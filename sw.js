@@ -1,0 +1,5 @@
+const CACHE="reconversion-control-v1";
+const CORE=["./","./index.html","./style.css","./data.js","./app.js","./manifest.webmanifest","./assets/icon-192.png","./assets/icon-512.png"];
+self.addEventListener("install",function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(CORE);}).then(function(){return self.skipWaiting();}));});
+self.addEventListener("activate",function(e){e.waitUntil(caches.keys().then(function(keys){return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
+self.addEventListener("fetch",function(e){if(e.request.method!=="GET")return;e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request).then(function(x){if(new URL(e.request.url).origin===location.origin){var y=x.clone();caches.open(CACHE).then(function(c){c.put(e.request,y);});}return x;}).catch(function(){return caches.match("./index.html");});}));});
