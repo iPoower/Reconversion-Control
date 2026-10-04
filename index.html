@@ -14,7 +14,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icon-192.png">
   <link rel="apple-touch-icon" href="./assets/icon-192.png">
-  <link rel="stylesheet" href="./style.css?v=2">
+  <link rel="stylesheet" href="./style.css?v=3">
 </head>
 <body>
 <header class="statusbar"><div class="statusin">
@@ -29,11 +29,11 @@
     <nav id="nav" class="chips" aria-label="Navigation"></nav>
   </section>
   <section id="app"></section>
-  <footer>V1 · GitHub Pages · local-first · sans analytics · sans document Drive public</footer>
+  <footer>V1.1 · GitHub Pages · local-first · sans analytics · sans document Drive public</footer>
 </main>
-<dialog id="dlg"><div class="dialogbox"><button id="close" class="close" aria-label="Fermer">×</button><div id="detail"></div></div></dialog>
-<input id="importer" type="file" accept="application/json" hidden>
-<script src="./data.js?v=2"></script>
-<script src="./app.js?v=2"></script>
+<dialog id="dlg" class="dialog" aria-labelledby="detail-title"><div class="dialogbox"><button id="close" class="close" aria-label="Fermer">×</button><div id="detail"></div></div></dialog>
+<input id="importer" type="file" accept=".json,application/json" aria-label="Importer une progression JSON" hidden>
+<script src="./data.js?v=3"></script>
+<script src="./app.js?v=3"></script>
 </body>
 </html>

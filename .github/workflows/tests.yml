@@ -1,0 +1,40 @@
+name: Reconversion Control · tests mobiles
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - name: Dépendances de test verrouillées
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Navigateur
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Syntaxe
+        run: |
+          node --check app.js
+          node --check data.js
+          node --check sw.js
+      - name: Navigation, recherche et affichage iPhone
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: npm test
+      - name: Cache et redémarrage hors connexion
+        if: matrix.browser == 'chromium'
+        run: npm run test:sw
