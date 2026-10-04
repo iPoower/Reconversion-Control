@@ -30,11 +30,19 @@ jobs:
         run: |
           node --check app.js
           node --check data.js
+          node --check course-foundations.js
+          node --check course-race.js
+          node --check course-operations.js
+          node --check learning.js
           node --check sw.js
       - name: Navigation, recherche et affichage iPhone
         env:
           BROWSER: ${{ matrix.browser }}
         run: npm test
+      - name: Cours, sources, corrigés et progression
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: npm run test:learning
       - name: Cache et redémarrage hors connexion
         if: matrix.browser == 'chromium'
         run: npm run test:sw

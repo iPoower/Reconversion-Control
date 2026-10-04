@@ -5,6 +5,7 @@
   "description": "Cockpit local de reconversion IT",
   "scripts": {
     "test": "node tests/mobile.spec.cjs",
+    "test:learning": "node tests/learning.spec.cjs",
     "test:sw": "node tests/sw.spec.cjs"
   },
   "devDependencies": {

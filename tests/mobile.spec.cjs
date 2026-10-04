@@ -41,7 +41,7 @@ async function main() {
   }
   try {
     const {page} = await open();
-    const headings = {cockpit: "Knowledge Health", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", privacy: "Sources pédagogiques"};
+    const headings = {cockpit: "Knowledge Health", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Cours Race Control", privacy: "Sources pédagogiques"};
     for (const [view, heading] of Object.entries(headings)) {
       await nav(page, view);
       assert.equal(await page.locator("#app h2").first().textContent(), heading);
@@ -50,11 +50,12 @@ async function main() {
     await nav(page, "cockpit");
     await page.locator('#app [data-view="path"]').tap();
     assert.equal(await page.locator("#app h2").first().textContent(), headings.path);
-    passed("all five navigation tabs and cockpit’s Voir le parcours work by touch");
+    passed("all six navigation tabs and cockpit’s Voir le parcours work by touch");
 
     await nav(page, "library");
     const topics = await page.evaluate(() => RC_TOPICS.map(t => ({id:t.id, section:t.section, title:t.title})));
-    assert.equal(topics.length, 42);
+    assert.equal(topics.length, 74);
+    assert.equal(topics.filter(t => !/^rc-\d{2}$/.test(t.id)).length, 42, "the original 42 topics stay available");
     const sections = await page.evaluate(() => RC_SECTIONS.map(s => s.id));
     assert.equal(sections.length, 9);
     for (const section of sections) {
@@ -62,7 +63,7 @@ async function main() {
       assert.deepEqual(await visibleIds(page), topics.filter(t => t.section === section).map(t => t.id).sort());
     }
     await page.locator('[data-section="all"]').tap();
-    assert.equal((await visibleIds(page)).length, 42);
+    assert.equal((await visibleIds(page)).length, 74);
     passed("all nine domain tabs and Tout filter the actual cards");
 
     const search = page.locator("#search");
@@ -92,7 +93,7 @@ async function main() {
       await page.locator("#close").tap();
       assert.equal(await page.locator("#dlg").evaluate(el => el.open), false);
     }
-    passed("all 42 fiche dialogs open the right content and close on iPhone");
+    passed("all 74 fiche dialogs open the right content and close on iPhone");
     await page.locator('#cards [data-open="dns"]').tap();
     await page.locator('[data-dprog="mastered"]').tap();
     assert.equal(await page.locator("#dlg").evaluate(el => el.open), true);
@@ -275,7 +276,7 @@ async function main() {
       const bounds = await layout.page.locator("#dlg").boundingBox();
       assert(bounds.x >= -1 && bounds.x + bounds.width <= viewport.width + 1, "dialog must fit viewport");
       await layout.page.locator("#close").tap();
-      passed(viewport.width + "×" + viewport.height + ": five views and long fiche fit, every touch control ≥44 px");
+      passed(viewport.width + "×" + viewport.height + ": six views and long fiche fit, every touch control ≥44 px");
     }
     assert.deepEqual(errors, [], "no unhandled JavaScript errors");
     assert.deepEqual(external, [], "the app must not request external services");

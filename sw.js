@@ -1,6 +1,6 @@
 const PREFIX = "reconversion-control-";
-const CACHE = PREFIX + "v3";
-const CORE = ["./", "./index.html", "./style.css", "./data.js", "./app.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/icon-512.png"];
+const CACHE = PREFIX + "v4";
+const CORE = ["./", "./index.html", "./style.css", "./data.js", "./course-foundations.js", "./course-race.js", "./course-operations.js", "./learning.js", "./app.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/icon-512.png"];
 const BASE = new URL(self.registration.scope);
 const INDEX = new URL("./index.html", BASE).href;
 const ASSETS = new Set(CORE.map(function(path) { return new URL(path, BASE).pathname; }));
