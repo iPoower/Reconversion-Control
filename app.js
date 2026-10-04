@@ -36,7 +36,7 @@ function stars(n){return "★★★★★".slice(0,n)+"☆☆☆☆☆".slice(0,
 function nav(){
  var items=[["cockpit","◉ Cockpit"],["path","↗ Parcours"],["library","▦ Fiches"],["review","↻ Révisions"],["privacy","⌾ Sources & privacy"]];
  $("#nav").innerHTML=items.map(function(x){return'<button class="chip '+(state.view===x[0]?"on":"")+'" data-view="'+x[0]+'">'+x[1]+"</button>";}).join("");
- $$("[data-view]").forEach(function(b){b.onclick=function(){state.view=b.dataset.view;save();render();};});
+
 }
 function healthRows(){
  return RC_SECTIONS.map(function(s){var p=progressFor(RC_TOPICS.filter(function(t){return t.section===s.id;}));return'<div class="hr"><b>'+s.icon+" "+esc(s.label)+'</b><div class="bar"><i style="width:'+p.pct+'%"></i></div><span class="pct">'+p.pct+"%</span></div>";}).join("");
@@ -79,7 +79,8 @@ function detail(id){
  $("#dlg").showModal();
 }
 function bind(){
- $$("[data-open]").forEach(function(b){b.onclick=function(){detail(b.dataset.open);};});
+ $("[data-view]").forEach(function(b){b.onclick=function(){var v=b.dataset.view;if(!v||v===state.view)return;state.view=v;save();render();window.scrollTo(0,0);};});
+ $("[data-open]").forEach(function(b){b.onclick=function(){detail(b.dataset.open);};});
  $$("[data-prog]").forEach(function(b){b.onclick=function(e){e.stopPropagation();setProgress(b.dataset.id,b.dataset.prog);};});
  $$("[data-section]").forEach(function(b){b.onclick=function(){state.section=b.dataset.section;render();};});
  $$("[data-good]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.good,true);};});
@@ -97,7 +98,7 @@ function exportState(){
 $("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{var j=JSON.parse(await f.text());if(!j.progress||!j.review)throw new Error();state.progress=j.progress;state.review=j.review;save();render();alert("Progression importée.");}catch(err){alert("Fichier invalide.");}e.target.value="";};
 $("#close").onclick=function(){$("#dlg").close();};$("#dlg").addEventListener("click",function(e){if(e.target===$("#dlg"))$("#dlg").close();});
 var theme=localStorage.getItem(THEME)||"dark";document.documentElement.dataset.theme=theme;$("#theme").onclick=function(){theme=document.documentElement.dataset.theme==="dark"?"light":"dark";document.documentElement.dataset.theme=theme;localStorage.setItem(THEME,theme);};
-function render(){nav();var f={cockpit:cockpit,path:path,library:library,review:review,privacy:privacy}[state.view]||cockpit;$("#app").innerHTML=f();bind();}
-if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(function(){});
+function render(){try{nav();var views={cockpit:cockpit,path:path,library:library,review:review,privacy:privacy};if(!views[state.view])state.view="cockpit";$("#app").innerHTML=views[state.view]();bind();}catch(err){console.error("Reconversion Control render error",err);$("#app").innerHTML='<section class="mod"><div class="mh"><h2>Interface à relancer</h2><span class="src">RECOVERY</span></div><p class="muted">Une vue n’a pas pu être affichée. Ta progression locale est conservée.</p><div class="actions"><button id="recover" class="btn pri">Revenir au cockpit</button></div></section>';var r=$("#recover");if(r)r.onclick=function(){state.view="cockpit";save();render();};}}
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(function(r){r.update().catch(function(){});}).catch(function(){});
 render();
 })();
