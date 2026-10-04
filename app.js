@@ -79,8 +79,8 @@ function detail(id){
  $("#dlg").showModal();
 }
 function bind(){
- $("[data-view]").forEach(function(b){b.onclick=function(){var v=b.dataset.view;if(!v||v===state.view)return;state.view=v;save();render();window.scrollTo(0,0);};});
- $("[data-open]").forEach(function(b){b.onclick=function(){detail(b.dataset.open);};});
+ $$("[data-view]").forEach(function(b){b.onclick=function(){var v=b.dataset.view;if(!v||v===state.view)return;state.view=v;save();render();window.scrollTo(0,0);};});
+ $$("[data-open]").forEach(function(b){b.onclick=function(){detail(b.dataset.open);};});
  $$("[data-prog]").forEach(function(b){b.onclick=function(e){e.stopPropagation();setProgress(b.dataset.id,b.dataset.prog);};});
  $$("[data-section]").forEach(function(b){b.onclick=function(){state.section=b.dataset.section;render();};});
  $$("[data-good]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.good,true);};});
