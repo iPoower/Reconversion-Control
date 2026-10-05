@@ -63,7 +63,7 @@ async function main() {
     const installedLessons = await page.evaluate(async () => (await (await (await caches.open("reconversion-control-v8")).match("./course-foundations.js")).text()));
     assert(!installedLessons.includes("__staleReconversionLessons"),"installation must also refresh a still-fresh HTTP-cached course file");
     await page.reload();
-    assert.equal(await page.locator("#app h2").first().textContent(), "Knowledge Health");
+    assert.equal(await page.locator("#app h2").first().textContent(), "🎯 Mission du jour");
     assert.equal(await page.evaluate(() => !!window.__staleReconversionScript), false);
     await page.locator('#nav [data-view="library"]').tap();
     assert.equal(await page.locator("#cards .card").count(), 74);
@@ -72,7 +72,7 @@ async function main() {
 
     await context.setOffline(true);
     await page.goto(server.url + "/?v=2");
-    assert.equal(await page.locator("#app h2").first().textContent(), "Knowledge Health");
+    assert.equal(await page.locator("#app h2").first().textContent(), "🎯 Mission du jour");
     await page.locator('#nav [data-view="library"]').tap();
     await page.locator("#search").fill("DNS");
     await page.locator('[data-open="dns"]').tap();
