@@ -1,44 +1,51 @@
-const CACHE="reconversion-control-v3";
-const CORE=["./","./index.html","./style.css?v=3","./data.js?v=3","./app.js?v=3","./manifest.webmanifest","./assets/icon-192.png","./assets/icon-512.png"];
+const PREFIX = "reconversion-control-";
+const CACHE = PREFIX + "v4";
+const CORE = ["./", "./index.html", "./style.css", "./data.js", "./course-foundations.js", "./course-race.js", "./course-operations.js", "./learning.js", "./app.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/icon-512.png"];
+const BASE = new URL(self.registration.scope);
+const INDEX = new URL("./index.html", BASE).href;
+const ASSETS = new Set(CORE.map(function(path) { return new URL(path, BASE).pathname; }));
 
-self.addEventListener("install",function(e){
-  e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(CORE);}).then(function(){return self.skipWaiting();}));
+self.addEventListener("install", function(event) {
+  event.waitUntil(caches.open(CACHE).then(function(cache) {
+    // Une nouvelle version ne doit pas recopier un ancien HTTP cache Safari.
+    return cache.addAll(CORE.map(function(path) {
+      return new Request(new URL(path, BASE), { cache: "reload" });
+    }));
+  }).then(function() { return self.skipWaiting(); }));
 });
-
-self.addEventListener("activate",function(e){
-  e.waitUntil(caches.keys().then(function(keys){
-    return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));
-  }).then(function(){return self.clients.claim();}));
+self.addEventListener("activate", function(event) {
+  event.waitUntil(caches.keys().then(function(keys) {
+    // Les autres applications GitHub Pages partagent le même domaine.
+    return Promise.all(keys.filter(function(key) {
+      return key.startsWith(PREFIX) && key !== CACHE;
+    }).map(function(key) { return caches.delete(key); }));
+  }).then(function() { return self.clients.claim(); }));
 });
-
-function put(c,r,x){
-  if(x&&x.ok&&new URL(r.url).origin===location.origin)c.put(r,x.clone());
-  return x;
-}
-
-function networkFirst(r){
-  return caches.open(CACHE).then(function(c){
-    return fetch(r).then(function(x){return put(c,r,x);}).catch(function(){
-      return c.match(r,{ignoreSearch:true}).then(function(h){return h||c.match("./index.html");});
-    });
-  });
-}
-
-function cacheFirst(r){
-  return caches.open(CACHE).then(function(c){
-    return c.match(r,{ignoreSearch:true}).then(function(h){
-      return h||fetch(r).then(function(x){return put(c,r,x);});
-    });
-  });
-}
-
-self.addEventListener("fetch",function(e){
-  if(e.request.method!=="GET")return;
-  var u=new URL(e.request.url);
-  if(u.origin!==location.origin)return;
-  if(e.request.mode==="navigate"||["script","style"].indexOf(e.request.destination)>=0){
-    e.respondWith(networkFirst(e.request));
-  }else{
-    e.respondWith(cacheFirst(e.request).catch(function(){return caches.match("./index.html");}));
+self.addEventListener("fetch", function(event) {
+  const request = event.request, url = new URL(request.url);
+  if (request.method !== "GET" || url.origin !== BASE.origin || !url.pathname.startsWith(BASE.pathname)) return;
+  if (request.mode === "navigate") {
+    event.respondWith(caches.open(CACHE).then(async function(cache) {
+      try {
+        const response = await fetch(new Request(request, { cache: "no-cache" }));
+        if (response.ok) {
+          if (url.pathname === BASE.pathname || url.pathname === new URL(INDEX).pathname) await cache.put(INDEX, response.clone());
+          return response;
+        }
+        return await cache.match(INDEX) || response;
+      } catch (error) {
+        return await cache.match(INDEX) || Response.error();
+      }
+    }));
+    return;
   }
+  if (!ASSETS.has(url.pathname)) return;
+  event.respondWith(caches.open(CACHE).then(async function(cache) {
+    // Les paramètres de version ne font pas perdre les fichiers préchargés.
+    const key = url.origin + url.pathname, cached = await cache.match(key);
+    if (cached) return cached;
+    const response = await fetch(request);
+    if (response.ok) await cache.put(key, response.clone());
+    return response;
+  }));
 });
