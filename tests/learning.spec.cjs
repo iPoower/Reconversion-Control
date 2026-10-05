@@ -9,6 +9,7 @@ const browserType = {chromium, webkit}[browserName];
 assert(browserType, "BROWSER must be chromium or webkit");
 const profile = {...devices["iPhone 11 Pro Max"], serviceWorkers:"block", acceptDownloads:true};
 const chapterIds = Array.from({length:32}, (_, i) => "rc-" + String(i + 1).padStart(2, "0"));
+const studyIds = ["rc-01","rc-03","rc-04","rc-05","rc-06","rc-07","rc-02","rc-08","rc-09","rc-10","rc-11","rc-12","rc-13","rc-14","rc-15","rc-16","rc-18","rc-17","rc-19","rc-20","rc-21","rc-22","rc-24","rc-23","rc-29","rc-25","rc-26","rc-27","rc-28","rc-30","rc-31","rc-32"];
 let checks = 0;
 function passed(name) {checks++; console.log("PASS " + name);}
 async function nav(page, view) {await page.locator('#nav [data-view="' + view + '"]').tap();}
@@ -47,8 +48,8 @@ async function main() {
   try {
     const {page} = await open();
     await nav(page,"course");
-    assert.equal(await page.locator("#app h2").first().textContent(),"Cours Race Control");
-    assert.deepEqual(await page.locator("#course-chapters [data-card]").evaluateAll(cards=>cards.map(c=>c.dataset.card)),chapterIds);
+    assert.equal(await page.locator("#app h2").first().textContent(),"Parcours de révision");
+    assert.deepEqual(await page.locator("#course-chapters [data-card]").evaluateAll(cards=>cards.map(c=>c.dataset.card)),studyIds);
     assert.deepEqual(await page.locator("[data-course-level]").evaluateAll(levels=>levels.map(level=>level.dataset.courseLevel)),["beginner","intermediate","pro"]);
     assert.equal(await page.locator('[data-course-level="beginner"]').evaluate(el=>el.open),true);
     assert.equal(await page.locator('[data-course-level="intermediate"]').evaluate(el=>el.open),false);
@@ -60,7 +61,13 @@ async function main() {
     assert.equal(await page.evaluate(()=>RC_SECTIONS.length),9);
     passed("the course presents 32 chapters in a beginner, intermediate and pro hierarchy");
 
-    const beginnerDone = Object.fromEntries(chapterIds.slice(0,9).map(id=>[id,"mastered"]));
+    assert.match(await page.locator('[data-card="rc-03"] .src').textContent(),/ÉTAPE 2/);
+    assert.match(await page.locator('[data-card="rc-02"] .src').textContent(),/ÉTAPE 7/);
+    assert.match(await page.locator('[data-card="rc-29"] .src').textContent(),/ÉTAPE 25/);
+    assert.deepEqual(await page.locator('[data-course-level="beginner"] .study-phase > .mh > h3').evaluateAll(nodes=>nodes.map(n=>n.textContent)),["Vue d’ensemble","Bases du Web","Travailler comme un développeur"]);
+    passed("study order follows prerequisites rather than source chapter numbers");
+
+    const beginnerDone = Object.fromEntries(studyIds.slice(0,9).map(id=>[id,"mastered"]));
     const staged = await open({view:"course",section:"all",search:"",status:"all",progress:beginnerDone,review:{}});
     assert.match(await staged.page.locator('[data-level-card="beginner"]').textContent(),/TERMINÉ/);
     assert.match(await staged.page.locator('[data-level-card="intermediate"]').textContent(),/NIVEAU ACTIF/);
@@ -72,7 +79,7 @@ async function main() {
     passed("finishing beginner automatically promotes intermediate as the active level");
 
     const interviews = new Set(), exercises = new Set();
-    for(const id of chapterIds) {
+    for(const id of studyIds) {
       await openChapter(page,id);
       const detail = page.locator("#detail .lesson-detail");
       assert.equal(await detail.count(),1,id + " must show a real lesson rather than the old generic template");
@@ -107,8 +114,8 @@ async function main() {
 
     await page.locator('#course-chapters [data-open="rc-01"]').tap();
     assert.equal(await page.locator('#detail [data-open="rc-00"]').count(),0);
-    await page.locator('#detail .chapter-navigation [data-open="rc-02"]').tap();
-    assert.equal(await page.locator("#detail .lesson-detail").getAttribute("data-lesson-id"),"rc-02");
+    await page.locator('#detail .chapter-navigation [data-open="rc-03"]').tap();
+    assert.equal(await page.locator("#detail .lesson-detail").getAttribute("data-lesson-id"),"rc-03");
     assert.equal(await page.locator("#dlg").evaluate(el=>el.open),true);
     assert(await page.locator("#detail-title").evaluate(el=>el===document.activeElement),"a chapter transition must focus the new heading, not a removed button");
     assert.equal(await page.locator(".dialogbox").evaluate(el=>el.scrollTop),0);
