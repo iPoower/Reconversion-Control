@@ -48,6 +48,23 @@ var RC_CURRICULUM=[
  {id:"rc-31",level:"pro",phase:"Consolider et expliquer"},
  {id:"rc-32",level:"pro",phase:"Consolider et expliquer"}
 ];
+var RC_PORTFOLIO_PROOFS=[
+ {icon:"📱",title:"PWA & offline",lesson:"rc-09",skill:"Web · PWA",proof:"Service worker, cache versionné et reprise hors connexion."},
+ {icon:"🌦️",title:"Moteurs météo & risque",lesson:"rc-12",skill:"Data · logique métier",proof:"Normalisation météo, température chaussée et risque de verglas explicable."},
+ {icon:"📍",title:"GPS & state machine",lesson:"rc-18",skill:"Architecture · mobile",proof:"Position réelle, transitions d’état et parcours live cohérents."},
+ {icon:"🔐",title:"Privacy & chiffrement",lesson:"rc-24",skill:"Cybersecurity",proof:"Minimisation des données, frontières de confiance et chiffrement."},
+ {icon:"🧪",title:"Tests multi-navigateurs",lesson:"rc-25",skill:"Quality · E2E",proof:"Validation Chromium + WebKit, scénarios négatifs et régressions."},
+ {icon:"♾️",title:"CI/CD & rollback",lesson:"rc-27",skill:"DevSecOps",proof:"PR, SHA vérifié, pipeline, déploiement et retour arrière sûr."},
+ {icon:"🔧",title:"Debug méthodique",lesson:"rc-29",skill:"Engineering",proof:"Observe → Diagnose → Fix → Test → Verify sur des incidents réels."}
+];
+var RC_CAREER_STAGES=[
+ {icon:"🧱",title:"Fondations IT",subtitle:"Foundations",sections:["fundamentals","linux","network"]},
+ {icon:"🛡️",title:"Cybersécurité",subtitle:"Cybersecurity",sections:["security"]},
+ {icon:"☁️",title:"Cloud + DevSecOps",subtitle:"Cloud engineering",sections:["cloud","devsecops"]},
+ {icon:"🔴",title:"Pentest",subtitle:"Offensive security",sections:["pentest"]},
+ {icon:"🤖",title:"Sécurité IA",subtitle:"AI security",sections:["ai"]},
+ {icon:"🧪",title:"Portfolio + entretien",subtitle:"Portfolio & interview",sections:["portfolio"]}
+];
 var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{}};
 var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0;
 var state=load();
@@ -130,12 +147,43 @@ function focusTopic(){
  var list=RC_TOPICS.filter(function(t){return pstate(t.id)!=="mastered";}).sort(function(a,b){var sa=section(a.section).order,sb=section(b.section).order;return sa-sb||b.p-a.p;});
  return list[0]||RC_TOPICS[0];
 }
+function nextStudyLesson(){var ordered=orderedLessons();return ordered.find(function(lesson){return pstate(lesson.id)!=="mastered";})||ordered[0];}
+function courseMastery(){return progressFor(orderedLessons());}
+function englishVocabularyProgress(){
+ var total=0,learned=0;
+ orderedLessons().forEach(function(lesson){var en=englishData(lesson.id);if(!en)return;total+=en.vocab.length;if(pstate(lesson.id)==="mastered")learned+=en.vocab.length;});
+ return{learned:learned,total:total};
+}
+function portfolioProofState(proof){var s=pstate(proof.lesson);return s==="mastered"?"VALIDÉ":s==="progress"?"EN COURS":"À PRATIQUER";}
+function portfolioProofsHtml(){
+ var validated=RC_PORTFOLIO_PROOFS.filter(function(proof){return pstate(proof.lesson)==="mastered";}).length;
+ return'<section class="mod portfolio-proofs"><div class="mh"><h2>Portfolio Proofs</h2><span class="src">'+validated+" / "+RC_PORTFOLIO_PROOFS.length+' VALIDÉS</span></div><p class="en-kicker" lang="en">Turn Race Control into evidence you can explain in an interview.</p><p class="muted">Chaque carte relie une capacité réellement travaillée dans Race Control à la compétence IT que tu dois savoir expliquer.</p><div class="proof-grid">'+RC_PORTFOLIO_PROOFS.map(function(proof){return'<article class="proof-card" data-proof="'+proof.lesson+'"><div class="proof-top"><span class="proof-icon">'+proof.icon+'</span><span class="proof-state '+pstate(proof.lesson)+'">'+portfolioProofState(proof)+'</span></div><h3>'+esc(proof.title)+'</h3><small>'+esc(proof.skill)+'</small><p>'+esc(proof.proof)+'</p><button class="btn" data-open="'+proof.lesson+'">Voir la preuve · Explain</button></article>';}).join("")+'</div></section>';
+}
+function studyPulseHtml(){
+ var cp=courseMastery(),en=englishVocabularyProgress(),d=due(),proofs=RC_PORTFOLIO_PROOFS.filter(function(proof){return pstate(proof.lesson)==="mastered";}).length;
+ return'<section class="mod study-pulse"><div class="mh"><h2>Study Pulse</h2><span class="src">LOCAL · TRANSPARENT</span></div><div class="pulse-grid"><div class="pulse"><small>Cours acquis<br><span lang="en">Mastered lessons</span></small><b>'+cp.mastered+' / '+cp.total+'</b></div><div class="pulse"><small>Vocabulaire EN<br><span lang="en">English vocabulary</span></small><b>'+en.learned+' / '+en.total+'</b></div><div class="pulse"><small>Preuves portfolio<br><span lang="en">Portfolio proofs</span></small><b>'+proofs+' / '+RC_PORTFOLIO_PROOFS.length+'</b></div><div class="pulse"><small>Révisions dues<br><span lang="en">Reviews due</span></small><b>'+d.length+'</b></div></div><p class="muted">Aucun score magique : ces chiffres viennent directement de tes statuts locaux.</p></section>';
+}
+function dailyMissionHtml(){
+ var next=nextStudyLesson(),step=studyStep(next.id),d=due(),en=englishData(next.id),level=courseLevelFor(next),reviewTarget=d[0];
+ return'<section class="mod mission"><div class="mh"><h2>🎯 Mission du jour</h2><span class="src">3 ACTIONS MAX</span></div><p class="en-kicker" lang="en">Today’s mission · learn, review, speak.</p><div class="mission-grid"><article class="mission-card primary"><span class="src">01 · LEARN</span><h3>Étape '+step+' · '+esc(next.title)+'</h3><p lang="en">'+esc(en?en.title:"")+'</p><button class="btn pri" data-open="'+next.id+'">Commencer · Start</button></article><article class="mission-card"><span class="src">02 · REVIEW</span><h3>'+(reviewTarget?esc(reviewTarget.t.title):"Aucune révision urgente")+'</h3><p>'+(reviewTarget?"Révision espacée due aujourd’hui.":"Ton planning de répétition espacée est à jour.")+'</p>'+(reviewTarget?'<button class="btn" data-view="review">Réviser · Review</button>':'<button class="btn" data-view="review">Voir le planning</button>')+'</article><article class="mission-card english"><span class="src">03 · SPEAK · '+englishIntensity(level)+'% EN</span><h3>🎤 English challenge</h3><p lang="en">'+esc(en?en.question:"Explain what you learned today.")+'</p><button class="btn" data-open="'+next.id+'">Ouvrir l’English Coach</button></article></div></section>';
+}
+function interviewLabHtml(){
+ var lesson=nextStudyLesson(),en=englishData(lesson.id);
+ return'<section class="mod interview-lab"><div class="mh"><h2>🎤 Interview Lab</h2><span class="src">60–90 SEC</span></div><div class="interview-layout"><div><span class="src">QUESTION FR</span><p>'+esc(lesson.interview.question)+'</p></div><div><span class="src">QUESTION EN</span><p lang="en">'+esc(en?en.question:"Explain this concept in English.")+'</p></div></div><details class="answer interview-method"><summary>Méthode de réponse · Answer framework</summary><p><b>1. Contexte</b> — le problème. <b>2. Action</b> — ce que tu as fait. <b>3. Preuve</b> — test, SHA, métrique ou résultat. <b>4. Limite</b> — ce que tu surveillerais ensuite.</p></details><div class="actions"><button class="btn pri" data-open="'+lesson.id+'">Préparer cette question</button></div></section>';
+}
+function careerStagePct(stage){
+ var values=stage.sections.map(function(id){var s=section(id);return s?progressFor(RC_TOPICS.filter(function(t){return t.section===id;})).pct:0;});
+ return values.length?Math.round(values.reduce(function(a,b){return a+b;},0)/values.length):0;
+}
+function careerPathHtml(){
+ return'<section class="mod career-track"><div class="mh"><h2>Cap reconversion</h2><span class="src">CYBER · CLOUD · DEVSECOPS · AI</span></div><p class="en-kicker" lang="en">Career track · build the foundations before specialization.</p><div class="career-grid">'+RC_CAREER_STAGES.map(function(stage,i){var pct=careerStagePct(stage);return'<article class="career-stage '+(pct>=80?"ready":pct>=35?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+stage.icon+" "+esc(stage.title)+'</b><small lang="en">'+esc(stage.subtitle)+'</small><div class="bar"><i style="width:'+pct+'%"></i></div></div><span class="score">'+pct+'%</span></article>';}).join("")+'</div><p class="muted">Repères : consolider les fondamentaux, puis cyber/cloud/DevSecOps, ensuite pentest et sécurité IA. Le portfolio sert de preuve tout au long du parcours.</p></section>';
+}
 function cockpit(){
  var p=progressFor(RC_TOPICS), d=due(), f=focusTopic();
- return'<div class="grid2"><section class="mod"><div class="mh"><h2>Knowledge Health</h2><span class="src">LOCAL</span></div><div class="hero"><h2>'+(p.pct>=80?"PRÊT À CONSOLIDER":p.pct>=45?"PROGRESSION ACTIVE":"BASES À CONSTRUIRE")+'</h2><p><strong>'+p.pct+' %</strong> de couverture pondérée · '+p.mastered+" acquis · "+p.inprog+' en cours</p></div><div class="health">'+healthRows()+'</div></section><section class="mod"><div class="mh"><h2>Briefing</h2><span class="src">PRIORITÉ</span></div><div class="metrics"><div class="metric"><small>Fiches</small><b>'+p.total+'</b></div><div class="metric"><small>Acquis</small><b>'+p.mastered+'</b></div><div class="metric"><small>À revoir</small><b>'+d.length+'</b></div><div class="metric"><small>Domaines</small><b>'+RC_SECTIONS.length+'</b></div></div><div class="hero"><h2>🎯 '+esc(f.title)+'</h2><p>'+esc(f.summary)+'</p><div class="actions" style="margin-top:10px"><button class="btn pri" data-open="'+f.id+'">Ouvrir la fiche</button><button class="btn" data-view="path">Voir le parcours</button></div></div></section></div><section class="mod"><div class="mh"><h2>Priorités ★★★★★</h2><span class="src">À SAVOIR</span></div><div class="grid3">'+RC_TOPICS.filter(function(t){return t.p===5&&pstate(t.id)!=="mastered";}).slice(0,6).map(cardHtml).join("")+'</div></section>';
+ return dailyMissionHtml()+'<div class="grid2"><section class="mod"><div class="mh"><h2>Knowledge Health</h2><span class="src">LOCAL</span></div><div class="hero"><h2>'+(p.pct>=80?"PRÊT À CONSOLIDER":p.pct>=45?"PROGRESSION ACTIVE":"BASES À CONSTRUIRE")+'</h2><p><strong>'+p.pct+' %</strong> de couverture pondérée · '+p.mastered+" acquis · "+p.inprog+' en cours</p></div><div class="health">'+healthRows()+'</div></section>'+studyPulseHtml()+'</div>'+interviewLabHtml()+portfolioProofsHtml()+'<section class="mod"><div class="mh"><h2>Priorités ★★★★★</h2><span class="src">À SAVOIR</span></div><div class="grid3">'+RC_TOPICS.filter(function(t){return t.p===5&&pstate(t.id)!=="mastered";}).slice(0,6).map(cardHtml).join("")+'</div></section>';
 }
 function path(){
- return'<section class="mod"><div class="mh"><h2>Parcours recommandé</h2><span class="src">9 ÉTAPES</span></div><p class="muted">On consolide les couches dans l’ordre. Kubernetes, pentest avancé et sécurité IA deviennent beaucoup plus simples quand Linux, réseau et IAM sont solides.</p>'+RC_SECTIONS.map(function(s,i){var p=progressFor(RC_TOPICS.filter(function(t){return t.section===s.id;}));var active=p.pct<80&&RC_SECTIONS.slice(0,i).every(function(x){return progressFor(RC_TOPICS.filter(function(t){return t.section===x.id;})).pct>=50;});return'<div class="pathrow '+(active?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+s.icon+" "+esc(s.label)+'</b><div class="muted">'+esc(s.goal)+'</div></div><span class="score">'+p.pct+"%</span></div>";}).join("")+'</section>';
+ return careerPathHtml()+'<section class="mod"><div class="mh"><h2>Parcours recommandé</h2><span class="src">9 DOMAINES</span></div><p class="muted">On consolide les couches dans l’ordre. Kubernetes, pentest avancé et sécurité IA deviennent beaucoup plus simples quand Linux, réseau et IAM sont solides.</p>'+RC_SECTIONS.map(function(s,i){var p=progressFor(RC_TOPICS.filter(function(t){return t.section===s.id;}));var active=p.pct<80&&RC_SECTIONS.slice(0,i).every(function(x){return progressFor(RC_TOPICS.filter(function(t){return t.section===x.id;})).pct>=50;});return'<div class="pathrow '+(active?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+s.icon+" "+esc(s.label)+'</b><div class="muted">'+esc(s.goal)+'</div></div><span class="score">'+p.pct+"%</span></div>";}).join("")+'</section>';
 }
 function curriculumItem(id){return RC_CURRICULUM.find(function(item){return item.id===id;})||null;}
 function studyStep(id){var i=RC_CURRICULUM.findIndex(function(item){return item.id===id;});return i<0?0:i+1;}
