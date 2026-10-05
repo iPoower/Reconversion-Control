@@ -1,5 +1,5 @@
 const PREFIX = "reconversion-control-";
-const CACHE = PREFIX + "v7";
+const CACHE = PREFIX + "v8";
 const CORE = ["./", "./index.html", "./style.css", "./data.js", "./course-foundations.js", "./course-race.js", "./course-operations.js", "./learning.js", "./english.js", "./app.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/icon-512.png"];
 const BASE = new URL(self.registration.scope);
 const INDEX = new URL("./index.html", BASE).href;
