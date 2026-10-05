@@ -107,8 +107,20 @@ function progressFor(list){
 }
 function due(){return Object.keys(state.review).map(function(id){return{id:id,r:state.review[id],t:topic(id)};}).filter(function(x){return x.t&&x.r.due<=today();}).sort(function(a,b){var d=a.r.due.localeCompare(b.r.due);if(d)return d;var sa=studyStep(a.id)||999,sb=studyStep(b.id)||999;return sa-sb;});}
 function stars(n){return "★★★★★".slice(0,n)+"☆☆☆☆☆".slice(0,5-n);}
+function englishData(id){return typeof RC_ENGLISH!=="undefined"&&RC_ENGLISH[id]?RC_ENGLISH[id]:null;}
+function englishIntensity(level){return level&&level.id==="beginner"?25:level&&level.id==="intermediate"?50:75;}
+function englishSupport(level){
+ if(level&&level.id==="beginner")return "Lis d’abord la phrase anglaise, puis compare avec le français. Réponds une fois en français, puis reformule en anglais.";
+ if(level&&level.id==="intermediate")return "Lis d’abord sans traduction. Réponds en anglais en 2–3 phrases, puis utilise le français seulement pour vérifier.";
+ return "Réponds d’abord en anglais comme en entretien. Ouvre l’aide française uniquement pour vérifier le sens.";
+}
+function englishCoachHtml(lesson,level){
+ var en=englishData(lesson.id);if(!en)return"";
+ var pct=englishIntensity(level), frHelp=level&&level.id==="beginner"?'<p class="en-fr-help"><b>🇫🇷 Sens :</b> '+esc(en.phraseFr)+'</p>':'<details class="answer en-fr-help"><summary>🇫🇷 Aide française · French help</summary><p>'+esc(en.phraseFr)+'</p></details>';
+ return'<section class="english-coach" data-english-level="'+pct+'"><div class="mh"><h3>🇬🇧 English Coach</h3><span class="src">'+pct+'% EN</span></div><p class="en-mode">'+esc(englishSupport(level))+'</p><h4 lang="en">'+esc(en.title)+'</h4><p class="en-summary" lang="en">'+esc(en.summary)+'</p><div class="en-phrase"><b>Key sentence · Phrase clé</b><p lang="en">'+esc(en.phrase)+'</p>'+frHelp+'</div><div class="en-vocab"><b>Vocabulary · Vocabulaire</b><div class="en-vocab-grid">'+en.vocab.map(function(pair){return'<span><strong lang="en">'+esc(pair[0])+'</strong><small>'+esc(pair[1])+'</small></span>';}).join("")+'</div></div><div class="en-speaking"><b>🎤 Speaking challenge · Défi oral</b><p lang="en">'+esc(en.question)+'</p><small>Objectif : réponds à voix haute, même avec des phrases simples.</small></div></section>';
+}
 function nav(){
- var items=[["cockpit","◉ Cockpit"],["path","↗ Parcours"],["library","▦ Fiches"],["course","▤ Cours Race Control"],["review","↻ Révisions"],["privacy","⌾ Sources & privacy"]];
+ var items=[["cockpit","◉ Cockpit"],["path","↗ Parcours · Path"],["library","▦ Fiches · Notes"],["course","▤ Cours · Study"],["review","↻ Révisions · Review"],["privacy","⌾ Sources & privacy"]];
  $("#nav").innerHTML=items.map(function(x){return'<button class="chip '+(state.view===x[0]?"on":"")+'" data-view="'+x[0]+'"'+(state.view===x[0]?' aria-current="page"':"")+'>'+x[1]+"</button>";}).join("");
 }
 function healthRows(){
@@ -149,12 +161,12 @@ function courseLevelSection(level,active){
 }
 function cardHtml(t){
  var s=pstate(t.id);
- var level=t.chapter?courseLevelFor(t):null, step=t.chapter?studyStep(t.id):0, entry=t.chapter?curriculumItem(t.id):null;
- return'<article class="card" data-card="'+t.id+'">'+(t.chapter?'<span class="src">'+level.icon+' '+esc(level.label.toUpperCase())+' · ÉTAPE '+step+' · '+esc(entry.phase.toUpperCase())+'</span>':'<span class="src">FICHE ESSENTIELLE</span>')+'<div class="ctop"><h3>'+esc(t.title)+'</h3><span class="prio">'+stars(t.p)+'</span></div><p>'+esc(t.summary)+'</p><div class="tags">'+t.tags.map(function(x){return'<span class="tag">'+esc(x)+'</span>';}).join("")+'</div><div class="seg"><button class="learn '+(s==="learn"?"on":"")+'" aria-pressed="'+(s==="learn")+'" data-prog="learn" data-id="'+t.id+'">À apprendre</button><button class="progress '+(s==="progress"?"on":"")+'" aria-pressed="'+(s==="progress")+'" data-prog="progress" data-id="'+t.id+'">En cours</button><button class="mastered '+(s==="mastered"?"on":"")+'" aria-pressed="'+(s==="mastered")+'" data-prog="mastered" data-id="'+t.id+'">Acquis</button></div><button class="btn" data-open="'+t.id+'">'+(t.chapter?'Lire le chapitre':'Voir la fiche')+'</button></article>';
+ var level=t.chapter?courseLevelFor(t):null, step=t.chapter?studyStep(t.id):0, entry=t.chapter?curriculumItem(t.id):null, en=t.chapter?englishData(t.id):null;
+ return'<article class="card" data-card="'+t.id+'">'+(t.chapter?'<span class="src">'+level.icon+' '+esc(level.label.toUpperCase())+' · ÉTAPE '+step+' · '+esc(entry.phase.toUpperCase())+'</span>':'<span class="src">FICHE ESSENTIELLE · CORE NOTE</span>')+'<div class="ctop"><h3>'+esc(t.title)+'</h3><span class="prio">'+stars(t.p)+'</span></div>'+(en?'<p class="card-en-title" lang="en">🇬🇧 '+esc(en.title)+'</p>':'')+'<p>'+esc(t.summary)+'</p><div class="tags">'+t.tags.map(function(x){return'<span class="tag">'+esc(x)+'</span>';}).join("")+'</div><div class="seg"><button class="learn '+(s==="learn"?"on":"")+'" aria-pressed="'+(s==="learn")+'" data-prog="learn" data-id="'+t.id+'">À apprendre<small>Learn</small></button><button class="progress '+(s==="progress"?"on":"")+'" aria-pressed="'+(s==="progress")+'" data-prog="progress" data-id="'+t.id+'">En cours<small>Learning</small></button><button class="mastered '+(s==="mastered"?"on":"")+'" aria-pressed="'+(s==="mastered")+'" data-prog="mastered" data-id="'+t.id+'">Acquis<small>Mastered</small></button></div><button class="btn" data-open="'+t.id+'">'+(t.chapter?'Lire · Read':'Voir · Open')+'</button></article>';
 }
 function searchText(value){return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
 function topicSearchText(t){
- return t.title+" "+t.summary+" "+t.tags.join(" ")+" "+(RC_LESSON_TEXT[t.id] || "")+" "+(RC_LESSON_LINKS[t.id] || []).map(function(lesson){return RC_LESSON_TEXT[lesson.id];}).join(" ");
+ return t.title+" "+t.summary+" "+t.tags.join(" ")+" "+(RC_LESSON_TEXT[t.id] || "")+" "+(typeof RC_ENGLISH_TEXT!=="undefined"?(RC_ENGLISH_TEXT[t.id]||""):"")+" "+(RC_LESSON_LINKS[t.id] || []).map(function(lesson){return RC_LESSON_TEXT[lesson.id]+" "+(typeof RC_ENGLISH_TEXT!=="undefined"?(RC_ENGLISH_TEXT[lesson.id]||""):"");}).join(" ");
 }
 var topicSearchIndex=Object.create(null);
 RC_TOPICS.forEach(function(t){topicSearchIndex[t.id]=searchText(topicSearchText(t));});
