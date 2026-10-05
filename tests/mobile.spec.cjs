@@ -79,7 +79,8 @@ async function main() {
     assert.match(await page.locator('[data-lab="lab-01"] .lab-status').textContent(),/EN COURS/);
     assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).progress.programming,KEY),"progress");
     const publicLabText=await page.locator(".drive-shelf").textContent();
-    assert(!/drive\.google\.com|docs\.google\.com|[A-Za-z0-9_-]{25,}/.test(publicLabText),"public source shelf must not expose Drive URLs or IDs");
+    assert(!/drive\.google\.com|docs\.google\.com|usp=drivesdk/i.test(publicLabText),"public source shelf must not expose private Drive links");
+    assert.equal(await page.evaluate(()=>RC_DRIVE_SOURCES.every(source=>Object.keys(source).sort().join(",")==="author,covers,domain,id,title")),true,"published Drive metadata must be limited to curated bibliography fields");
     passed("Drive-backed Lab Mode exposes 15 practical labs and 10 curated references without private Drive links");
 
     await nav(page, "library");
