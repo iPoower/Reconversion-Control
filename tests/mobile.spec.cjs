@@ -77,7 +77,7 @@ async function main() {
     assert.match(await page.locator('[data-lab="lab-01"]').textContent(),/Explain it in English/);
     await page.locator('[data-lab="lab-01"] [data-prog="progress"]').tap();
     assert.match(await page.locator('[data-lab="lab-01"] .lab-status').textContent(),/EN COURS/);
-    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem(KEY)).progress.programming),"progress");
+    assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).progress.programming,KEY),"progress");
     const publicLabText=await page.locator(".drive-shelf").textContent();
     assert(!/drive\.google\.com|docs\.google\.com|[A-Za-z0-9_-]{25,}/.test(publicLabText),"public source shelf must not expose Drive URLs or IDs");
     passed("Drive-backed Lab Mode exposes 15 practical labs and 10 curated references without private Drive links");
