@@ -153,7 +153,7 @@ function bindCards(root){
  Array.from(root.querySelectorAll("[data-prog]")).forEach(function(b){b.onclick=function(e){e.stopPropagation();setProgress(b.dataset.id,b.dataset.prog);};});
 }
 function bind(){
- $("[data-view]").forEach(function(b){b.onclick=function(){var v=b.dataset.view;if(!v||v===state.view)return;state.view=v;save();render();window.scrollTo(0,0);var active=$("#nav [aria-current]");if(active)active.focus({preventScroll:true});};});
+ $$("[data-view]").forEach(function(b){b.onclick=function(){state.view=b.dataset.view;save();render();$("#nav [aria-current]").focus({preventScroll:true});};});
  bindCards($("#app"));
  $$("[data-section]").forEach(function(b){b.onclick=function(){state.section=b.dataset.section;save();render();$("[data-section=\""+state.section+"\"]").focus({preventScroll:true});};});
  $$("[data-good]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.good,true);};});
@@ -175,7 +175,7 @@ function closeDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.cl
 $("#close").onclick=closeDetail;$("#dlg").addEventListener("click",function(e){if(e.target===$("#dlg"))closeDetail();});$("#dlg").addEventListener("close",afterDetailClose);
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&$("#dlg").classList.contains("dialog-fallback"))closeDetail();});
 var theme=storageGet(THEME)==="light"?"light":"dark";document.documentElement.dataset.theme=theme;$("#theme").onclick=function(){theme=document.documentElement.dataset.theme==="dark"?"light":"dark";document.documentElement.dataset.theme=theme;storageSet(THEME,theme);};
-function render(){try{var navScroll=$("#nav").scrollLeft, tabs=$(".tabs");if(tabs)libraryTabsScroll=tabs.scrollLeft;nav();var views={cockpit:cockpit,path:path,library:library,course:course,review:review,privacy:privacy};if(!views[state.view])state.view="cockpit";$("#app").innerHTML=views[state.view]();$("#nav").scrollLeft=navScroll;tabs=$(".tabs");if(tabs)tabs.scrollLeft=libraryTabsScroll;bind();storageNotice();}catch(err){console.error("Reconversion Control render error",err);$("#app").innerHTML='<section class="mod"><div class="mh"><h2>Interface à relancer · '+esc(err&&err.message||err)+'</h2><span class="src">RECOVERY</span></div><p class="muted">Une vue n’a pas pu être affichée. Ta progression locale est conservée.</p><div class="actions"><button id="recover" class="btn pri">Revenir au cockpit</button></div></section>';var r=$("#recover");if(r)r.onclick=function(){state.view="cockpit";save();render();};}}
+function render(){var navScroll=$("#nav").scrollLeft, tabs=$(".tabs");if(tabs)libraryTabsScroll=tabs.scrollLeft;nav();var f={cockpit:cockpit,path:path,library:library,course:course,review:review,privacy:privacy}[state.view]||cockpit;$("#app").innerHTML=f();$("#nav").scrollLeft=navScroll;tabs=$(".tabs");if(tabs)tabs.scrollLeft=libraryTabsScroll;bind();storageNotice();}
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).catch(function(){});
 render();
 })();
