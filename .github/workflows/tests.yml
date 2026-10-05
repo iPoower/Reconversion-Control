@@ -34,6 +34,7 @@ jobs:
           node --check course-race.js
           node --check course-operations.js
           node --check learning.js
+          node --check english.js
           node --check sw.js
       - name: Navigation, recherche et affichage iPhone
         env:

@@ -67,6 +67,28 @@ async function main() {
     assert.deepEqual(await page.locator('[data-course-level="beginner"] .study-phase > .mh > h3').evaluateAll(nodes=>nodes.map(n=>n.textContent)),["Vue d’ensemble","Bases du Web","Travailler comme un développeur"]);
     passed("study order follows prerequisites rather than source chapter numbers");
 
+    const englishMeta = await page.evaluate(()=>Object.fromEntries(Object.entries(RC_ENGLISH).map(([id,item])=>[id,{title:item.title,vocab:item.vocab.length,question:item.question}])));
+    assert.equal(Object.keys(englishMeta).length,32);
+    for(const id of studyIds) {
+      assert(englishMeta[id] && englishMeta[id].title && englishMeta[id].question,id+" must have English coaching");
+      assert(englishMeta[id].vocab>=4,id+" must teach at least four English terms");
+    }
+    await openChapter(page,"rc-01");
+    assert.equal(await page.locator(".english-coach").getAttribute("data-english-level"),"25");
+    assert.match(await page.locator(".english-coach").textContent(),/Race Control at a glance/);
+    assert.equal(await page.locator(".english-coach .en-vocab-grid span").count(),4);
+    assert.match(await page.locator(".english-coach").textContent(),/Sens/);
+    await page.locator("#close").tap();
+    await openChapter(page,"rc-10");
+    assert.equal(await page.locator(".english-coach").getAttribute("data-english-level"),"50");
+    assert.equal(await page.locator(".english-coach details.en-fr-help").evaluate(el=>el.open),false);
+    await page.locator("#close").tap();
+    await openChapter(page,"rc-29");
+    assert.equal(await page.locator(".english-coach").getAttribute("data-english-level"),"75");
+    assert.match(await page.locator(".english-coach").textContent(),/debugging process/i);
+    await page.locator("#close").tap();
+    passed("all 32 lessons include progressive English coaching at 25, 50 or 75 percent");
+
     const beginnerDone = Object.fromEntries(studyIds.slice(0,9).map(id=>[id,"mastered"]));
     const staged = await open({view:"course",section:"all",search:"",status:"all",progress:beginnerDone,review:{}});
     assert.match(await staged.page.locator('[data-level-card="beginner"]').textContent(),/TERMINÉ/);
@@ -154,6 +176,10 @@ async function main() {
     await search.pressSequentially(bodyToken,{delay:15});
     assert(await page.locator('[data-card="rc-06"]').isVisible(),"search must find text from the lesson body");
     assert(await page.evaluate(()=>document.querySelector("#search")===window.originalLessonSearch && document.activeElement===window.originalLessonSearch));
+    await search.fill("road surface temperature");
+    assert(await page.locator('[data-card="rc-11"]').isVisible(),"English search must find the road-surface lesson");
+    await search.fill("root cause");
+    assert(await page.locator('[data-card="rc-02"]').isVisible() || await page.locator('[data-card="rc-29"]').isVisible(),"English search must index coaching vocabulary");
     await search.fill("zzzz-no-such-lesson");
     assert.equal(await page.locator("#cards .card").count(),0);
     await search.fill(bodyToken.toLowerCase());

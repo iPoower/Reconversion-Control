@@ -87,7 +87,7 @@ async function main() {
     await search.fill("");
     for (const t of topics) {
       await page.locator('#cards [data-open="' + t.id + '"]').tap();
-      assert.equal(await page.locator("#dlg").evaluate(el => el.open), true);
+      assert.equal(await page.locator("#dlg").evaluate(el => el.open), true, "dialog should open for " + t.id + " · errors: " + errors.join(" | "));
       assert.equal(await page.locator("#detail h2").textContent(), t.title);
       assert.match(await page.locator("#detail").textContent(), /Question d’entretien/);
       await page.locator("#close").tap();

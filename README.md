@@ -6,6 +6,7 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 
 - 9 domaines, 42 fiches essentielles conservées et 32 chapitres Race Control
 - parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec 32 étapes réordonnées selon leurs prérequis plutôt que selon l’ordre des supports source
+- apprentissage bilingue progressif FR + EN : English Coach à 25 % en Débutant, 50 % en Intermédiaire et 75 % en Pro, recherche bilingue et défis oraux
 - cours guidé : objectifs, explications, exemples, pièges, entretien et exercice corrigé
 - 12 questions de révision, glossaire de 42 termes et six checkpoints de compréhension
 - sources et pages visibles, inventaire des sept pièces et limites de couverture
