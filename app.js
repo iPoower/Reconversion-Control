@@ -8,9 +8,45 @@ var section=function(id){return RC_SECTIONS.find(function(s){return s.id===id;})
 var topic=function(id){return RC_TOPICS.find(function(t){return t.id===id;});};
 var views=["cockpit","path","library","course","review","privacy"], statuses=["learn","progress","mastered"];
 var RC_COURSE_LEVELS=[
- {id:"beginner",label:"Débutant",icon:"🟢",from:1,to:9,goal:"Construire les bases : comprendre le Web, JavaScript, HTTP/JSON, Git, le build et la PWA."},
- {id:"intermediate",label:"Intermédiaire",icon:"🟡",from:10,to:21,goal:"Comprendre les moteurs métier : météo, pneus, agenda, trajets, GPS, Waze et Tenue."},
- {id:"pro",label:"Pro",icon:"🔴",from:22,to:32,goal:"Maîtriser l’exploitation : cloud, chiffrement, privacy, tests, CI/CD, rollback, incidents et refactor."}
+ {id:"beginner",label:"Débutant",icon:"🟢",goal:"Comprendre d’abord comment une application Web fonctionne, puis comment on la versionne, la construit et la rend installable."},
+ {id:"intermediate",label:"Intermédiaire",icon:"🟡",goal:"Appliquer les bases aux vraies données Race Control : météo, pneus, agenda, trajets, GPS et décision utilisateur."},
+ {id:"pro",label:"Pro",icon:"🔴",goal:"Passer du développement à l’exploitation : cloud, confidentialité, diagnostic, tests, CI/CD, incidents, refactor et entretien."}
+];
+var RC_CURRICULUM=[
+ {id:"rc-01",level:"beginner",phase:"Vue d’ensemble"},
+ {id:"rc-03",level:"beginner",phase:"Bases du Web"},
+ {id:"rc-04",level:"beginner",phase:"Bases du Web"},
+ {id:"rc-05",level:"beginner",phase:"Bases du Web"},
+ {id:"rc-06",level:"beginner",phase:"Bases du Web"},
+ {id:"rc-07",level:"beginner",phase:"Travailler comme un développeur"},
+ {id:"rc-02",level:"beginner",phase:"Travailler comme un développeur"},
+ {id:"rc-08",level:"beginner",phase:"Travailler comme un développeur"},
+ {id:"rc-09",level:"beginner",phase:"Travailler comme un développeur"},
+
+ {id:"rc-10",level:"intermediate",phase:"Données météo et risque"},
+ {id:"rc-11",level:"intermediate",phase:"Données météo et risque"},
+ {id:"rc-12",level:"intermediate",phase:"Données météo et risque"},
+ {id:"rc-13",level:"intermediate",phase:"Données météo et risque"},
+ {id:"rc-14",level:"intermediate",phase:"Données météo et risque"},
+ {id:"rc-15",level:"intermediate",phase:"Agenda, trajets et position"},
+ {id:"rc-16",level:"intermediate",phase:"Agenda, trajets et position"},
+ {id:"rc-18",level:"intermediate",phase:"Agenda, trajets et position"},
+ {id:"rc-17",level:"intermediate",phase:"Agenda, trajets et position"},
+ {id:"rc-19",level:"intermediate",phase:"Agenda, trajets et position"},
+ {id:"rc-20",level:"intermediate",phase:"Décision utilisateur"},
+ {id:"rc-21",level:"intermediate",phase:"Décision utilisateur"},
+
+ {id:"rc-22",level:"pro",phase:"Cloud et confidentialité"},
+ {id:"rc-24",level:"pro",phase:"Cloud et confidentialité"},
+ {id:"rc-23",level:"pro",phase:"Cloud et confidentialité"},
+ {id:"rc-29",level:"pro",phase:"Diagnostiquer et tester"},
+ {id:"rc-25",level:"pro",phase:"Diagnostiquer et tester"},
+ {id:"rc-26",level:"pro",phase:"Livrer et revenir en arrière"},
+ {id:"rc-27",level:"pro",phase:"Livrer et revenir en arrière"},
+ {id:"rc-28",level:"pro",phase:"Livrer et revenir en arrière"},
+ {id:"rc-30",level:"pro",phase:"Consolider et expliquer"},
+ {id:"rc-31",level:"pro",phase:"Consolider et expliquer"},
+ {id:"rc-32",level:"pro",phase:"Consolider et expliquer"}
 ];
 var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{}};
 var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0;
@@ -69,7 +105,7 @@ function progressFor(list){
  var total=list.length, mastered=list.filter(function(t){return pstate(t.id)==="mastered";}).length, inprog=list.filter(function(t){return pstate(t.id)==="progress";}).length;
  return{total:total,mastered:mastered,inprog:inprog,pct:total?Math.round((mastered+inprog*.5)*100/total):0};
 }
-function due(){return Object.keys(state.review).map(function(id){return{id:id,r:state.review[id],t:topic(id)};}).filter(function(x){return x.t&&x.r.due<=today();}).sort(function(a,b){return a.r.due.localeCompare(b.r.due);});}
+function due(){return Object.keys(state.review).map(function(id){return{id:id,r:state.review[id],t:topic(id)};}).filter(function(x){return x.t&&x.r.due<=today();}).sort(function(a,b){var d=a.r.due.localeCompare(b.r.due);if(d)return d;var sa=studyStep(a.id)||999,sb=studyStep(b.id)||999;return sa-sb;});}
 function stars(n){return "★★★★★".slice(0,n)+"☆☆☆☆☆".slice(0,5-n);}
 function nav(){
  var items=[["cockpit","◉ Cockpit"],["path","↗ Parcours"],["library","▦ Fiches"],["course","▤ Cours Race Control"],["review","↻ Révisions"],["privacy","⌾ Sources & privacy"]];
@@ -89,16 +125,32 @@ function cockpit(){
 function path(){
  return'<section class="mod"><div class="mh"><h2>Parcours recommandé</h2><span class="src">9 ÉTAPES</span></div><p class="muted">On consolide les couches dans l’ordre. Kubernetes, pentest avancé et sécurité IA deviennent beaucoup plus simples quand Linux, réseau et IAM sont solides.</p>'+RC_SECTIONS.map(function(s,i){var p=progressFor(RC_TOPICS.filter(function(t){return t.section===s.id;}));var active=p.pct<80&&RC_SECTIONS.slice(0,i).every(function(x){return progressFor(RC_TOPICS.filter(function(t){return t.section===x.id;})).pct>=50;});return'<div class="pathrow '+(active?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+s.icon+" "+esc(s.label)+'</b><div class="muted">'+esc(s.goal)+'</div></div><span class="score">'+p.pct+"%</span></div>";}).join("")+'</section>';
 }
-function courseLevelFor(item){return RC_COURSE_LEVELS.find(function(level){return item&&item.chapter>=level.from&&item.chapter<=level.to;})||null;}
-function courseLessons(level){return RC_LESSONS.filter(function(lesson){return lesson.chapter>=level.from&&lesson.chapter<=level.to;});}
+function curriculumItem(id){return RC_CURRICULUM.find(function(item){return item.id===id;})||null;}
+function studyStep(id){var i=RC_CURRICULUM.findIndex(function(item){return item.id===id;});return i<0?0:i+1;}
+function orderedLessons(){return RC_CURRICULUM.map(function(item){return RC_LESSON_MAP[item.id];}).filter(Boolean);}
+function courseLevelFor(item){var entry=item&&curriculumItem(item.id);return entry?RC_COURSE_LEVELS.find(function(level){return level.id===entry.level;})||null:null;}
+function courseLessons(level){return RC_CURRICULUM.filter(function(item){return item.level===level.id;}).map(function(item){return RC_LESSON_MAP[item.id];}).filter(Boolean);}
+function coursePhases(level){
+ var phases=[];
+ RC_CURRICULUM.filter(function(item){return item.level===level.id;}).forEach(function(item){
+  var phase=phases.find(function(p){return p.label===item.phase;});
+  if(!phase){phase={label:item.phase,ids:[]};phases.push(phase);}
+  phase.ids.push(item.id);
+ });
+ return phases;
+}
 function activeCourseLevel(){return RC_COURSE_LEVELS.find(function(level){var lessons=courseLessons(level);return progressFor(lessons).mastered<lessons.length;})||RC_COURSE_LEVELS[RC_COURSE_LEVELS.length-1];}
 function courseLevelState(level,active){var p=progressFor(courseLessons(level));return p.mastered===p.total?"TERMINÉ":level.id===active.id?"NIVEAU ACTIF":"À VENIR";}
-function courseRoadmapCard(level,active){var lessons=courseLessons(level),p=progressFor(lessons),status=courseLevelState(level,active);return '<article class="course-stage '+(level.id===active.id?"active":"")+'" data-level-card="'+level.id+'"><span class="src">'+level.icon+" "+esc(level.label.toUpperCase())+'</span><b>'+p.mastered+" / "+p.total+' acquis</b><div class="bar"><i style="width:'+p.pct+'%"></i></div><small>'+status+' · chapitres '+level.from+"–"+level.to+'</small></article>';}
-function courseLevelSection(level,active){var lessons=courseLessons(level),p=progressFor(lessons),status=courseLevelState(level,active);return '<details class="course-level" data-course-level="'+level.id+'"'+(level.id===active.id?" open":"")+'><summary><span class="level-title">'+level.icon+" "+esc(level.label)+'</span><span class="level-meta">'+status+" · "+p.mastered+"/"+p.total+" acquis · chapitres "+level.from+"–"+level.to+'</span></summary><div class="course-level-body"><p class="muted">'+esc(level.goal)+'</p><div class="grid3">'+lessons.map(function(lesson){return cardHtml(topic(lesson.id));}).join("")+'</div></div></details>';}
+function levelStepRange(level){var steps=RC_CURRICULUM.map(function(item,i){return item.level===level.id?i+1:null;}).filter(Boolean);return steps[0]+"–"+steps[steps.length-1];}
+function courseRoadmapCard(level,active){var lessons=courseLessons(level),p=progressFor(lessons),status=courseLevelState(level,active);return '<article class="course-stage '+(level.id===active.id?"active":"")+'" data-level-card="'+level.id+'"><span class="src">'+level.icon+" "+esc(level.label.toUpperCase())+'</span><b>'+p.mastered+" / "+p.total+' acquis</b><div class="bar"><i style="width:'+p.pct+'%"></i></div><small>'+status+' · étapes '+levelStepRange(level)+'</small></article>';}
+function courseLevelSection(level,active){
+ var lessons=courseLessons(level),p=progressFor(lessons),status=courseLevelState(level,active),phases=coursePhases(level);
+ return '<details class="course-level" data-course-level="'+level.id+'"'+(level.id===active.id?" open":"")+'><summary><span class="level-title">'+level.icon+" "+esc(level.label)+'</span><span class="level-meta">'+status+" · "+p.mastered+"/"+p.total+" acquis · étapes "+levelStepRange(level)+'</span></summary><div class="course-level-body"><p class="muted">'+esc(level.goal)+'</p>'+phases.map(function(phase){return '<section class="study-phase"><div class="mh"><h3>'+esc(phase.label)+'</h3><span class="src">'+phase.ids.length+' ÉTAPE'+(phase.ids.length>1?"S":"")+'</span></div><div class="grid3">'+phase.ids.map(function(id){return cardHtml(topic(id));}).join("")+'</div></section>';}).join("")+'</div></details>';
+}
 function cardHtml(t){
  var s=pstate(t.id);
- var level=t.chapter?courseLevelFor(t):null;
- return'<article class="card" data-card="'+t.id+'">'+(t.chapter?'<span class="src">'+level.icon+' '+esc(level.label.toUpperCase())+' · CHAPITRE '+t.chapter+'</span>':'<span class="src">FICHE ESSENTIELLE</span>')+'<div class="ctop"><h3>'+esc(t.title)+'</h3><span class="prio">'+stars(t.p)+'</span></div><p>'+esc(t.summary)+'</p><div class="tags">'+t.tags.map(function(x){return'<span class="tag">'+esc(x)+'</span>';}).join("")+'</div><div class="seg"><button class="learn '+(s==="learn"?"on":"")+'" aria-pressed="'+(s==="learn")+'" data-prog="learn" data-id="'+t.id+'">À apprendre</button><button class="progress '+(s==="progress"?"on":"")+'" aria-pressed="'+(s==="progress")+'" data-prog="progress" data-id="'+t.id+'">En cours</button><button class="mastered '+(s==="mastered"?"on":"")+'" aria-pressed="'+(s==="mastered")+'" data-prog="mastered" data-id="'+t.id+'">Acquis</button></div><button class="btn" data-open="'+t.id+'">'+(t.chapter?'Lire le chapitre':'Voir la fiche')+'</button></article>';
+ var level=t.chapter?courseLevelFor(t):null, step=t.chapter?studyStep(t.id):0, entry=t.chapter?curriculumItem(t.id):null;
+ return'<article class="card" data-card="'+t.id+'">'+(t.chapter?'<span class="src">'+level.icon+' '+esc(level.label.toUpperCase())+' · ÉTAPE '+step+' · '+esc(entry.phase.toUpperCase())+'</span>':'<span class="src">FICHE ESSENTIELLE</span>')+'<div class="ctop"><h3>'+esc(t.title)+'</h3><span class="prio">'+stars(t.p)+'</span></div><p>'+esc(t.summary)+'</p><div class="tags">'+t.tags.map(function(x){return'<span class="tag">'+esc(x)+'</span>';}).join("")+'</div><div class="seg"><button class="learn '+(s==="learn"?"on":"")+'" aria-pressed="'+(s==="learn")+'" data-prog="learn" data-id="'+t.id+'">À apprendre</button><button class="progress '+(s==="progress"?"on":"")+'" aria-pressed="'+(s==="progress")+'" data-prog="progress" data-id="'+t.id+'">En cours</button><button class="mastered '+(s==="mastered"?"on":"")+'" aria-pressed="'+(s==="mastered")+'" data-prog="mastered" data-id="'+t.id+'">Acquis</button></div><button class="btn" data-open="'+t.id+'">'+(t.chapter?'Lire le chapitre':'Voir la fiche')+'</button></article>';
 }
 function searchText(value){return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
 function topicSearchText(t){
@@ -116,8 +168,8 @@ function library(){
  return'<section class="mod"><div class="mh"><h2>Bibliothèque essentielle</h2><span id="library-count" class="src" role="status" aria-live="polite">'+list.length+' FICHES</span></div><div class="filters"><label class="field-label" for="search">Rechercher une fiche<input id="search" type="search" placeholder="DNS, IAM, Docker, SBOM…" value="'+esc(state.search)+'"></label><label class="field-label" for="status">Statut<select id="status">'+[["all","Tous les statuts"],["learn","À apprendre"],["progress","En cours"],["mastered","Acquis"]].map(function(x){return'<option value="'+x[0]+'"'+(state.status===x[0]?" selected":"")+'>'+x[1]+"</option>";}).join("")+'</select></label></div><div class="tabs"><button class="tab '+(state.section==="all"?"on":"")+'" aria-pressed="'+(state.section==="all")+'" data-section="all">◉ Tout</button>'+RC_SECTIONS.map(function(s){return'<button class="tab '+(state.section===s.id?"on":"")+'" aria-pressed="'+(state.section===s.id)+'" data-section="'+s.id+'">'+s.icon+" "+esc(s.label)+"</button>";}).join("")+'</div><div id="cards" class="grid3">'+libraryCards(list)+"</div></section>";
 }
 function course(){
- var p=progressFor(RC_LESSONS), active=activeCourseLevel(), next=RC_LESSONS.find(function(lesson){return pstate(lesson.id)!=="mastered";}), action=next?(p.mastered||p.inprog?'Continuer':'Commencer'):'Revoir';next=next || RC_LESSONS[0];
- return'<section class="mod"><div class="mh"><h2>Cours Race Control</h2><span class="src">'+RC_LESSONS.length+' CHAPITRES · 3 NIVEAUX</span></div><p class="source-note">Parcours guidé : commence par Débutant, puis Intermédiaire, puis Pro. Les niveaux suivants restent consultables, mais le niveau actif indique toujours où concentrer ton travail.</p><div class="hero"><span class="src">'+active.icon+" NIVEAU ACTUEL · "+esc(active.label.toUpperCase())+'</span><h2>'+esc(active.goal)+'</h2><p>'+p.mastered+' chapitres acquis · '+p.inprog+' en cours sur 32</p>'+(next?'<button class="btn pri" data-open="'+next.id+'">'+action+' · chapitre '+next.chapter+' · '+esc(next.title)+'</button>':'')+'</div><div class="course-roadmap" aria-label="Progression des niveaux">'+RC_COURSE_LEVELS.map(function(level){return courseRoadmapCard(level,active);}).join("")+'</div><p class="muted">Ouvre ton niveau actuel et avance dans l’ordre des chapitres. Marque un chapitre “Acquis” lorsqu’il est compris ; les Révisions espacées prendront ensuite le relais.</p><div id="course-chapters" class="course-levels">'+RC_COURSE_LEVELS.map(function(level){return courseLevelSection(level,active);}).join("")+'</div></section>';
+ var ordered=orderedLessons(),p=progressFor(ordered),active=activeCourseLevel(),next=ordered.find(function(lesson){return pstate(lesson.id)!=="mastered";}),action=next?(p.mastered||p.inprog?'Continuer':'Commencer'):'Revoir';next=next||ordered[0];
+ return'<section class="mod"><div class="mh"><h2>Parcours de révision</h2><span class="src">'+ordered.length+' ÉTAPES · 3 NIVEAUX</span></div><p class="source-note">L’ordre ci-dessous suit les prérequis : comprendre le Web avant l’architecture, comprendre les données avant les moteurs métier, puis apprendre à tester, livrer et diagnostiquer. Les numéros d’origine des supports ne dictent plus ton ordre de travail.</p><div class="hero"><span class="src">'+active.icon+" NIVEAU ACTUEL · "+esc(active.label.toUpperCase())+'</span><h2>'+esc(active.goal)+'</h2><p>'+p.mastered+' étapes acquises · '+p.inprog+' en cours sur 32</p>'+(next?'<button class="btn pri" data-open="'+next.id+'">'+action+' · étape '+studyStep(next.id)+' · '+esc(next.title)+'</button>':'')+'</div><div class="course-roadmap" aria-label="Progression des niveaux">'+RC_COURSE_LEVELS.map(function(level){return courseRoadmapCard(level,active);}).join("")+'</div><p class="muted">Règle simple : travaille la prochaine étape proposée. Si plusieurs révisions sont dues le même jour, l’app garde cet ordre pédagogique.</p><div id="course-chapters" class="course-levels">'+RC_COURSE_LEVELS.map(function(level){return courseLevelSection(level,active);}).join("")+'</div></section>';
 }
 function review(){
  var d=due(), future=Object.keys(state.review).map(function(id){return{id:id,r:state.review[id],t:topic(id)};}).filter(function(x){return x.t&&x.r.due>today();}).sort(function(a,b){return a.r.due.localeCompare(b.r.due);}).slice(0,10);
@@ -140,9 +192,9 @@ function relatedHtml(id){
  return related.length?'<section class="related-lessons"><h3>Approfondir avec Race Control</h3><p class="muted">Les cours ci-dessous développent une partie de ce repère à partir des supports fournis.</p><div class="actions">'+related.map(function(lesson){return'<button class="btn" data-open="'+esc(lesson.id)+'">Chapitre '+lesson.chapter+' · '+esc(lesson.title)+'</button>';}).join("")+'</div></section>':'';
 }
 function lessonHtml(lesson,t,s,ps){
- var index=RC_LESSONS.indexOf(lesson), previous=RC_LESSONS[index-1], next=RC_LESSONS[index+1], level=courseLevelFor(lesson);
+ var ordered=orderedLessons(), index=ordered.findIndex(function(item){return item.id===lesson.id;}), previous=ordered[index-1], next=ordered[index+1], level=courseLevelFor(lesson), entry=curriculumItem(lesson.id), step=studyStep(lesson.id);
  var quiz=lesson.quiz || [], glossary=lesson.glossary || [];
- return'<div class="detail lesson-detail" data-lesson-id="'+esc(lesson.id)+'"><span class="src">'+level.icon+" "+esc(level.label.toUpperCase())+" · CHAPITRE "+lesson.chapter+" · "+s.icon+" "+esc(s.label)+'</span><h2 id="detail-title" tabindex="-1">'+esc(t.title)+'</h2><p class="muted">'+esc(t.summary)+'</p>'+detailProgress(ps)+'<p class="source-note">Support prod15 · instantané historique. Les fonctions annoncées comme feuille de route dans ce support ne sont pas présentées comme livrées.</p><section class="lesson-goals"><h3>Objectifs</h3><ul>'+lesson.goals.map(function(goal){return'<li>'+esc(goal)+'</li>';}).join("")+'</ul></section><div class="lesson-sections">'+lesson.sections.map(function(part){return'<section><h3>'+esc(part.title)+'</h3>'+part.body.map(function(paragraph){return'<p>'+esc(paragraph)+'</p>';}).join("")+(part.code?'<pre class="code"><code>'+esc(part.code)+'</code></pre>':'')+'</section>';}).join("")+'</div><section class="box"><h3>Pièges à éviter</h3><ul>'+lesson.pitfalls.map(function(pitfall){return'<li>'+esc(pitfall)+'</li>';}).join("")+'</ul></section><section class="box"><h3>🎙️ Question d’entretien</h3><p>'+esc(lesson.interview.question)+'</p>'+answerHtml("Voir une réponse possible",lesson.interview.answer)+'</section><section class="box"><h3>🧪 Exercice</h3><p>'+esc(lesson.exercise.prompt)+'</p>'+answerHtml("Afficher le corrigé",lesson.exercise.answer)+'</section>'+(quiz.length?'<section class="lesson-quiz"><h3>Révision : teste-toi avant de lire</h3>'+quiz.map(function(item,i){return'<article class="quiz-item"><h4>'+(i+1)+'. '+esc(item.question)+'</h4>'+answerHtml("Voir la réponse "+(i+1),item.answer)+'</article>';}).join("")+'</section>':'')+(glossary.length?'<section class="lesson-glossary"><h3>Glossaire</h3><dl>'+glossary.map(function(item){return'<dt>'+esc(item.term)+'</dt><dd>'+esc(item.definition)+'</dd>';}).join("")+'</dl></section>':'')+'<section class="lesson-sources"><h3>Sources et version</h3><ul>'+lesson.sources.map(function(ref){var support=RC_SUPPORTS.find(function(item){return item.id===ref.id;});return'<li data-source-id="'+esc(ref.id)+'">'+esc(support?support.title:ref.id)+' · p. '+esc(ref.pages)+' · '+esc(support?support.version:"prod15")+'</li>';}).join("")+'</ul><p class="muted">Adaptation pédagogique, sans documents bruts ni données opérationnelles privées.</p></section><div class="actions chapter-navigation" aria-label="Navigation entre chapitres">'+(previous?'<button class="btn" data-open="'+esc(previous.id)+'">← Chapitre '+previous.chapter+'</button>':'')+(next?'<button class="btn pri" data-open="'+esc(next.id)+'">Chapitre '+next.chapter+' →</button>':'')+'</div></div>';
+ return'<div class="detail lesson-detail" data-lesson-id="'+esc(lesson.id)+'"><span class="src">'+level.icon+" "+esc(level.label.toUpperCase())+" · ÉTAPE "+step+" / 32 · "+esc(entry.phase.toUpperCase())+'</span><h2 id="detail-title" tabindex="-1">'+esc(t.title)+'</h2><p class="muted">'+esc(t.summary)+'</p>'+detailProgress(ps)+'<p class="study-why"><b>Pourquoi maintenant ?</b> Cette étape appartient au bloc « '+esc(entry.phase)+' » et prépare la suite du parcours.</p><p class="source-note">Support prod15 · instantané historique. Le numéro du chapitre source est '+lesson.chapter+' ; l’ordre affiché ici est l’ordre pédagogique de révision.</p><section class="lesson-goals"><h3>À savoir avant de passer à la suite</h3><ul>'+lesson.goals.map(function(goal){return'<li>'+esc(goal)+'</li>';}).join("")+'</ul></section><div class="lesson-sections">'+lesson.sections.map(function(part){return'<section><h3>'+esc(part.title)+'</h3>'+part.body.map(function(paragraph){return'<p>'+esc(paragraph)+'</p>';}).join("")+(part.code?'<pre class="code"><code>'+esc(part.code)+'</code></pre>':'')+'</section>';}).join("")+'</div><section class="box"><h3>Pièges à éviter</h3><ul>'+lesson.pitfalls.map(function(pitfall){return'<li>'+esc(pitfall)+'</li>';}).join("")+'</ul></section><section class="box"><h3>🎙️ Question d’entretien</h3><p>'+esc(lesson.interview.question)+'</p>'+answerHtml("Voir une réponse possible",lesson.interview.answer)+'</section><section class="box"><h3>🧪 Exercice</h3><p>'+esc(lesson.exercise.prompt)+'</p>'+answerHtml("Afficher le corrigé",lesson.exercise.answer)+'</section>'+(quiz.length?'<section class="lesson-quiz"><h3>Révision : teste-toi avant de lire</h3>'+quiz.map(function(item,i){return'<article class="quiz-item"><h4>'+(i+1)+'. '+esc(item.question)+'</h4>'+answerHtml("Voir la réponse "+(i+1),item.answer)+'</article>';}).join("")+'</section>':'')+(glossary.length?'<section class="lesson-glossary"><h3>Glossaire</h3><dl>'+glossary.map(function(item){return'<dt>'+esc(item.term)+'</dt><dd>'+esc(item.definition)+'</dd>';}).join("")+'</dl></section>':'')+'<section class="lesson-sources"><h3>Sources et version</h3><ul>'+lesson.sources.map(function(ref){var support=RC_SUPPORTS.find(function(item){return item.id===ref.id;});return'<li data-source-id="'+esc(ref.id)+'">'+esc(support?support.title:ref.id)+' · p. '+esc(ref.pages)+' · '+esc(support?support.version:"prod15")+'</li>';}).join("")+'</ul><p class="muted">Adaptation pédagogique, sans documents bruts ni données opérationnelles privées.</p></section><div class="actions chapter-navigation" aria-label="Navigation entre étapes">'+(previous?'<button class="btn" data-open="'+esc(previous.id)+'">← Étape '+studyStep(previous.id)+'</button>':'')+(next?'<button class="btn pri" data-open="'+esc(next.id)+'">Étape '+studyStep(next.id)+' →</button>':'')+'</div></div>';
 }
 function detail(id){
  var t=topic(id); if(!t)return;
