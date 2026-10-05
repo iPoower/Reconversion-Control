@@ -87,7 +87,7 @@ async function main() {
     await page.reload();
     assert.equal(await page.locator(".daily-finish.won").count(),1);
     await nav(page,"cockpit");
-    assert.match(await page.locator(".daily-teaser").textContent(),/Défi du jour terminé/);
+    assert.match(await page.locator(".daily-teaser").textContent(),/Défi terminé/);
     passed("five-minute daily quest completes three playful rounds, persists XP and updates the cockpit");
 
     await nav(page, "labs");
