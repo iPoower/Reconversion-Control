@@ -1,12 +1,12 @@
 (function(){
 "use strict";
-var KEY="reconversion-control.state.v1", THEME="reconversion-control.theme";
+var KEY="reconversion-control.state.v1", THEME="reconversion-control.theme", DAILY_KEY="reconversion-control.daily-five.v1";
 var $=function(s){return document.querySelector(s);};
 var $$=function(s){return Array.from(document.querySelectorAll(s));};
 var esc=function(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
 var section=function(id){return RC_SECTIONS.find(function(s){return s.id===id;});};
 var topic=function(id){return RC_TOPICS.find(function(t){return t.id===id;});};
-var views=["cockpit","path","library","course","labs","review","privacy"], statuses=["learn","progress","mastered"];
+var views=["cockpit","daily","path","library","course","labs","review","privacy"], statuses=["learn","progress","mastered"];
 var RC_COURSE_LEVELS=[
  {id:"beginner",label:"Débutant",labelEn:"Beginner",icon:"🟢",goal:"Comprendre d’abord comment une application Web fonctionne, puis comment on la versionne, la construit et la rend installable.",goalEn:"Understand how a web app works before learning how to version, build and install it."},
  {id:"intermediate",label:"Intermédiaire",labelEn:"Intermediate",icon:"🟡",goal:"Appliquer les bases aux vraies données Race Control : météo, pneus, agenda, trajets, GPS et décision utilisateur.",goalEn:"Apply the fundamentals to real Race Control data: weather, tyres, calendar, trips, GPS and user decisions."},
@@ -68,6 +68,7 @@ var RC_CAREER_STAGES=[
 var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{}};
 var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0;
 var state=load();
+var dailyState=dailyLoad();
 function storageStatus(key,failed){if(failed)storageFailures[key]=true;else delete storageFailures[key];storageUnavailable=Object.keys(storageFailures).length>0;}
 function storageGet(key){try{var value=localStorage.getItem(key);storageStatus(key,false);return value;}catch(e){storageStatus(key,true);if(key===KEY)progressUnread=true;return null;}}
 function storageSet(key,value,replace){
@@ -90,6 +91,26 @@ function progression(data,strict){
  Object.keys(data.review).forEach(function(id){var r=data.review[id];if(!topic(id)||!plainObject(r)||!Number.isInteger(r.step)||r.step<0||r.step>5||!validDate(r.due)){if(strict)throw new Error("Invalid review");return;}result.review[id]={step:r.step,due:r.due};});
  return result;
 }
+function dailySanitize(value){
+ var out={days:{}};if(!plainObject(value)||!plainObject(value.days))return out;
+ Object.keys(value.days).forEach(function(date){
+  var r=value.days[date];if(!validDate(date)||!plainObject(r))return;
+  var clean={};
+  if(Number.isInteger(r.quizChoice)&&r.quizChoice>=0&&r.quizChoice<=2)clean.quizChoice=r.quizChoice;
+  if(typeof r.quizCorrect==="boolean")clean.quizCorrect=r.quizCorrect;
+  if(r.missionDone===true)clean.missionDone=true;
+  if(Number.isInteger(r.englishChoice)&&r.englishChoice>=0&&r.englishChoice<=2)clean.englishChoice=r.englishChoice;
+  if(typeof r.englishCorrect==="boolean")clean.englishCorrect=r.englishCorrect;
+  if(r.completed===true)clean.completed=true;
+  if(Number.isInteger(r.xp)&&r.xp>=0&&r.xp<=200)clean.xp=r.xp;
+  out.days[date]=clean;
+ });
+ return out;
+}
+function dailyLoad(){try{return dailySanitize(JSON.parse(storageGet(DAILY_KEY)||"null"));}catch(e){return{days:{}};}}
+function dailySave(){storageSet(DAILY_KEY,JSON.stringify(dailyState));}
+function dailyRecord(date){return dailyState.days[date]||{};}
+function ensureDailyRecord(date){if(!dailyState.days[date])dailyState.days[date]={};return dailyState.days[date];}
 function load(){
  var initial=JSON.parse(JSON.stringify(defaults));
  try{var j=JSON.parse(storageGet(KEY)||"null");if(!plainObject(j))return initial;
@@ -137,7 +158,7 @@ function englishCoachHtml(lesson,level){
  return'<section class="english-coach" data-english-level="'+pct+'"><div class="mh"><h3>🇬🇧 English Coach</h3><span class="src">'+pct+'% EN</span></div><p class="en-mode">'+esc(englishSupport(level))+'</p><h4 lang="en">'+esc(en.title)+'</h4><p class="en-summary" lang="en">'+esc(en.summary)+'</p><div class="en-phrase"><b>Key sentence · Phrase clé</b><p lang="en">'+esc(en.phrase)+'</p>'+frHelp+'</div><div class="en-vocab"><b>Vocabulary · Vocabulaire</b><div class="en-vocab-grid">'+en.vocab.map(function(pair){return'<span><strong lang="en">'+esc(pair[0])+'</strong><small>'+esc(pair[1])+'</small></span>';}).join("")+'</div></div><div class="en-speaking"><b>🎤 Speaking challenge · Défi oral</b><p lang="en">'+esc(en.question)+'</p><small>Objectif : réponds à voix haute, même avec des phrases simples.</small></div></section>';
 }
 function nav(){
- var items=[["cockpit","◉ Cockpit"],["path","↗ Parcours · Path"],["library","▦ Fiches · Notes"],["course","▤ Cours · Study"],["labs","🧪 Labs"],["review","↻ Révisions · Review"],["privacy","⌾ Sources & privacy"]];
+ var items=[["cockpit","◉ Cockpit"],["daily","⚡ 5 min"],["path","↗ Parcours · Path"],["library","▦ Fiches · Notes"],["course","▤ Cours · Study"],["labs","🧪 Labs"],["review","↻ Révisions · Review"],["privacy","⌾ Sources & privacy"]];
  $("#nav").innerHTML=items.map(function(x){return'<button class="chip '+(state.view===x[0]?"on":"")+'" data-view="'+x[0]+'"'+(state.view===x[0]?' aria-current="page"':"")+'>'+x[1]+"</button>";}).join("");
 }
 function healthRows(){
@@ -178,9 +199,46 @@ function careerStagePct(stage){
 function careerPathHtml(){
  return'<section class="mod career-track"><div class="mh"><h2>Cap reconversion</h2><span class="src">CYBER · CLOUD · DEVSECOPS · AI</span></div><p class="en-kicker" lang="en">Career track · build the foundations before specialization.</p><div class="career-grid">'+RC_CAREER_STAGES.map(function(stage,i){var pct=careerStagePct(stage);return'<article class="career-stage '+(pct>=80?"ready":pct>=35?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+stage.icon+" "+esc(stage.title)+'</b><small lang="en">'+esc(stage.subtitle)+'</small><div class="bar"><i style="width:'+pct+'%"></i></div></div><span class="score">'+pct+'%</span></article>';}).join("")+'</div><p class="muted">Repères : consolider les fondamentaux, puis cyber/cloud/DevSecOps, ensuite pentest et sécurité IA. Le portfolio sert de preuve tout au long du parcours.</p></section>';
 }
+function dailySession(date){
+ var stamp=Math.floor(Date.parse((date||today())+"T12:00:00Z")/86400000);
+ return RC_DAILY_FIVE[((stamp%RC_DAILY_FIVE.length)+RC_DAILY_FIVE.length)%RC_DAILY_FIVE.length];
+}
+function dailyProgress(record){return (Number.isInteger(record.quizChoice)?1:0)+(record.missionDone?1:0)+(Number.isInteger(record.englishChoice)?1:0);}
+function dailyStats(){
+ var dates=Object.keys(dailyState.days),xp=dates.reduce(function(sum,date){return sum+(dailyState.days[date].xp||0);},0),completed=dates.filter(function(date){return dailyState.days[date].completed;}).length;
+ var cursor=dailyRecord(today()).completed?today():addDays(today(),-1),streak=0;
+ while(dailyRecord(cursor).completed){streak++;cursor=addDays(cursor,-1);}
+ return{xp:xp,completed:completed,streak:streak};
+}
+function dailyWeekHtml(){
+ return'<div class="daily-week" aria-label="Sept derniers jours">'+[-6,-5,-4,-3,-2,-1,0].map(function(offset){var date=addDays(today(),offset),done=dailyRecord(date).completed;return'<span class="'+(done?"done":"")+'" title="'+date+'"><i></i><small>'+["D","L","M","M","J","V","S"][new Date(date+"T12:00:00Z").getUTCDay()]+'</small></span>';}).join("")+'</div>';
+}
+function dailyChoiceHtml(kind,block,record){
+ var chosen=kind==="quiz"?record.quizChoice:record.englishChoice,answer=block.answer,locked=Number.isInteger(chosen),attr=kind==="quiz"?"data-daily-quiz":"data-daily-english";
+ return'<div class="daily-choices">'+block.choices.map(function(choice,i){var cls=locked?(i===answer?" correct":i===chosen?" wrong":""):"";return'<button class="daily-choice'+cls+'" '+attr+'="'+i+'" aria-pressed="'+(chosen===i)+'"'+(locked?" disabled":"")+'><span>'+String.fromCharCode(65+i)+'</span>'+esc(choice)+'</button>';}).join("")+'</div>'+(locked?'<div class="daily-feedback '+(chosen===answer?"ok":"ko")+'"><b>'+(chosen===answer?"✅ Bien joué !":"💡 Pas grave — retiens ceci")+'</b><p>'+esc(block.explain)+'</p></div>':"");
+}
+function dailyFiveTeaserHtml(){
+ var r=dailyRecord(today()),s=dailySession(),stats=dailyStats(),done=dailyProgress(r);
+ return'<section class="mod daily-teaser '+(r.completed?"completed":"")+'"><div class="daily-teaser-icon">'+(r.completed?"🏆":"⚡")+'</div><div><span class="src">5 MINUTES PAR JOUR · DAILY QUEST</span><h2>'+(r.completed?"Défi du jour terminé !":esc(s.icon+" "+s.title))+'</h2><p>'+(r.completed?"Reviens demain pour une nouvelle mission.":"3 mini-défis, zéro blabla : "+done+"/3 étapes faites aujourd’hui.")+'</p></div><div class="daily-teaser-meta"><b>🔥 '+stats.streak+'</b><small>streak</small><button class="btn pri" data-view="daily">'+(r.completed?"Revoir":"Jouer · Play")+'</button></div></section>';
+}
+function dailyFive(){
+ var s=dailySession(),r=dailyRecord(today()),stats=dailyStats(),done=dailyProgress(r),ready=done===3,xp=r.completed?r.xp:100+(r.quizCorrect?20:0)+(r.englishCorrect?20:0);
+ return'<section class="mod daily-five"><div class="daily-game-head"><div><span class="src">⚡ DAILY QUEST · 5 MIN MAX</span><h2>⚡ 5 minutes du jour</h2><p class="en-kicker" lang="en">One tiny challenge a day. Keep the brain warm.</p></div><div class="daily-scoreboard"><span><b>🔥 '+stats.streak+'</b><small>jours</small></span><span><b>⚡ '+stats.xp+'</b><small>XP</small></span><span><b>🏆 '+stats.completed+'</b><small>sessions</small></span></div></div>'+dailyWeekHtml()+'<div class="daily-progress"><div><b>'+done+' / 3</b><span>'+(r.completed?"MISSION ACCOMPLIE":"EN COURS")+'</span></div><div class="bar"><i style="width:'+(done/3*100)+'%"></i></div></div><div class="daily-title-card"><span class="daily-big-icon">'+s.icon+'</span><div><span class="src">'+esc(s.domain.toUpperCase())+' · SESSION '+(RC_DAILY_FIVE.indexOf(s)+1)+'</span><h2>'+esc(s.title)+'</h2><p>Une session courte : réponds au feeling, apprends de la correction, puis passe à la suite.</p></div></div><div class="daily-rounds"><article class="daily-round '+(Number.isInteger(r.quizChoice)?"done":"")+'"><span class="round-num">01</span><div class="round-copy"><span class="src">⚡ FLASH QUIZ · ~90 SEC</span><h3>'+esc(s.quiz.q)+'</h3>'+dailyChoiceHtml("quiz",s.quiz,r)+'</div></article><article class="daily-round '+(r.missionDone?"done":"")+'"><span class="round-num">02</span><div class="round-copy"><span class="src">🧠 MINI-MISSION · ~2 MIN</span><h3>'+esc(s.mission.prompt)+'</h3><p class="muted">Réponds d’abord à voix haute ou dans ta tête. Pas besoin d’écrire.</p>'+(r.missionDone?'<div class="daily-feedback ok"><b>🧩 Réponse de référence</b><p>'+esc(s.mission.reveal)+'</p></div>':'<button class="btn" data-daily-mission>J’ai réfléchi · Voir la réponse</button>')+'</div></article><article class="daily-round '+(Number.isInteger(r.englishChoice)?"done":"")+'"><span class="round-num">03</span><div class="round-copy"><span class="src">🇬🇧 ENGLISH SPRINT · ~90 SEC</span><h3><span class="daily-word">'+esc(s.english.term)+'</span></h3><p>'+esc(s.english.q)+'</p>'+dailyChoiceHtml("english",s.english,r)+'</div></article></div><section class="daily-finish '+(r.completed?"won":"")+'">'+(r.completed?'<div class="celebrate" aria-hidden="true">🎉 ⚡ 🏆 🔥 🎉</div><h2>Mission accomplie · Daily quest complete!</h2><p><b>+'+r.xp+' XP</b> aujourd’hui. Le but n’est pas la perfection : c’est de garder le contact avec l’IT tous les jours.</p><p class="en-kicker" lang="en">Small steps, every day.</p>':ready?'<h2>Tu as fini les 3 rounds 👏</h2><p>Valide la session pour enregistrer ton XP et ton streak.</p><button class="btn pri daily-complete" data-daily-complete>Terminer · +'+xp+' XP</button>':'<h2>Encore '+(3-done)+' round'+(3-done>1?"s":"")+' ⚡</h2><p>5 minutes maximum. Avance sans chercher à être parfait.</p>')+'</section></section>';
+}
+function dailyAnswer(kind,index){
+ var s=dailySession(),r=ensureDailyRecord(today());
+ if(kind==="quiz"&&!Number.isInteger(r.quizChoice)){r.quizChoice=index;r.quizCorrect=index===s.quiz.answer;}
+ if(kind==="english"&&!Number.isInteger(r.englishChoice)){r.englishChoice=index;r.englishCorrect=index===s.english.answer;}
+ dailySave();render();
+}
+function dailyMissionDone(){var r=ensureDailyRecord(today());r.missionDone=true;dailySave();render();}
+function dailyComplete(){
+ var r=ensureDailyRecord(today());if(r.completed||dailyProgress(r)<3)return;
+ r.completed=true;r.xp=100+(r.quizCorrect?20:0)+(r.englishCorrect?20:0);dailySave();render();
+}
 function cockpit(){
  var p=progressFor(RC_TOPICS), d=due(), f=focusTopic();
- return dailyMissionHtml()+'<div class="grid2"><section class="mod"><div class="mh"><h2>Knowledge Health</h2><span class="src">LOCAL</span></div><div class="hero"><h2>'+(p.pct>=80?"PRÊT À CONSOLIDER":p.pct>=45?"PROGRESSION ACTIVE":"BASES À CONSTRUIRE")+'</h2><p><strong>'+p.pct+' %</strong> de couverture pondérée · '+p.mastered+" acquis · "+p.inprog+' en cours</p></div><div class="health">'+healthRows()+'</div></section>'+studyPulseHtml()+'</div>'+interviewLabHtml()+portfolioProofsHtml()+'<section class="mod"><div class="mh"><h2>Priorités ★★★★★</h2><span class="src">À SAVOIR</span></div><div class="grid3">'+RC_TOPICS.filter(function(t){return t.p===5&&pstate(t.id)!=="mastered";}).slice(0,6).map(cardHtml).join("")+'</div></section>';
+ return dailyFiveTeaserHtml()+dailyMissionHtml()+'<div class="grid2"><section class="mod"><div class="mh"><h2>Knowledge Health</h2><span class="src">LOCAL</span></div><div class="hero"><h2>'+(p.pct>=80?"PRÊT À CONSOLIDER":p.pct>=45?"PROGRESSION ACTIVE":"BASES À CONSTRUIRE")+'</h2><p><strong>'+p.pct+' %</strong> de couverture pondérée · '+p.mastered+" acquis · "+p.inprog+' en cours</p></div><div class="health">'+healthRows()+'</div></section>'+studyPulseHtml()+'</div>'+interviewLabHtml()+portfolioProofsHtml()+'<section class="mod"><div class="mh"><h2>Priorités ★★★★★</h2><span class="src">À SAVOIR</span></div><div class="grid3">'+RC_TOPICS.filter(function(t){return t.p===5&&pstate(t.id)!=="mastered";}).slice(0,6).map(cardHtml).join("")+'</div></section>';
 }
 function path(){
  return'<section class="mod"><div class="mh"><h2>Parcours recommandé</h2><span class="src">9 DOMAINES</span></div><p class="muted">On consolide les couches dans l’ordre. Kubernetes, pentest avancé et sécurité IA deviennent beaucoup plus simples quand Linux, réseau et IAM sont solides.</p>'+RC_SECTIONS.map(function(s,i){var p=progressFor(RC_TOPICS.filter(function(t){return t.section===s.id;}));var active=p.pct<80&&RC_SECTIONS.slice(0,i).every(function(x){return progressFor(RC_TOPICS.filter(function(t){return t.section===x.id;})).pct>=50;});return'<div class="pathrow '+(active?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+s.icon+" "+esc(s.label)+'</b><div class="muted">'+esc(s.goal)+'</div></div><span class="score">'+p.pct+"%</span></div>";}).join("")+'</section>'+careerPathHtml();
@@ -294,7 +352,11 @@ function bindCards(root){
 function bind(){
  $$("[data-view]").forEach(function(b){b.onclick=function(){state.view=b.dataset.view;save();render();$("#nav [aria-current]").focus({preventScroll:true});};});
  bindCards($("#app"));
- $$("[data-lab-jump]").forEach(function(b){b.onclick=function(){var target=$("[data-lab=\""+b.dataset.labJump+"\"]");if(target){var d=target.querySelector("details");if(d)d.open=true;target.scrollIntoView({behavior:"smooth",block:"start"});}};});
+ $("[data-daily-quiz]").forEach(function(b){b.onclick=function(){dailyAnswer("quiz",Number(b.dataset.dailyQuiz));};});
+ $("[data-daily-english]").forEach(function(b){b.onclick=function(){dailyAnswer("english",Number(b.dataset.dailyEnglish));};});
+ $("[data-daily-mission]").forEach(function(b){b.onclick=dailyMissionDone;});
+ $("[data-daily-complete]").forEach(function(b){b.onclick=dailyComplete;});
+ $("[data-lab-jump]").forEach(function(b){b.onclick=function(){var target=$("[data-lab=\""+b.dataset.labJump+"\"]");if(target){var d=target.querySelector("details");if(d)d.open=true;target.scrollIntoView({behavior:"smooth",block:"start"});}};});
  $$("[data-section]").forEach(function(b){b.onclick=function(){state.section=b.dataset.section;save();render();$("[data-section=\""+state.section+"\"]").focus({preventScroll:true});};});
  $$("[data-good]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.good,true);};});
  $$("[data-bad]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.bad,false);};});
@@ -302,20 +364,20 @@ function bind(){
  var st=$("#status"); if(st)st.onchange=function(){state.status=st.value;save();updateLibrary();};
  if($("#export"))$("#export").onclick=exportState;
  if($("#import"))$("#import").onclick=function(){$("#importer").click();};
- if($("#reset"))$("#reset").onclick=function(){if(confirm("Réinitialiser toute la progression locale ?")){storageRemove(KEY);state=JSON.parse(JSON.stringify(defaults));render();}};
+ if($("#reset"))$("#reset").onclick=function(){if(confirm("Réinitialiser toute la progression locale ?")){storageRemove(KEY);storageRemove(DAILY_KEY);state=JSON.parse(JSON.stringify(defaults));dailyState={days:{}};render();}};
 }
 function exportState(){
- var blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),progress:state.progress,review:state.review},null,2)],{type:"application/json"});
+ var blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),progress:state.progress,review:state.review,dailyFive:dailyState},null,2)],{type:"application/json"});
  var a=document.createElement("a"), url=URL.createObjectURL(blob);a.href=url;a.download="reconversion-control-progression.json";a.hidden=true;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},60000);
 }
 function readFile(file){return typeof file.text==="function"?file.text():new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(){resolve(reader.result);};reader.onerror=function(){reject(reader.error);};reader.readAsText(file);});}
-$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1))throw new Error("Invalid version");var imported=progression(j,true);state.progress=imported.progress;state.review=imported.review;save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
+$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1))throw new Error("Invalid version");var imported=progression(j,true);state.progress=imported.progress;state.review=imported.review;if(j.dailyFive!==undefined){dailyState=dailySanitize(j.dailyFive);dailySave();}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
 function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dlg").classList.remove("dialog-fallback");var focus=detailOpener&&detailOpener.isConnected?detailOpener:$("[data-open=\""+detailId+"\"]")||$("#nav [aria-current]");if(focus)focus.focus({preventScroll:true});detailOpener=null;}
 function closeDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.close();else{dlg.removeAttribute("open");afterDetailClose();}}
 $("#close").onclick=closeDetail;$("#dlg").addEventListener("click",function(e){if(e.target===$("#dlg"))closeDetail();});$("#dlg").addEventListener("close",afterDetailClose);
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&$("#dlg").classList.contains("dialog-fallback"))closeDetail();});
 var theme=storageGet(THEME)==="light"?"light":"dark";document.documentElement.dataset.theme=theme;$("#theme").onclick=function(){theme=document.documentElement.dataset.theme==="dark"?"light":"dark";document.documentElement.dataset.theme=theme;storageSet(THEME,theme);};
-function render(){var navScroll=$("#nav").scrollLeft, tabs=$(".tabs");if(tabs)libraryTabsScroll=tabs.scrollLeft;nav();var f={cockpit:cockpit,path:path,library:library,course:course,labs:labs,review:review,privacy:privacy}[state.view]||cockpit;$("#app").innerHTML=f();$("#nav").scrollLeft=navScroll;tabs=$(".tabs");if(tabs)tabs.scrollLeft=libraryTabsScroll;bind();storageNotice();}
+function render(){var navScroll=$("#nav").scrollLeft, tabs=$(".tabs");if(tabs)libraryTabsScroll=tabs.scrollLeft;nav();var f={cockpit:cockpit,daily:dailyFive,path:path,library:library,course:course,labs:labs,review:review,privacy:privacy}[state.view]||cockpit;$("#app").innerHTML=f();$("#nav").scrollLeft=navScroll;tabs=$(".tabs");if(tabs)tabs.scrollLeft=libraryTabsScroll;bind();storageNotice();}
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).catch(function(){});
 render();
 })();
