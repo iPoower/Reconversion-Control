@@ -12,7 +12,12 @@ const chapterIds = Array.from({length:32}, (_, i) => "rc-" + String(i + 1).padSt
 let checks = 0;
 function passed(name) {checks++; console.log("PASS " + name);}
 async function nav(page, view) {await page.locator('#nav [data-view="' + view + '"]').tap();}
-async function openChapter(page, id) {await page.locator('[data-open="' + id + '"]').first().tap();}
+async function openChapter(page, id) {
+  const opener = page.locator('[data-open="' + id + '"]').first();
+  const level = opener.locator("xpath=ancestor::details[1]");
+  if (await level.count() && !(await level.evaluate(el=>el.open))) await level.locator("summary").first().tap();
+  await opener.tap();
+}
 async function geometry(page, label) {
   const result = await page.evaluate(() => {
     const visible = el => {const r=el.getBoundingClientRect();return r.width && r.height && getComputedStyle(el).display !== "none" && !el.closest("[hidden]");};
@@ -44,9 +49,27 @@ async function main() {
     await nav(page,"course");
     assert.equal(await page.locator("#app h2").first().textContent(),"Cours Race Control");
     assert.deepEqual(await page.locator("#course-chapters [data-card]").evaluateAll(cards=>cards.map(c=>c.dataset.card)),chapterIds);
+    assert.deepEqual(await page.locator("[data-course-level]").evaluateAll(levels=>levels.map(level=>level.dataset.courseLevel)),["beginner","intermediate","pro"]);
+    assert.equal(await page.locator('[data-course-level="beginner"]').evaluate(el=>el.open),true);
+    assert.equal(await page.locator('[data-course-level="intermediate"]').evaluate(el=>el.open),false);
+    assert.equal(await page.locator('[data-course-level="pro"]').evaluate(el=>el.open),false);
+    assert.match(await page.locator('[data-level-card="beginner"]').textContent(),/Débutant|DÉBUTANT/);
+    assert.match(await page.locator('[data-level-card="intermediate"]').textContent(),/Intermédiaire|INTERMÉDIAIRE/);
+    assert.match(await page.locator('[data-level-card="pro"]').textContent(),/Pro|PRO/);
     assert.equal(await page.evaluate(()=>RC_TOPICS.length),74);
     assert.equal(await page.evaluate(()=>RC_SECTIONS.length),9);
-    passed("the course presents all 32 chapters in order alongside the 42 original fiches");
+    passed("the course presents 32 chapters in a beginner, intermediate and pro hierarchy");
+
+    const beginnerDone = Object.fromEntries(chapterIds.slice(0,9).map(id=>[id,"mastered"]));
+    const staged = await open({view:"course",section:"all",search:"",status:"all",progress:beginnerDone,review:{}});
+    assert.match(await staged.page.locator('[data-level-card="beginner"]').textContent(),/TERMINÉ/);
+    assert.match(await staged.page.locator('[data-level-card="intermediate"]').textContent(),/NIVEAU ACTIF/);
+    assert.match(await staged.page.locator('[data-level-card="pro"]').textContent(),/À VENIR/);
+    assert.equal(await staged.page.locator('[data-course-level="beginner"]').evaluate(el=>el.open),false);
+    assert.equal(await staged.page.locator('[data-course-level="intermediate"]').evaluate(el=>el.open),true);
+    assert.equal(await staged.page.locator('[data-course-level="pro"]').evaluate(el=>el.open),false);
+    assert.match(await staged.page.locator(".hero").textContent(),/INTERMÉDIAIRE/);
+    passed("finishing beginner automatically promotes intermediate as the active level");
 
     const interviews = new Set(), exercises = new Set();
     for(const id of chapterIds) {
