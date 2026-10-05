@@ -352,11 +352,11 @@ function bindCards(root){
 function bind(){
  $$("[data-view]").forEach(function(b){b.onclick=function(){state.view=b.dataset.view;save();render();$("#nav [aria-current]").focus({preventScroll:true});};});
  bindCards($("#app"));
- $("[data-daily-quiz]").forEach(function(b){b.onclick=function(){dailyAnswer("quiz",Number(b.dataset.dailyQuiz));};});
- $("[data-daily-english]").forEach(function(b){b.onclick=function(){dailyAnswer("english",Number(b.dataset.dailyEnglish));};});
- $("[data-daily-mission]").forEach(function(b){b.onclick=dailyMissionDone;});
- $("[data-daily-complete]").forEach(function(b){b.onclick=dailyComplete;});
- $("[data-lab-jump]").forEach(function(b){b.onclick=function(){var target=$("[data-lab=\""+b.dataset.labJump+"\"]");if(target){var d=target.querySelector("details");if(d)d.open=true;target.scrollIntoView({behavior:"smooth",block:"start"});}};});
+ $$("[data-daily-quiz]").forEach(function(b){b.onclick=function(){dailyAnswer("quiz",Number(b.dataset.dailyQuiz));};});
+ $$("[data-daily-english]").forEach(function(b){b.onclick=function(){dailyAnswer("english",Number(b.dataset.dailyEnglish));};});
+ $$("[data-daily-mission]").forEach(function(b){b.onclick=dailyMissionDone;});
+ $$("[data-daily-complete]").forEach(function(b){b.onclick=dailyComplete;});
+ $$("[data-lab-jump]").forEach(function(b){b.onclick=function(){var target=$("[data-lab=\""+b.dataset.labJump+"\"]");if(target){var d=target.querySelector("details");if(d)d.open=true;target.scrollIntoView({behavior:"smooth",block:"start"});}};});
  $$("[data-section]").forEach(function(b){b.onclick=function(){state.section=b.dataset.section;save();render();$("[data-section=\""+state.section+"\"]").focus({preventScroll:true});};});
  $$("[data-good]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.good,true);};});
  $$("[data-bad]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.bad,false);};});
