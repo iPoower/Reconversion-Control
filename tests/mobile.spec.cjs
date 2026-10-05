@@ -41,14 +41,26 @@ async function main() {
   }
   try {
     const {page} = await open();
-    const headings = {cockpit: "Knowledge Health", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Parcours de révision", privacy: "Sources pédagogiques"};
+    const headings = {cockpit: "🎯 Mission du jour", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Parcours de révision", privacy: "Sources pédagogiques"};
     for (const [view, heading] of Object.entries(headings)) {
       await nav(page, view);
       assert.equal(await page.locator("#app h2").first().textContent(), heading);
       assert.equal(await page.locator('#nav [data-view="' + view + '"]').getAttribute("aria-current"), "page");
     }
     await nav(page, "cockpit");
+    assert.equal(await page.locator(".mission-card").count(),3);
+    assert.equal(await page.locator(".session-recipe span").count(),3);
+    assert.equal(await page.locator(".portfolio-proofs .proof-card").count(),7);
+    assert.equal(await page.locator(".interview-lab").count(),1);
+    assert.equal(await page.locator(".study-pulse .pulse").count(),4);
+    assert.match(await page.locator(".mission-card.english").textContent(),/English challenge/);
+    await page.locator(".mission-card.primary [data-open]").tap();
+    assert.equal(await page.locator("#detail .lesson-detail").getAttribute("data-lesson-id"),"rc-01");
+    await page.locator("#close").tap();
+    passed("cockpit turns progress into a three-action daily mission, interview lab and portfolio proofs");
     await page.locator('#app [data-view="path"]').tap();
+    assert.equal(await page.locator(".career-track .career-stage").count(),6);
+    assert.match(await page.locator(".career-track").textContent(),/Cloud \+ DevSecOps/);
     assert.equal(await page.locator("#app h2").first().textContent(), headings.path);
     passed("all six navigation tabs and cockpit’s Voir le parcours work by touch");
 
