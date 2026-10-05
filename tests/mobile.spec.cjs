@@ -41,7 +41,7 @@ async function main() {
   }
   try {
     const {page} = await open();
-    const headings = {cockpit: "Knowledge Health", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Cours Race Control", privacy: "Sources pédagogiques"};
+    const headings = {cockpit: "Knowledge Health", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Parcours de révision", privacy: "Sources pédagogiques"};
     for (const [view, heading] of Object.entries(headings)) {
       await nav(page, view);
       assert.equal(await page.locator("#app h2").first().textContent(), heading);
