@@ -102,3 +102,7 @@
  .pulse-grid{grid-template-columns:1fr}
  .mission-card,.proof-card{padding:11px}
 }
+
+.session-recipe{display:flex;flex-wrap:wrap;gap:8px}
+.session-recipe span{border:1px solid var(--l);background:var(--p2);border-radius:99px;padding:7px 10px;font:10px var(--mono)}
+.session-recipe b{font-size:11px}
