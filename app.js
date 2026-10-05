@@ -219,7 +219,7 @@ function dailyChoiceHtml(kind,block,record){
 }
 function dailyFiveTeaserHtml(){
  var r=dailyRecord(today()),s=dailySession(),stats=dailyStats(),done=dailyProgress(r);
- return'<section class="mod daily-teaser '+(r.completed?"completed":"")+'"><div class="daily-teaser-icon">'+(r.completed?"🏆":"⚡")+'</div><div><span class="src">5 MINUTES PAR JOUR · DAILY QUEST</span><h2>'+(r.completed?"Défi du jour terminé !":esc(s.icon+" "+s.title))+'</h2><p>'+(r.completed?"Reviens demain pour une nouvelle mission.":"3 mini-défis, zéro blabla : "+done+"/3 étapes faites aujourd’hui.")+'</p></div><div class="daily-teaser-meta"><b>🔥 '+stats.streak+'</b><small>streak</small><button class="btn pri" data-view="daily">'+(r.completed?"Revoir":"Jouer · Play")+'</button></div></section>';
+ return'<section class="mod daily-teaser '+(r.completed?"completed":"")+'"><div class="daily-teaser-icon">'+(r.completed?"🏆":"⚡")+'</div><div><span class="src">5 MINUTES PAR JOUR · DAILY QUEST</span><h2>⚡ 5 minutes du jour</h2><p><b>'+esc(s.icon+" "+s.title)+'</b> · '+(r.completed?"Défi terminé. Reviens demain pour une nouvelle mission.":"3 mini-défis, zéro blabla : "+done+"/3 étapes faites aujourd’hui.")+'</p></div><div class="daily-teaser-meta"><b>🔥 '+stats.streak+'</b><small>streak</small><button class="btn pri" data-view="daily">'+(r.completed?"Revoir":"Jouer · Play")+'</button></div></section>';
 }
 function dailyFive(){
  var s=dailySession(),r=dailyRecord(today()),stats=dailyStats(),done=dailyProgress(r),ready=done===3,xp=r.completed?r.xp:100+(r.quizCorrect?20:0)+(r.englishCorrect?20:0);
