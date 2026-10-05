@@ -38,3 +38,28 @@
 .study-phase+.study-phase{border-top:1px solid var(--l);padding-top:16px}
 .study-phase .mh h3{margin:0;font-family:"Arial Narrow","Helvetica Neue",sans-serif;font-size:18px;letter-spacing:.05em;text-transform:uppercase}
 .study-why{margin:0;border-left:3px solid var(--go);background:var(--gos);padding:10px 12px;overflow-wrap:anywhere}
+
+.en-kicker,.hero-en,.level-goal-en,.lesson-title-en,.card-en-title{margin:0;color:var(--fg2)}
+.en-kicker{font:11px var(--mono);text-transform:uppercase;letter-spacing:.05em}
+.hero-en{margin-top:6px;font-style:italic}
+.level-title small{font-size:.68em;color:var(--fg2);font-weight:600}
+.level-goal-en{font-size:12px;font-style:italic}
+.card-en-title{font-size:11.5px;font-style:italic}
+.seg button{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.seg button small{display:block;margin-top:3px;font:8.5px var(--mono);opacity:.78}
+.english-ladder{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.english-ladder>div{min-width:0;border:1px solid var(--l);background:var(--p2);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:4px}
+.english-ladder b{font-size:12px}.english-ladder span{font-size:10.5px;color:var(--fg2)}
+.english-coach{border:1px solid var(--l2);border-radius:7px;background:var(--p2);padding:13px;display:flex;flex-direction:column;gap:12px}
+.english-coach .mh{margin:0}.english-coach h3,.english-coach h4{margin:0}
+.english-coach h4{font-family:"Arial Narrow","Helvetica Neue",sans-serif;font-size:22px;text-transform:uppercase}
+.en-mode{margin:0;color:var(--fg2);font-size:12px}
+.en-summary{margin:0;font-size:13px}
+.en-phrase,.en-vocab,.en-speaking{border-top:1px solid var(--l);padding-top:10px}
+.en-phrase p,.en-speaking p{margin:7px 0 0}
+.en-fr-help{margin-top:8px}
+.en-vocab-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:8px}
+.en-vocab-grid span{min-width:0;border:1px solid var(--l);border-radius:4px;padding:8px;display:flex;flex-direction:column;gap:3px}
+.en-vocab-grid strong{font-size:12px}.en-vocab-grid small{font-size:10px;color:var(--fg2)}
+.en-speaking small{display:block;margin-top:7px;color:var(--fg2)}
+@media(max-width:620px){.english-ladder{grid-template-columns:1fr}.en-vocab-grid{grid-template-columns:1fr}.seg button{min-height:52px;font-size:10.5px}.card-en-title{font-size:11px}}
