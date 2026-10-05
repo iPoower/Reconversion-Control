@@ -2,7 +2,7 @@
 
 PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, inspirée du cockpit de Race Control mais hébergée dans un dépôt totalement indépendant.
 
-## V1.6 — cockpit de reconversion
+## V1.7 — Learning Engine · Labs Drive
 
 - 9 domaines, 42 fiches essentielles conservées et 32 chapitres Race Control
 - parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec 32 étapes réordonnées selon leurs prérequis plutôt que selon l’ordre des supports source
@@ -11,6 +11,8 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 - 12 questions de révision, glossaire de 42 termes et six checkpoints de compréhension
 - sources et pages visibles, inventaire des sept pièces et limites de couverture
 - cockpit quotidien : Mission du jour (Learn / Review / Speak), session guidée 30 min, Study Pulse et Interview Lab
+- Lab Mode : 15 exercices pratiques Débutant / Intermédiaire / Pro, reliés aux statuts existants
+- Drive Source Shelf : 10 références privées sélectionnées et adaptées sans publier d’ID, URL Drive ou chapitre intégral
 - Portfolio Proofs : sept capacités Race Control reliées à des compétences explicables en entretien
 - Cap reconversion : Fondations IT → Cyber → Cloud/DevSecOps → Pentest → Sécurité IA → Portfolio
 - Knowledge Health par domaine

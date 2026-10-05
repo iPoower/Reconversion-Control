@@ -106,3 +106,28 @@
 .session-recipe{display:flex;flex-wrap:wrap;gap:8px}
 .session-recipe span{border:1px solid var(--l);background:var(--p2);border-radius:99px;padding:7px 10px;font:10px var(--mono)}
 .session-recipe b{font-size:11px}
+
+.lab-rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.lab-rules span{border:1px solid var(--l);background:var(--p2);border-radius:6px;padding:9px;font:10px var(--mono);text-align:center}
+.lab-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.lab-card{min-width:0;border:1px solid var(--l);background:var(--p2);border-radius:7px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.lab-card h3,.source-book h3{margin:0}
+.lab-card>p{margin:0;color:var(--fg2)}
+.lab-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lab-status{font:9px var(--mono);border:1px solid var(--l);border-radius:99px;padding:4px 7px;white-space:nowrap}
+.lab-status.progress{border-color:var(--a);background:var(--as)}
+.lab-status.mastered{border-color:var(--go);background:var(--gos)}
+.lab-detail{margin-top:auto;border-top:1px solid var(--l);padding-top:4px}
+.lab-detail>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}
+.lab-body{display:flex;flex-direction:column;gap:8px;padding-top:8px}
+.lab-body h4{margin:4px 0 0}
+.lab-body p,.lab-body ol,.lab-body ul{margin:0}
+.lab-body li+li{margin-top:6px}
+.lab-english,.lab-sources{border:1px solid var(--l);border-radius:6px;padding:10px;background:var(--p)}
+.lab-english p,.lab-sources p{margin:6px 0 0}
+.lab-sources small{display:block;margin-top:7px;color:var(--fg2)}
+.source-shelf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.source-book{min-width:0;border:1px solid var(--l);background:var(--p2);border-radius:6px;padding:11px;display:flex;flex-direction:column;gap:6px}
+.source-book small,.source-book p{color:var(--fg2);margin:0}
+@media(max-width:760px){.lab-grid,.source-shelf-grid{grid-template-columns:1fr}.lab-rules{grid-template-columns:1fr 1fr}}
+@media(max-width:430px){.lab-rules{grid-template-columns:1fr}.lab-card{padding:11px}}

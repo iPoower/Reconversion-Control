@@ -41,7 +41,7 @@ async function main() {
   }
   try {
     const {page} = await open();
-    const headings = {cockpit: "🎯 Mission du jour", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Parcours de révision", privacy: "Sources pédagogiques"};
+    const headings = {cockpit: "🎯 Mission du jour", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Parcours de révision", labs: "🧪 Lab Mode", privacy: "Sources pédagogiques"};
     for (const [view, heading] of Object.entries(headings)) {
       await nav(page, view);
       assert.equal(await page.locator("#app h2").first().textContent(), heading);
@@ -62,7 +62,26 @@ async function main() {
     assert.equal(await page.locator(".career-track .career-stage").count(),6);
     assert.match(await page.locator(".career-track").textContent(),/Cloud \+ DevSecOps/);
     assert.equal(await page.locator("#app h2").first().textContent(), headings.path);
-    passed("all six navigation tabs and cockpit’s Voir le parcours work by touch");
+    passed("all seven navigation tabs and cockpit’s Voir le parcours work by touch");
+
+    await nav(page, "labs");
+    assert.equal(await page.locator(".lab-card").count(),15);
+    assert.equal(await page.locator(".source-book").count(),10);
+    assert.deepEqual(await page.evaluate(()=>({labs:RC_LABS.length,sources:RC_DRIVE_SOURCES.length})),{labs:15,sources:10});
+    assert.equal(await page.locator('[data-lab-level="beginner"] .lab-card').count(),6);
+    assert.equal(await page.locator('[data-lab-level="intermediate"] .lab-card').count(),6);
+    assert.equal(await page.locator('[data-lab-level="pro"] .lab-card').count(),3);
+    await page.locator("[data-lab-jump]").tap();
+    assert.equal(await page.locator('[data-lab="lab-01"] details').evaluate(el=>el.open),true);
+    assert.match(await page.locator('[data-lab="lab-01"]').textContent(),/Python Crash Course/);
+    assert.match(await page.locator('[data-lab="lab-01"]').textContent(),/Explain it in English/);
+    await page.locator('[data-lab="lab-01"] [data-prog="progress"]').tap();
+    assert.match(await page.locator('[data-lab="lab-01"] .lab-status').textContent(),/EN COURS/);
+    assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).progress.programming,KEY),"progress");
+    const publicLabText=await page.locator(".drive-shelf").textContent();
+    assert(!/drive\.google\.com|docs\.google\.com|usp=drivesdk/i.test(publicLabText),"public source shelf must not expose private Drive links");
+    assert.equal(await page.evaluate(()=>RC_DRIVE_SOURCES.every(source=>Object.keys(source).sort().join(",")==="author,covers,domain,id,title")),true,"published Drive metadata must be limited to curated bibliography fields");
+    passed("Drive-backed Lab Mode exposes 15 practical labs and 10 curated references without private Drive links");
 
     await nav(page, "library");
     const topics = await page.evaluate(() => RC_TOPICS.map(t => ({id:t.id, section:t.section, title:t.title})));
@@ -288,7 +307,7 @@ async function main() {
       const bounds = await layout.page.locator("#dlg").boundingBox();
       assert(bounds.x >= -1 && bounds.x + bounds.width <= viewport.width + 1, "dialog must fit viewport");
       await layout.page.locator("#close").tap();
-      passed(viewport.width + "×" + viewport.height + ": six views and long fiche fit, every touch control ≥44 px");
+      passed(viewport.width + "×" + viewport.height + ": seven views and long fiche fit, every touch control ≥44 px");
     }
     assert.deepEqual(errors, [], "no unhandled JavaScript errors");
     assert.deepEqual(external, [], "the app must not request external services");
