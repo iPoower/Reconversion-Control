@@ -64,7 +64,7 @@ async function main() {
     assert.match(await page.locator('[data-card="rc-03"] .src').textContent(),/ÉTAPE 2/);
     assert.match(await page.locator('[data-card="rc-02"] .src').textContent(),/ÉTAPE 7/);
     assert.match(await page.locator('[data-card="rc-29"] .src').textContent(),/ÉTAPE 25/);
-    assert.deepEqual(await page.locator('[data-course-level="beginner"] .study-phase h3').evaluateAll(nodes=>nodes.map(n=>n.textContent)),["Vue d’ensemble","Bases du Web","Travailler comme un développeur"]);
+    assert.deepEqual(await page.locator('[data-course-level="beginner"] .study-phase > .mh > h3').evaluateAll(nodes=>nodes.map(n=>n.textContent)),["Vue d’ensemble","Bases du Web","Travailler comme un développeur"]);
     passed("study order follows prerequisites rather than source chapter numbers");
 
     const beginnerDone = Object.fromEntries(studyIds.slice(0,9).map(id=>[id,"mastered"]));
