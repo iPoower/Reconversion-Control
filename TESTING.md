@@ -43,3 +43,7 @@ Playwright ne permet pas de piloter les Service Workers de WebKit.
 - [ ] installation écran d'accueil iPhone
 - [x] cache offline après première visite (test automatisé Chromium)
 - [ ] validation manuelle sur l’iPhone 11 Pro Max réel, Safari et écran d’accueil
+
+
+## Intégration v4
+La validation de cette branche couvre aussi la conservation des garde-fous de navigation et de récupération du shell v3 lors du passage au corpus pédagogique v4.
