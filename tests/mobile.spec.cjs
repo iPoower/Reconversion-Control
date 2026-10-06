@@ -90,6 +90,14 @@ async function main() {
     assert.match(await page.locator(".daily-teaser").textContent(),/Défi terminé/);
     passed("five-minute daily quest completes three playful rounds, persists XP and updates the cockpit");
 
+    const tamperedDaily = await open();
+    await tamperedDaily.page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:DAILY_KEY,value:{days:{"2026-10-04":{completed:true,xp:200}}}});
+    await tamperedDaily.page.reload();
+    await nav(tamperedDaily.page,"daily");
+    assert.equal(await tamperedDaily.page.locator(".daily-finish.won").count(),0,"impossible local Daily Five completion must be discarded");
+    assert.match(await tamperedDaily.page.locator(".daily-scoreboard").textContent(),/⚡ 0/,"tampered XP must not be trusted");
+    passed("Daily Five discards impossible completion and XP state instead of trusting derived fields");
+
     await nav(page, "labs");
     assert.equal(await page.locator(".lab-card").count(),15);
     assert.equal(await page.locator(".source-book").count(),10);
@@ -193,6 +201,9 @@ async function main() {
       "not-json", JSON.stringify({version:2,progress:{},review:{}}),
       JSON.stringify({version:1,progress:{unknown:"mastered"},review:{}}),
       JSON.stringify({version:1,progress:{dns:"hacked"},review:{}}),
+      JSON.stringify({version:1,progress:{dns:"learn"},review:{dns:{step:0,due:"2026-10-04"}}}),
+      JSON.stringify({version:1,progress:{dns:"progress"},review:{dns:{step:0,due:"2026-10-04"}}}),
+      JSON.stringify({version:1,progress:{},review:{},dailyFive:{days:{"2026-10-04":{completed:true,xp:200}}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:0,due:"2026-02-31"}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:9,due:"2026-10-04"}}}),
       JSON.stringify({version:1,progress:[],review:{}}),
