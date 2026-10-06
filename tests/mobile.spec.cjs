@@ -109,13 +109,29 @@ async function main() {
     assert.equal(await page.locator('[data-lab="lab-01"] details').evaluate(el=>el.open),true);
     assert.match(await page.locator('[data-lab="lab-01"]').textContent(),/Python Crash Course/);
     assert.match(await page.locator('[data-lab="lab-01"]').textContent(),/Explain it in English/);
-    await page.locator('[data-lab="lab-01"] [data-prog="progress"]').tap();
+    await page.locator('[data-lab="lab-01"] [data-lab-prog="progress"]').tap();
     assert.match(await page.locator('[data-lab="lab-01"] .lab-status').textContent(),/EN COURS/);
-    assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).progress.programming,KEY),"progress");
+    assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).labs["lab-01"],KEY),"progress");
+    assert.notEqual(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).progress.programming,KEY),"progress","lab progress must not mutate knowledge state");
     const publicLabText=await page.locator(".drive-shelf").textContent();
     assert(!/drive\.google\.com|docs\.google\.com|usp=drivesdk/i.test(publicLabText),"public source shelf must not expose private Drive links");
     assert.equal(await page.evaluate(()=>RC_DRIVE_SOURCES.every(source=>Object.keys(source).sort().join(",")==="author,covers,domain,id,title")),true,"published Drive metadata must be limited to curated bibliography fields");
     passed("Drive-backed Lab Mode exposes 15 practical labs and 10 curated references without private Drive links");
+
+    const proofId=await page.evaluate(()=>RC_PORTFOLIO_PROOFS[0].lesson);
+    await page.evaluate(({key,proofId})=>{const s=JSON.parse(localStorage.getItem(key));s.progress[proofId]="mastered";s.review[proofId]={step:0,due:"2099-01-01"};localStorage.setItem(key,JSON.stringify(s));},{key:KEY,proofId});
+    await page.reload();
+    await nav(page,"labs");
+    assert.match(await page.locator('[data-lab="lab-01"] .lab-status').textContent(),/EN COURS/,"mastering knowledge must not auto-validate a lab");
+    await nav(page,"cockpit");
+    const firstProof=page.locator('.proof-card[data-proof="'+proofId+'"]');
+    assert.match(await firstProof.locator(".proof-state").textContent(),/À CONSTRUIRE/,"mastering knowledge must not auto-validate portfolio evidence");
+    await firstProof.locator(".proof-evidence summary").tap();
+    await firstProof.locator("[data-proof-evidence]").fill("PR #10 · SHA bb2e02b · WebKit + Chromium verts");
+    await firstProof.locator('[data-proof-prog="mastered"]').tap();
+    const proofSaved=await page.evaluate(({key,proofId})=>JSON.parse(localStorage.getItem(key)).proofs[proofId],{key:KEY,proofId});
+    assert.equal(proofSaved.status,"mastered");assert.match(proofSaved.evidence,/PR #10/);
+    passed("knowledge, labs and portfolio evidence persist as independent mastery dimensions");
 
     await nav(page, "library");
     const topics = await page.evaluate(() => RC_TOPICS.map(t => ({id:t.id, section:t.section, title:t.title})));
@@ -198,12 +214,14 @@ async function main() {
     const alerts = [];
     filters.on("dialog", async dialog => {alerts.push(dialog.message()); await dialog.accept();});
     const invalid = [
-      "not-json", JSON.stringify({version:2,progress:{},review:{}}),
+      "not-json", JSON.stringify({version:3,progress:{},review:{}}),
       JSON.stringify({version:1,progress:{unknown:"mastered"},review:{}}),
       JSON.stringify({version:1,progress:{dns:"hacked"},review:{}}),
       JSON.stringify({version:1,progress:{dns:"learn"},review:{dns:{step:0,due:"2026-10-04"}}}),
       JSON.stringify({version:1,progress:{dns:"progress"},review:{dns:{step:0,due:"2026-10-04"}}}),
       JSON.stringify({version:1,progress:{},review:{},dailyFive:{days:{"2026-10-04":{completed:true,xp:200}}}}),
+      JSON.stringify({version:2,progress:{},review:{},labs:{"lab-404":"mastered"},proofs:{}}),
+      JSON.stringify({version:2,progress:{},review:{},labs:{},proofs:{"rc-09":{status:"mastered",evidence:7}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:0,due:"2026-02-31"}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:9,due:"2026-10-04"}}}),
       JSON.stringify({version:1,progress:[],review:{}}),
@@ -218,21 +236,26 @@ async function main() {
       const after = await filters.evaluate(key => JSON.parse(localStorage.getItem(key)), KEY);
       assert.deepEqual(after.progress, beforeImport.progress);
       assert.deepEqual(after.review, beforeImport.review);
+      assert.deepEqual(after.labs, beforeImport.labs);
+      assert.deepEqual(after.proofs, beforeImport.proofs);
     }
     passed("invalid or oversized imports cannot corrupt local progress");
-    const valid = {version:1,progress:{dns:"mastered","linux-fs":"progress"},review:{dns:{step:2,due:"2099-10-04"}}};
+    const valid = {version:2,progress:{dns:"mastered","linux-fs":"progress"},review:{dns:{step:2,due:"2099-10-04"}},labs:{"lab-01":"mastered"},proofs:{"rc-09":{status:"progress",evidence:"PR #10 · tested"}}};
     const [chooser] = await Promise.all([filters.waitForEvent("filechooser"), filters.locator("#import").tap()]);
     await chooser.setFiles({name:"progress.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(valid))});
     await filters.waitForFunction(() => document.querySelector("#importer").value === "");
     const imported = await filters.evaluate(key => JSON.parse(localStorage.getItem(key)), KEY);
     assert.deepEqual(imported.progress, valid.progress);
     assert.deepEqual(imported.review, valid.review);
+    assert.deepEqual(imported.labs, valid.labs);
+    assert.deepEqual(imported.proofs, valid.proofs);
     const [download] = await Promise.all([filters.waitForEvent("download"), filters.locator("#export").tap()]);
     const exported = JSON.parse(await fs.readFile(await download.path(), "utf8"));
     assert.equal(download.suggestedFilename(), "reconversion-control-progression.json");
-    assert.equal(exported.version, 1);
+    assert.equal(exported.version, 2);
     assert.deepEqual(exported.progress, valid.progress); assert.deepEqual(exported.review, valid.review);
-    passed("Importer opens the file chooser; valid v1 import and export retain the same progression");
+    assert.deepEqual(exported.labs, valid.labs); assert.deepEqual(exported.proofs, valid.proofs);
+    passed("Importer opens the file chooser; V2 import/export retains knowledge, labs and portfolio evidence");
 
     const fileFallback = await browser.newContext(profile); contexts.push(fileFallback);
     await fileFallback.addInitScript(() => {File.prototype.text = undefined;});
@@ -244,7 +267,8 @@ async function main() {
     await filePage.waitForFunction(() => document.querySelector("#importer").value === "");
     const viaReader = await filePage.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);
     assert.deepEqual(viaReader.progress,legacyImport.progress); assert.deepEqual(viaReader.review,legacyImport.review);
-    passed("legacy JSON imports through FileReader when File.text is unavailable");
+    assert.deepEqual(viaReader.labs,{}); assert.deepEqual(viaReader.proofs,{});
+    passed("legacy V1 JSON imports through FileReader while new mastery dimensions start unvalidated");
 
     const blocked = await browser.newContext(profile); contexts.push(blocked);
     await blocked.addInitScript(() => {
