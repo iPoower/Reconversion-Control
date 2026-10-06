@@ -480,7 +480,7 @@ function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dl
 function physicalCloseDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.close();else{dlg.removeAttribute("open");afterDetailClose();}}
 function closeDetail(fromRoute){
  if(!fromRoute&&location.hash.indexOf("#topic/")===0){
-  if(detailRoutePushed){history.back();return;}
+  if(detailRoutePushed){physicalCloseDetail();history.back();return;}
   setRoute("#"+state.view,true);
  }
  physicalCloseDetail();
