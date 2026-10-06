@@ -420,8 +420,9 @@ function navigateView(view,replace){
  var active=$("#nav [aria-current]");if(active)active.focus({preventScroll:true});
 }
 function applyRoute(){
- var route=readRoute();
+ var route=readRoute(),dlg=$("#dlg");
  if(!route){route={view:views.indexOf(state.view)>=0?state.view:"cockpit",topic:null};setRoute("#"+route.view,true);}
+ if(!route.topic&&dlg&&(dlg.open||dlg.hasAttribute("open")))physicalCloseDetail();
  state.view=route.view;save();render();
  if(route.topic)detail(route.topic,true,false);
 }
