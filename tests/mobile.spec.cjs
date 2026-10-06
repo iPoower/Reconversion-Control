@@ -69,6 +69,7 @@ async function main() {
     assert.equal(await page.locator(".daily-round").count(),3);
     assert.equal(await page.locator(".daily-scoreboard span").count(),3);
     assert.equal(await page.evaluate(()=>RC_DAILY_FIVE.length),14);
+    assert.equal(await page.evaluate(()=>RC_DAILY_FIVE.every(s=>typeof s.topic==="string"&&RC_TOPICS.some(t=>t.id===s.topic))),true,"every Daily Five session must map to a real learning topic");
     assert.equal(await page.locator(".daily-progress b").textContent(),"0 / 3");
     await page.locator('[data-daily-quiz="0"]').tap();
     assert.equal(await page.locator(".daily-feedback").count(),1);
@@ -97,6 +98,21 @@ async function main() {
     assert.equal(await tamperedDaily.page.locator(".daily-finish.won").count(),0,"impossible local Daily Five completion must be discarded");
     assert.match(await tamperedDaily.page.locator(".daily-scoreboard").textContent(),/⚡ 0/,"tampered XP must not be trusted");
     passed("Daily Five discards impossible completion and XP state instead of trusting derived fields");
+
+    const adaptiveDue = await open({view:"daily",section:"all",search:"",status:"all",progress:{dns:"mastered"},review:{dns:{step:0,due:"2000-01-01"}}});
+    assert.equal(await adaptiveDue.page.locator(".daily-title-card h2").textContent(),"Le paquet perdu");
+    assert.match(await adaptiveDue.page.locator(".daily-game-head .src").textContent(),/RÉVISION DUE/);
+    await adaptiveDue.page.locator('[data-daily-quiz="0"]').tap();
+    const dueDaily=await adaptiveDue.page.evaluate(key=>JSON.parse(localStorage.getItem(key)),DAILY_KEY);
+    const dueRecord=dueDaily.days[Object.keys(dueDaily.days)[0]];
+    assert.equal(dueRecord.sessionId,"d01");assert.equal(dueRecord.reason,"Révision due");
+
+    const adaptiveError = await open({view:"daily",section:"all",search:"",status:"all",progress:{},review:{}});
+    await adaptiveError.page.evaluate(key=>{const d=new Date();d.setDate(d.getDate()-1);const date=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");localStorage.setItem(key,JSON.stringify({days:{[date]:{sessionId:"d03",reason:"Rotation",quizChoice:0,quizCorrect:false}}}));},DAILY_KEY);
+    await adaptiveError.page.reload();
+    assert.equal(await adaptiveError.page.locator(".daily-title-card h2").textContent(),"AuthN ou AuthZ ?");
+    assert.match(await adaptiveError.page.locator(".daily-game-head .src").textContent(),/ERREUR RÉCENTE/);
+    passed("Daily Five prioritizes a due mapped review, then a recent mistake, and locks the chosen session");
 
     await nav(page, "labs");
     assert.equal(await page.locator(".lab-card").count(),15);
@@ -225,6 +241,8 @@ async function main() {
       JSON.stringify({version:2,progress:{},review:{},labs:{},proofs:{"rc-09":{status:"mastered",evidence:7}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:0,due:"2026-02-31"}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:9,due:"2026-10-04"}}}),
+      JSON.stringify({version:2,progress:{dns:"mastered"},review:{dns:{step:0,due:"2026-10-04",lapses:-1}},labs:{},proofs:{}}),
+      JSON.stringify({version:2,progress:{dns:"mastered"},review:{dns:{step:0,due:"2026-10-04",lastRating:"magic"}},labs:{},proofs:{}}),
       JSON.stringify({version:1,progress:[],review:{}}),
       " ".repeat(1024 * 1024) + JSON.stringify({version:1,progress:{},review:{}})
     ];
@@ -355,7 +373,7 @@ async function main() {
     passed("existing v1 local progression loads without new-field migration loss");
 
     const ghostReview = await open({view:"review",section:"all",search:"",status:"all",progress:{dns:"learn"},review:{dns:{step:0,due:"2000-01-01"}}});
-    assert.equal(await ghostReview.page.locator("[data-good]").count(),0,"a non-mastered topic must never surface as a due review");
+    assert.equal(await ghostReview.page.locator("[data-review]").count(),0,"a non-mastered topic must never surface as a due review");
     assert.match(await ghostReview.page.locator("#app").textContent(),/Aucune révision due/);
     passed("legacy mismatched review state is ignored instead of creating a ghost review");
 
