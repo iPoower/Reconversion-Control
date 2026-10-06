@@ -1,6 +1,6 @@
 const PREFIX = "reconversion-control-";
 const BUILD = "__BUILD_SHA__";
-const CACHE = PREFIX + (BUILD === "__BUILD_SHA__" ? "dev" : BUILD.slice(0, 12));
+const CACHE = PREFIX + (BUILD.indexOf("__") === 0 ? "dev" : BUILD.slice(0, 12));
 const CORE = ["./", "./index.html", "./style.css", "./data.js", "./course-foundations.js", "./course-race.js", "./course-operations.js", "./learning.js", "./english.js", "./drive-learning.js", "./daily-five.js", "./app.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/icon-512.png"];
 const BASE = new URL(self.registration.scope);
 const INDEX = new URL("./index.html", BASE).href;
