@@ -50,20 +50,20 @@ async function main() {
     const keys = await page.evaluate(() => caches.keys());
     assert(!keys.includes("reconversion-control-v2"));
     assert(!keys.includes("reconversion-control-v3"));
-    assert(keys.includes("reconversion-control-v9"));
+    assert(keys.includes("reconversion-control-v10"));
     assert(keys.includes("race-control-private-cache")); assert(keys.includes("another-app-cache"));
     assert.equal(await page.evaluate(async () => (await caches.match("/Race-Control/protected-marker")).text()), "preserved");
-    passed("v9 activates, purges its old caches and preserves other applications’ caches");
-    const entryPaths = await page.evaluate(async () => (await (await caches.open("reconversion-control-v9")).keys()).map(request => new URL(request.url).pathname));
-    for (const file of ["index.html","app.js","data.js","course-foundations.js","course-race.js","course-operations.js","learning.js","english.js","drive-learning.js","style.css","manifest.webmanifest","assets/icon-192.png","assets/icon-512.png"]) assert(entryPaths.includes("/Reconversion-Control/" + file));
+    passed("v10 activates, purges its old caches and preserves other applications’ caches");
+    const entryPaths = await page.evaluate(async () => (await (await caches.open("reconversion-control-v10")).keys()).map(request => new URL(request.url).pathname));
+    for (const file of ["index.html","app.js","data.js","course-foundations.js","course-race.js","course-operations.js","learning.js","english.js","drive-learning.js","daily-five.js","style.css","manifest.webmanifest","assets/icon-192.png","assets/icon-512.png"]) assert(entryPaths.includes("/Reconversion-Control/" + file));
     passed("first installation precaches every file needed by the app");
 
-    const installedScript = await page.evaluate(async () => (await (await (await caches.open("reconversion-control-v9")).match("./app.js")).text()));
+    const installedScript = await page.evaluate(async () => (await (await (await caches.open("reconversion-control-v10")).match("./app.js")).text()));
     assert(!installedScript.includes("__staleReconversionScript"), "installation must replace a fresh HTTP-cached v2 script");
-    const installedLessons = await page.evaluate(async () => (await (await (await caches.open("reconversion-control-v9")).match("./course-foundations.js")).text()));
+    const installedLessons = await page.evaluate(async () => (await (await (await caches.open("reconversion-control-v10")).match("./course-foundations.js")).text()));
     assert(!installedLessons.includes("__staleReconversionLessons"),"installation must also refresh a still-fresh HTTP-cached course file");
     await page.reload();
-    assert.equal(await page.locator("#app h2").first().textContent(), "🎯 Mission du jour");
+    assert.equal(await page.locator("#app h2").first().textContent(), "⚡ 5 minutes du jour");
     assert.equal(await page.evaluate(() => !!window.__staleReconversionScript), false);
     await page.locator('#nav [data-view="library"]').tap();
     assert.equal(await page.locator("#cards .card").count(), 74);
@@ -72,7 +72,10 @@ async function main() {
 
     await context.setOffline(true);
     await page.goto(server.url + "/?v=2");
-    assert.equal(await page.locator("#app h2").first().textContent(), "🎯 Mission du jour");
+    assert.equal(await page.locator("#app h2").first().textContent(), "⚡ 5 minutes du jour");
+    await page.locator('#nav [data-view="daily"]').tap();
+    assert.equal(await page.locator(".daily-round").count(),3);
+    assert.equal(await page.locator(".daily-scoreboard span").count(),3);
     await page.locator('#nav [data-view="library"]').tap();
     await page.locator("#search").fill("DNS");
     await page.locator('[data-open="dns"]').tap();
@@ -124,12 +127,12 @@ async function main() {
     assert(await page.locator('[data-card="dns"] [data-prog="mastered"]').evaluate(el => el.classList.contains("on")));
     passed("a 503 navigation uses the existing offline app and preserves local progress");
     server.failures.clear();
-    const cacheBefore = await page.evaluate(async () => (await (await caches.open("reconversion-control-v9")).keys()).map(r=>r.url).sort());
+    const cacheBefore = await page.evaluate(async () => (await (await caches.open("reconversion-control-v10")).keys()).map(r=>r.url).sort());
     const outsideScope = await page.evaluate(async () => {const r=await fetch("/Other/unknown-script.js");return {status:r.status,type:r.headers.get("content-type"),body:await r.text()};});
     assert.equal(outsideScope.status,404); assert(!/^\s*<!doctype html/i.test(outsideScope.body));
     const missing = await page.evaluate(async () => {const r=await fetch("missing-script.js");return {status:r.status,type:r.headers.get("content-type"),body:await r.text()};});
     assert.equal(missing.status,404); assert(!/^\s*<!doctype html/i.test(missing.body));
-    const cacheAfter = await page.evaluate(async () => (await (await caches.open("reconversion-control-v9")).keys()).map(r=>r.url).sort());
+    const cacheAfter = await page.evaluate(async () => (await (await caches.open("reconversion-control-v10")).keys()).map(r=>r.url).sort());
     assert.deepEqual(cacheAfter,cacheBefore);
     passed("out-of-scope requests and unknown assets are not intercepted or cached");
     assert.deepEqual(errors,[]);

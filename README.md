@@ -2,7 +2,7 @@
 
 PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, inspirée du cockpit de Race Control mais hébergée dans un dépôt totalement indépendant.
 
-## V1.7 — Learning Engine · Labs Drive
+## V1.8 — Daily Five · micro-learning
 
 - 9 domaines, 42 fiches essentielles conservées et 32 chapitres Race Control
 - parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec 32 étapes réordonnées selon leurs prérequis plutôt que selon l’ordre des supports source
@@ -11,6 +11,7 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 - 12 questions de révision, glossaire de 42 termes et six checkpoints de compréhension
 - sources et pages visibles, inventaire des sept pièces et limites de couverture
 - cockpit quotidien : Mission du jour (Learn / Review / Speak), session guidée 30 min, Study Pulse et Interview Lab
+- ⚡ 5 minutes par jour : 14 sessions tournantes, Flash Quiz, Mini-mission, English Sprint, XP et streak local
 - Lab Mode : 15 exercices pratiques Débutant / Intermédiaire / Pro, reliés aux statuts existants
 - Drive Source Shelf : 10 références privées sélectionnées et adaptées sans publier d’ID, URL Drive ou chapitre intégral
 - Portfolio Proofs : sept capacités Race Control reliées à des compétences explicables en entretien
@@ -27,7 +28,7 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 
 ## Confidentialité
 
-Le dépôt public ne contient **aucun document Google Drive, aucun ID de fichier Drive et aucun lien privé**. Les sources affichées sont uniquement des références pédagogiques. La progression reste dans `localStorage`.
+Le dépôt public ne contient **aucun document Google Drive, aucun ID de fichier Drive et aucun lien privé**. Les sessions Daily Five sont également entièrement locales et n’envoient aucun score. Les sources affichées sont uniquement des références pédagogiques. La progression reste dans `localStorage`.
 
 Les adaptations reprennent le cours débutant, le dossier technique prod-15 et leurs annexes.
 Les fiches d’architecture prod-8 sont des archives, le PDF et le DOCX du dossier sont deux formats

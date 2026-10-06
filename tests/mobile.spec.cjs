@@ -4,6 +4,7 @@ const fs = require("node:fs/promises");
 const {chromium, webkit, devices} = require("playwright");
 const {startServer} = require("./server.cjs");
 const KEY = "reconversion-control.state.v1";
+const DAILY_KEY = "reconversion-control.daily-five.v1";
 const browserName = process.env.BROWSER || "chromium";
 const browserType = {chromium, webkit}[browserName];
 assert(browserType, "BROWSER must be chromium or webkit");
@@ -41,7 +42,7 @@ async function main() {
   }
   try {
     const {page} = await open();
-    const headings = {cockpit: "🎯 Mission du jour", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Parcours de révision", labs: "🧪 Lab Mode", privacy: "Sources pédagogiques"};
+    const headings = {cockpit: "⚡ 5 minutes du jour", daily: "⚡ 5 minutes du jour", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Parcours de révision", labs: "🧪 Lab Mode", privacy: "Sources pédagogiques"};
     for (const [view, heading] of Object.entries(headings)) {
       await nav(page, view);
       assert.equal(await page.locator("#app h2").first().textContent(), heading);
@@ -62,7 +63,40 @@ async function main() {
     assert.equal(await page.locator(".career-track .career-stage").count(),6);
     assert.match(await page.locator(".career-track").textContent(),/Cloud \+ DevSecOps/);
     assert.equal(await page.locator("#app h2").first().textContent(), headings.path);
-    passed("all seven navigation tabs and cockpit’s Voir le parcours work by touch");
+    passed("all eight navigation tabs and cockpit’s Voir le parcours work by touch");
+
+    await nav(page, "daily");
+    assert.equal(await page.locator(".daily-round").count(),3);
+    assert.equal(await page.locator(".daily-scoreboard span").count(),3);
+    assert.equal(await page.evaluate(()=>RC_DAILY_FIVE.length),14);
+    assert.equal(await page.locator(".daily-progress b").textContent(),"0 / 3");
+    await page.locator('[data-daily-quiz="0"]').tap();
+    assert.equal(await page.locator(".daily-feedback").count(),1);
+    await page.locator("[data-daily-mission]").tap();
+    assert.equal(await page.locator(".daily-feedback").count(),2);
+    await page.locator('[data-daily-english="0"]').tap();
+    assert.equal(await page.locator(".daily-progress b").textContent(),"3 / 3");
+    assert.equal(await page.locator("[data-daily-complete]").count(),1);
+    await page.locator("[data-daily-complete]").tap();
+    assert.equal(await page.locator(".daily-finish.won").count(),1);
+    const dailySaved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),DAILY_KEY);
+    const dailyDates=Object.keys(dailySaved.days);
+    assert.equal(dailyDates.length,1);
+    assert.equal(dailySaved.days[dailyDates[0]].completed,true);
+    assert(dailySaved.days[dailyDates[0]].xp>=100&&dailySaved.days[dailyDates[0]].xp<=140);
+    await page.reload();
+    assert.equal(await page.locator(".daily-finish.won").count(),1);
+    await nav(page,"cockpit");
+    assert.match(await page.locator(".daily-teaser").textContent(),/Défi terminé/);
+    passed("five-minute daily quest completes three playful rounds, persists XP and updates the cockpit");
+
+    const tamperedDaily = await open();
+    await tamperedDaily.page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:DAILY_KEY,value:{days:{"2026-10-04":{completed:true,xp:200}}}});
+    await tamperedDaily.page.reload();
+    await nav(tamperedDaily.page,"daily");
+    assert.equal(await tamperedDaily.page.locator(".daily-finish.won").count(),0,"impossible local Daily Five completion must be discarded");
+    assert.match(await tamperedDaily.page.locator(".daily-scoreboard").textContent(),/⚡ 0/,"tampered XP must not be trusted");
+    passed("Daily Five discards impossible completion and XP state instead of trusting derived fields");
 
     await nav(page, "labs");
     assert.equal(await page.locator(".lab-card").count(),15);
@@ -169,6 +203,7 @@ async function main() {
       JSON.stringify({version:1,progress:{dns:"hacked"},review:{}}),
       JSON.stringify({version:1,progress:{dns:"learn"},review:{dns:{step:0,due:"2026-10-04"}}}),
       JSON.stringify({version:1,progress:{dns:"progress"},review:{dns:{step:0,due:"2026-10-04"}}}),
+      JSON.stringify({version:1,progress:{},review:{},dailyFive:{days:{"2026-10-04":{completed:true,xp:200}}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:0,due:"2026-02-31"}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:9,due:"2026-10-04"}}}),
       JSON.stringify({version:1,progress:[],review:{}}),
@@ -244,6 +279,22 @@ async function main() {
     assert(await unreadPage.locator("#storage-notice").isVisible());
     passed("a temporary initial read failure never overwrites unread existing progression");
 
+    const unreadDaily = await browser.newContext(profile); contexts.push(unreadDaily);
+    const previousDaily = JSON.stringify({days:{"2099-01-01":{missionDone:true}}});
+    await unreadDaily.addInitScript(({key,old})=>{
+      const get=Storage.prototype.getItem;
+      localStorage.setItem(key,old);
+      let first=true;
+      Storage.prototype.getItem=function(k){if(k===key&&first){first=false;throw new DOMException("Temporary Daily Five read failure","SecurityError");}return get.call(this,k);};
+    },{key:DAILY_KEY,old:previousDaily});
+    const unreadDailyPage=await unreadDaily.newPage(); unreadDailyPage.on("pageerror",e=>errors.push(e.message));
+    await unreadDailyPage.goto(server.url+"/");
+    await nav(unreadDailyPage,"daily");
+    await unreadDailyPage.locator("[data-daily-mission]").tap();
+    assert.equal(await unreadDailyPage.evaluate(key=>localStorage.getItem(key),DAILY_KEY),previousDaily);
+    assert(await unreadDailyPage.locator("#storage-notice").isVisible());
+    passed("a temporary Daily Five read failure never overwrites unread daily history");
+
     const quota = await browser.newContext(profile); contexts.push(quota);
     const quotaPrevious = JSON.stringify({view:"library",section:"all",search:"",status:"all",progress:{dns:"learn"},review:{}});
     await quota.addInitScript(({key,old})=>{
@@ -314,7 +365,7 @@ async function main() {
       const bounds = await layout.page.locator("#dlg").boundingBox();
       assert(bounds.x >= -1 && bounds.x + bounds.width <= viewport.width + 1, "dialog must fit viewport");
       await layout.page.locator("#close").tap();
-      passed(viewport.width + "×" + viewport.height + ": seven views and long fiche fit, every touch control ≥44 px");
+      passed(viewport.width + "×" + viewport.height + ": eight views and long fiche fit, every touch control ≥44 px");
     }
     assert.deepEqual(errors, [], "no unhandled JavaScript errors");
     assert.deepEqual(external, [], "the app must not request external services");
