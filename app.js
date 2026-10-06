@@ -87,7 +87,7 @@ function progression(data,strict){
  if(!plainObject(data)||!plainObject(data.progress)||!plainObject(data.review))throw new Error("Invalid progression");
  var result={progress:{},review:{}};
  Object.keys(data.progress).forEach(function(id){var value=data.progress[id];if(!topic(id)||statuses.indexOf(value)<0){if(strict)throw new Error("Invalid status");return;}result.progress[id]=value;});
- Object.keys(data.review).forEach(function(id){var r=data.review[id];if(!topic(id)||!plainObject(r)||!Number.isInteger(r.step)||r.step<0||r.step>5||!validDate(r.due)){if(strict)throw new Error("Invalid review");return;}result.review[id]={step:r.step,due:r.due};});
+ Object.keys(data.review).forEach(function(id){var r=data.review[id];if(!topic(id)||result.progress[id]!=="mastered"||!plainObject(r)||!Number.isInteger(r.step)||r.step<0||r.step>5||!validDate(r.due)){if(strict)throw new Error("Invalid review");return;}result.review[id]={step:r.step,due:r.due};});
  return result;
 }
 function load(){
