@@ -270,13 +270,20 @@ async function main() {
     passed("course v1 backups and legacy progress import; an encrypted Race Control-shaped backup is rejected without corruption");
 
     const revision = await open({view:"review",progress:{dns:"mastered","rc-06":"mastered"},review:{dns:{step:0,due:"2000-01-01"},"rc-06":{step:0,due:"2000-01-01"}}});
-    await revision.page.locator('[data-good="rc-06"]').tap();
+    assert.equal(await revision.page.locator('[data-review-id="rc-06"]').count(),4,"SRS V2 exposes Again, Hard, Good and Easy");
+    await revision.page.locator('[data-review="good"][data-review-id="rc-06"]').tap();
     const reviewed = await revision.page.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);
-    assert.equal(reviewed.review["rc-06"].step,1);
+    assert.equal(reviewed.review["rc-06"].step,1);assert.equal(reviewed.review["rc-06"].lastRating,"good");
     assert.equal(reviewed.review.dns.due,"2000-01-01");
-    assert.equal(await revision.page.locator('[data-good="rc-06"]').count(),0);
-    assert.equal(await revision.page.locator('[data-good="dns"]').count(),1);
-    passed("spaced revision advances a new chapter without changing an existing fiche’s schedule");
+    assert.equal(await revision.page.locator('[data-review-id="rc-06"]').count(),0);
+    assert.equal(await revision.page.locator('[data-review-id="dns"]').count(),4);
+
+    const lapse = await open({view:"review",progress:{dns:"mastered"},review:{dns:{step:2,due:"2000-01-01",lapses:1,lastRating:"again"}}});
+    await lapse.page.locator('[data-review="again"][data-review-id="dns"]').tap();
+    const lapsed=await lapse.page.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);
+    assert.equal(lapsed.progress.dns,"progress","a second lapse must remove false mastery");
+    assert.equal(lapsed.review.dns,undefined,"demoted knowledge must leave the mastered review queue");
+    passed("SRS V2 records confidence ratings and demotes repeated forgotten knowledge instead of preserving false mastery");
 
     for(const viewport of [{width:320,height:568},{width:414,height:896},{width:1280,height:900}]) {
       const layout = await open(undefined,{viewport,screen:viewport,isMobile:viewport.width<1000});
