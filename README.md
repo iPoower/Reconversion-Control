@@ -2,7 +2,7 @@
 
 PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, inspirée du cockpit de Race Control mais hébergée dans un dépôt totalement indépendant.
 
-## V1.8 — Daily Five · micro-learning
+## V1.9 — Honest mastery · knowledge ≠ practice ≠ evidence
 
 - 9 domaines, 42 fiches essentielles conservées et 32 chapitres Race Control
 - parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec 32 étapes réordonnées selon leurs prérequis plutôt que selon l’ordre des supports source
@@ -12,9 +12,9 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 - sources et pages visibles, inventaire des sept pièces et limites de couverture
 - cockpit quotidien : Mission du jour (Learn / Review / Speak), session guidée 30 min, Study Pulse et Interview Lab
 - ⚡ 5 minutes par jour : 14 sessions tournantes, Flash Quiz, Mini-mission, English Sprint, XP et streak local
-- Lab Mode : 15 exercices pratiques Débutant / Intermédiaire / Pro, reliés aux statuts existants
+- Lab Mode : 15 exercices pratiques Débutant / Intermédiaire / Pro avec progression indépendante des cours
 - Drive Source Shelf : 10 références privées sélectionnées et adaptées sans publier d’ID, URL Drive ou chapitre intégral
-- Portfolio Proofs : sept capacités Race Control reliées à des compétences explicables en entretien
+- Portfolio Proofs : sept capacités Race Control avec statut et Evidence Locker locaux, indépendants du statut des cours
 - Cap reconversion : Fondations IT → Cyber → Cloud/DevSecOps → Pentest → Sécurité IA → Portfolio
 - Knowledge Health par domaine
 - statuts À apprendre / En cours / Acquis
@@ -49,7 +49,7 @@ avec ou sans accents ; changer de filtre conserve la saisie et la progression.
 La recherche parcourt les titres, les repères et le texte intégral des cours liés, y compris exemples,
 exercices et glossaire. Elle ne recherche pas les fichiers privés d’origine.
 **Importer**, dans **Sources & privacy**, ouvre le sélecteur de fichiers pour une sauvegarde JSON
-de progression ; **Exporter** en crée une nouvelle. Les sauvegardes V1 restent compatibles.
+de progression ; **Exporter** en crée une nouvelle. Les sauvegardes V1 restent compatibles ; les exports V2 ajoutent les états Labs et Portfolio Proofs sans exposer les contenus privés.
 
 Les commandes tactiles mesurent au moins 44 px. L’affichage prévoit les zones de sécurité de l’iPhone,
 le paysage et une fenêtre de fiche qui défile indépendamment. Un stockage indisponible est signalé ;
