@@ -88,26 +88,37 @@ function progression(data,strict){
  if(!plainObject(data)||!plainObject(data.progress)||!plainObject(data.review))throw new Error("Invalid progression");
  var result={progress:{},review:{}};
  Object.keys(data.progress).forEach(function(id){var value=data.progress[id];if(!topic(id)||statuses.indexOf(value)<0){if(strict)throw new Error("Invalid status");return;}result.progress[id]=value;});
- Object.keys(data.review).forEach(function(id){var r=data.review[id];if(!topic(id)||!plainObject(r)||!Number.isInteger(r.step)||r.step<0||r.step>5||!validDate(r.due)){if(strict)throw new Error("Invalid review");return;}result.review[id]={step:r.step,due:r.due};});
+ Object.keys(data.review).forEach(function(id){var r=data.review[id];if(!topic(id)||result.progress[id]!=="mastered"||!plainObject(r)||!Number.isInteger(r.step)||r.step<0||r.step>5||!validDate(r.due)){if(strict)throw new Error("Invalid review");return;}result.review[id]={step:r.step,due:r.due};});
  return result;
 }
-function dailySanitize(value){
- var out={days:{}};if(!plainObject(value)||!plainObject(value.days))return out;
+function dailySanitize(value,strict){
+ var out={days:{}};
+ function invalid(){if(strict)throw new Error("Invalid daily progression");}
+ if(!plainObject(value)||!plainObject(value.days)){invalid();return out;}
  Object.keys(value.days).forEach(function(date){
-  var r=value.days[date];if(!validDate(date)||!plainObject(r))return;
-  var clean={};
-  if(Number.isInteger(r.quizChoice)&&r.quizChoice>=0&&r.quizChoice<=2)clean.quizChoice=r.quizChoice;
-  if(typeof r.quizCorrect==="boolean")clean.quizCorrect=r.quizCorrect;
-  if(r.missionDone===true)clean.missionDone=true;
-  if(Number.isInteger(r.englishChoice)&&r.englishChoice>=0&&r.englishChoice<=2)clean.englishChoice=r.englishChoice;
-  if(typeof r.englishCorrect==="boolean")clean.englishCorrect=r.englishCorrect;
-  if(r.completed===true)clean.completed=true;
-  if(Number.isInteger(r.xp)&&r.xp>=0&&r.xp<=200)clean.xp=r.xp;
+  var r=value.days[date];if(!validDate(date)||!plainObject(r)){invalid();return;}
+  var clean={},session=dailySession(date);
+  if(r.quizChoice!==undefined){
+   if(!Number.isInteger(r.quizChoice)||r.quizChoice<0||r.quizChoice>2){invalid();return;}
+   clean.quizChoice=r.quizChoice;clean.quizCorrect=r.quizChoice===session.quiz.answer;
+   if(r.quizCorrect!==undefined&&r.quizCorrect!==clean.quizCorrect){invalid();return;}
+  }else if(r.quizCorrect!==undefined){invalid();return;}
+  if(r.missionDone!==undefined){if(r.missionDone!==true){invalid();return;}clean.missionDone=true;}
+  if(r.englishChoice!==undefined){
+   if(!Number.isInteger(r.englishChoice)||r.englishChoice<0||r.englishChoice>2){invalid();return;}
+   clean.englishChoice=r.englishChoice;clean.englishCorrect=r.englishChoice===session.english.answer;
+   if(r.englishCorrect!==undefined&&r.englishCorrect!==clean.englishCorrect){invalid();return;}
+  }else if(r.englishCorrect!==undefined){invalid();return;}
+  var complete=Number.isInteger(clean.quizChoice)&&clean.missionDone===true&&Number.isInteger(clean.englishChoice);
+  if(r.completed!==undefined){if(r.completed!==true||!complete){invalid();return;}clean.completed=true;}
+  var expectedXp=100+(clean.quizCorrect?20:0)+(clean.englishCorrect?20:0);
+  if(r.xp!==undefined){if(!clean.completed||!Number.isInteger(r.xp)||r.xp!==expectedXp){invalid();return;}clean.xp=expectedXp;}
+  else if(clean.completed){if(strict){invalid();return;}clean.xp=expectedXp;}
   out.days[date]=clean;
  });
  return out;
 }
-function dailyLoad(){try{return dailySanitize(JSON.parse(storageGet(DAILY_KEY)||"null"));}catch(e){return{days:{}};}}
+function dailyLoad(){try{return dailySanitize(JSON.parse(storageGet(DAILY_KEY)||"null"),false);}catch(e){return{days:{}};}}
 function dailySave(){storageSet(DAILY_KEY,JSON.stringify(dailyState));}
 function dailyRecord(date){return dailyState.days[date]||{};}
 function ensureDailyRecord(date){if(!dailyState.days[date])dailyState.days[date]={};return dailyState.days[date];}
@@ -371,7 +382,7 @@ function exportState(){
  var a=document.createElement("a"), url=URL.createObjectURL(blob);a.href=url;a.download="reconversion-control-progression.json";a.hidden=true;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},60000);
 }
 function readFile(file){return typeof file.text==="function"?file.text():new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(){resolve(reader.result);};reader.onerror=function(){reject(reader.error);};reader.readAsText(file);});}
-$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1))throw new Error("Invalid version");var imported=progression(j,true);state.progress=imported.progress;state.review=imported.review;if(j.dailyFive!==undefined){dailyState=dailySanitize(j.dailyFive);dailySave();}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
+$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1))throw new Error("Invalid version");var imported=progression(j,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);state.progress=imported.progress;state.review=imported.review;if(importedDaily){dailyState=importedDaily;dailySave();}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
 function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dlg").classList.remove("dialog-fallback");var focus=detailOpener&&detailOpener.isConnected?detailOpener:$("[data-open=\""+detailId+"\"]")||$("#nav [aria-current]");if(focus)focus.focus({preventScroll:true});detailOpener=null;}
 function closeDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.close();else{dlg.removeAttribute("open");afterDetailClose();}}
 $("#close").onclick=closeDetail;$("#dlg").addEventListener("click",function(e){if(e.target===$("#dlg"))closeDetail();});$("#dlg").addEventListener("close",afterDetailClose);
