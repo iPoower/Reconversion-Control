@@ -167,6 +167,8 @@ async function main() {
       "not-json", JSON.stringify({version:2,progress:{},review:{}}),
       JSON.stringify({version:1,progress:{unknown:"mastered"},review:{}}),
       JSON.stringify({version:1,progress:{dns:"hacked"},review:{}}),
+      JSON.stringify({version:1,progress:{dns:"learn"},review:{dns:{step:0,due:"2026-10-04"}}}),
+      JSON.stringify({version:1,progress:{dns:"progress"},review:{dns:{step:0,due:"2026-10-04"}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:0,due:"2026-02-31"}}}),
       JSON.stringify({version:1,progress:{dns:"mastered"},review:{dns:{step:9,due:"2026-10-04"}}}),
       JSON.stringify({version:1,progress:[],review:{}}),
@@ -275,6 +277,11 @@ async function main() {
     const legacy = await open({view:"library",section:"all",search:"",progress:{dns:"mastered"},review:{dns:{step:1,due:"2099-01-01"}}});
     assert(await legacy.page.locator('[data-card="dns"] [data-prog="mastered"]').evaluate(el => el.classList.contains("on")));
     passed("existing v1 local progression loads without new-field migration loss");
+
+    const ghostReview = await open({view:"review",section:"all",search:"",status:"all",progress:{dns:"learn"},review:{dns:{step:0,due:"2000-01-01"}}});
+    assert.equal(await ghostReview.page.locator("[data-good]").count(),0,"a non-mastered topic must never surface as a due review");
+    assert.match(await ghostReview.page.locator("#app").textContent(),/Aucune révision due/);
+    passed("legacy mismatched review state is ignored instead of creating a ghost review");
 
     const fallback = await browser.newContext(profile); contexts.push(fallback);
     await fallback.addInitScript(() => {HTMLDialogElement.prototype.showModal = undefined;});
