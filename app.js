@@ -66,7 +66,7 @@ var RC_CAREER_STAGES=[
  {icon:"🧪",title:"Portfolio + entretien",subtitle:"Portfolio & interview",sections:["portfolio"]}
 ];
 var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{},labs:{},proofs:{}};
-var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, dailyUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0, detailRoutePushed=false;
+var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, dailyUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0, detailRoutePushed=false, pendingRouteFocus=null;
 var state=load();
 var dailyState=dailyLoad();
 function storageStatus(key,failed){if(failed)storageFailures[key]=true;else delete storageFailures[key];storageUnavailable=Object.keys(storageFailures).length>0;}
@@ -422,9 +422,10 @@ function navigateView(view,replace){
 function applyRoute(){
  var route=readRoute(),dlg=$("#dlg");
  if(!route){route={view:views.indexOf(state.view)>=0?state.view:"cockpit",topic:null};setRoute("#"+route.view,true);}
- if(!route.topic&&dlg&&(dlg.open||dlg.hasAttribute("open")))physicalCloseDetail();
+ if(!route.topic&&dlg&&(dlg.open||dlg.hasAttribute("open"))){pendingRouteFocus=detailId;physicalCloseDetail();}
  state.view=route.view;save();render();
  if(route.topic)detail(route.topic,true,false);
+ else if(pendingRouteFocus){var routedFocus=$("[data-open=\""+pendingRouteFocus+"\"]")||$("#nav [aria-current]");pendingRouteFocus=null;if(routedFocus)routedFocus.focus({preventScroll:true});}
 }
 function detail(id,fromRoute,replaceRoute){
  var t=topic(id); if(!t)return;
@@ -477,11 +478,11 @@ function exportState(){
 }
 function readFile(file){return typeof file.text==="function"?file.text():new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(){resolve(reader.result);};reader.onerror=function(){reject(reader.error);};reader.readAsText(file);});}
 $("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1&&j.version!==2))throw new Error("Invalid version");var imported=progression(j,true),importedLabs=labStateSanitize(j.labs,true),importedProofs=proofStateSanitize(j.proofs,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);state.progress=imported.progress;state.review=imported.review;state.labs=importedLabs;state.proofs=importedProofs;if(importedDaily){dailyState=importedDaily;dailySave(true);}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
-function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dlg").classList.remove("dialog-fallback");var focus=detailOpener&&detailOpener.isConnected?detailOpener:$("[data-open=\""+detailId+"\"]")||$("#nav [aria-current]");if(focus)focus.focus({preventScroll:true});detailOpener=null;detailRoutePushed=false;}
+function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dlg").classList.remove("dialog-fallback");var focus=pendingRouteFocus?null:(detailOpener&&detailOpener.isConnected?detailOpener:$("[data-open=\""+detailId+"\"]")||$("#nav [aria-current]"));if(focus)focus.focus({preventScroll:true});detailOpener=null;detailRoutePushed=false;}
 function physicalCloseDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.close();else{dlg.removeAttribute("open");afterDetailClose();}}
 function closeDetail(fromRoute){
  if(!fromRoute&&location.hash.indexOf("#topic/")===0){
-  if(detailRoutePushed){physicalCloseDetail();history.back();return;}
+  if(detailRoutePushed){pendingRouteFocus=detailId;physicalCloseDetail();history.back();return;}
   setRoute("#"+state.view,true);
  }
  physicalCloseDetail();
