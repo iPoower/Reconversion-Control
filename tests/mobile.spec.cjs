@@ -329,6 +329,11 @@ async function main() {
     assert(await legacy.page.locator('[data-card="dns"] [data-prog="mastered"]').evaluate(el => el.classList.contains("on")));
     passed("existing v1 local progression loads without new-field migration loss");
 
+    const ghostReview = await open({view:"review",section:"all",search:"",status:"all",progress:{dns:"learn"},review:{dns:{step:0,due:"2000-01-01"}}});
+    assert.equal(await ghostReview.page.locator("[data-good]").count(),0,"a non-mastered topic must never surface as a due review");
+    assert.match(await ghostReview.page.locator("#app").textContent(),/Aucune révision due/);
+    passed("legacy mismatched review state is ignored instead of creating a ghost review");
+
     const fallback = await browser.newContext(profile); contexts.push(fallback);
     await fallback.addInitScript(() => {HTMLDialogElement.prototype.showModal = undefined;});
     const fallbackPage = await fallback.newPage(); fallbackPage.on("pageerror", e => errors.push(e.message));
