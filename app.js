@@ -65,7 +65,7 @@ var RC_CAREER_STAGES=[
  {icon:"🤖",title:"Sécurité IA",subtitle:"AI security",sections:["ai"]},
  {icon:"🧪",title:"Portfolio + entretien",subtitle:"Portfolio & interview",sections:["portfolio"]}
 ];
-var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{}};
+var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{},labs:{},proofs:{}};
 var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, dailyUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0;
 var state=load();
 var dailyState=dailyLoad();
@@ -90,6 +90,23 @@ function progression(data,strict){
  Object.keys(data.progress).forEach(function(id){var value=data.progress[id];if(!topic(id)||statuses.indexOf(value)<0){if(strict)throw new Error("Invalid status");return;}result.progress[id]=value;});
  Object.keys(data.review).forEach(function(id){var r=data.review[id];if(!topic(id)||result.progress[id]!=="mastered"||!plainObject(r)||!Number.isInteger(r.step)||r.step<0||r.step>5||!validDate(r.due)){if(strict)throw new Error("Invalid review");return;}result.review[id]={step:r.step,due:r.due};});
  return result;
+}
+function labStateSanitize(value,strict){
+ var out={};if(value===undefined)return out;
+ if(!plainObject(value)){if(strict)throw new Error("Invalid labs");return out;}
+ var ids=RC_LABS.map(function(lab){return lab.id;});
+ Object.keys(value).forEach(function(id){var status=value[id];if(ids.indexOf(id)<0||statuses.indexOf(status)<0){if(strict)throw new Error("Invalid lab status");return;}out[id]=status;});
+ return out;
+}
+function proofStateSanitize(value,strict){
+ var out={};if(value===undefined)return out;
+ if(!plainObject(value)){if(strict)throw new Error("Invalid proofs");return out;}
+ var ids=RC_PORTFOLIO_PROOFS.map(function(proof){return proof.lesson;});
+ Object.keys(value).forEach(function(id){
+  var item=value[id];if(ids.indexOf(id)<0||!plainObject(item)||statuses.indexOf(item.status)<0||typeof item.evidence!=="string"||item.evidence.length>2000){if(strict)throw new Error("Invalid proof");return;}
+  out[id]={status:item.status,evidence:item.evidence};
+ });
+ return out;
 }
 function dailySanitize(value,strict){
  var out={days:{}};
@@ -130,6 +147,7 @@ function load(){
  if(j.section==="all"||section(j.section))initial.section=j.section;
  if(typeof j.search==="string")initial.search=j.search;
  if(j.status==="all"||statuses.indexOf(j.status)>=0)initial.status=j.status;
+ initial.labs=labStateSanitize(j.labs,false);initial.proofs=proofStateSanitize(j.proofs,false);
  }catch(e){}return initial;
 }
 function save(replace){storageSet(KEY,JSON.stringify(state),replace);}
@@ -137,6 +155,12 @@ function today(){var now=new Date();return now.getFullYear()+"-"+String(now.getM
 function addDays(d,n){var x=new Date(d+"T12:00:00Z");x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);}
 function daysBetween(a,b){return Math.round((Date.parse(a+"T12:00:00Z")-Date.parse(b+"T12:00:00Z"))/86400000);}
 function pstate(id){return state.progress[id]||"learn";}
+function labProgressState(id){return state.labs[id]||"learn";}
+function setLabProgress(id,value){if(!RC_LABS.some(function(lab){return lab.id===id;})||statuses.indexOf(value)<0)return;state.labs[id]=value;save();render();}
+function proofRecord(id){return state.proofs[id]||{status:"learn",evidence:""};}
+function proofStatus(proof){return proofRecord(proof.lesson).status;}
+function setProofStatus(id,value){if(!RC_PORTFOLIO_PROOFS.some(function(proof){return proof.lesson===id;})||statuses.indexOf(value)<0)return;var current=proofRecord(id);state.proofs[id]={status:value,evidence:current.evidence};save();render();}
+function setProofEvidence(id,value){if(!RC_PORTFOLIO_PROOFS.some(function(proof){return proof.lesson===id;}))return;var current=proofRecord(id);state.proofs[id]={status:current.status,evidence:String(value||"").slice(0,2000)};save();}
 function setProgress(id,value){
  state.progress[id]=value;
  if(value==="mastered"){if(!state.review[id])state.review[id]={step:0,due:addDays(today(),1)};}
@@ -186,13 +210,13 @@ function englishVocabularyProgress(){
  orderedLessons().forEach(function(lesson){var en=englishData(lesson.id);if(!en)return;total+=en.vocab.length;if(pstate(lesson.id)==="mastered")learned+=en.vocab.length;});
  return{learned:learned,total:total};
 }
-function portfolioProofState(proof){var s=pstate(proof.lesson);return s==="mastered"?"VALIDÉ":s==="progress"?"EN COURS":"À PRATIQUER";}
+function portfolioProofState(proof){var s=proofStatus(proof);return s==="mastered"?"VALIDÉ":s==="progress"?"EN COURS":"À CONSTRUIRE";}
 function portfolioProofsHtml(){
- var validated=RC_PORTFOLIO_PROOFS.filter(function(proof){return pstate(proof.lesson)==="mastered";}).length;
- return'<section class="mod portfolio-proofs"><div class="mh"><h2>Portfolio Proofs</h2><span class="src">'+validated+" / "+RC_PORTFOLIO_PROOFS.length+' VALIDÉS</span></div><p class="en-kicker" lang="en">Turn Race Control into evidence you can explain in an interview.</p><p class="muted">Chaque carte relie une capacité réellement travaillée dans Race Control à la compétence IT que tu dois savoir expliquer.</p><div class="proof-grid">'+RC_PORTFOLIO_PROOFS.map(function(proof){return'<article class="proof-card" data-proof="'+proof.lesson+'"><div class="proof-top"><span class="proof-icon">'+proof.icon+'</span><span class="proof-state '+pstate(proof.lesson)+'">'+portfolioProofState(proof)+'</span></div><h3>'+esc(proof.title)+'</h3><small>'+esc(proof.skill)+'</small><p>'+esc(proof.proof)+'</p><button class="btn" data-open="'+proof.lesson+'">Voir la preuve · Explain</button></article>';}).join("")+'</div></section>';
+ var validated=RC_PORTFOLIO_PROOFS.filter(function(proof){return proofStatus(proof)==="mastered";}).length;
+ return'<section class="mod portfolio-proofs"><div class="mh"><h2>Portfolio Proofs</h2><span class="src">'+validated+" / "+RC_PORTFOLIO_PROOFS.length+' VALIDÉS</span></div><p class="en-kicker" lang="en">Knowledge is not evidence. Capture what you actually built, tested or explained.</p><p class="muted">Une preuve portfolio est indépendante du statut du cours : ajoute une trace concrète (PR, SHA, test, incident, résultat) avant de la valider.</p><div class="proof-grid">'+RC_PORTFOLIO_PROOFS.map(function(proof){var record=proofRecord(proof.lesson);return'<article class="proof-card" data-proof="'+proof.lesson+'"><div class="proof-top"><span class="proof-icon">'+proof.icon+'</span><span class="proof-state '+record.status+'">'+portfolioProofState(proof)+'</span></div><h3>'+esc(proof.title)+'</h3><small>'+esc(proof.skill)+'</small><p>'+esc(proof.proof)+'</p><button class="btn" data-open="'+proof.lesson+'">Voir le cours · Explain</button><details class="proof-evidence"><summary>Evidence Locker · preuve locale</summary><div class="proof-evidence-body"><label>Trace concrète<textarea data-proof-evidence="'+proof.lesson+'" maxlength="2000" placeholder="Ex. PR #44 · SHA 1f325a9 · test WebKit vert">'+esc(record.evidence)+'</textarea></label><div class="seg"><button class="learn '+(record.status==="learn"?"on":"")+'" data-proof-prog="learn" data-proof-id="'+proof.lesson+'">À construire<small>Build</small></button><button class="progress '+(record.status==="progress"?"on":"")+'" data-proof-prog="progress" data-proof-id="'+proof.lesson+'">En cours<small>Working</small></button><button class="mastered '+(record.status==="mastered"?"on":"")+'" data-proof-prog="mastered" data-proof-id="'+proof.lesson+'">Validé<small>Evidence</small></button></div></div></details></article>';}).join("")+'</div></section>';
 }
 function studyPulseHtml(){
- var cp=courseMastery(),en=englishVocabularyProgress(),d=due(),proofs=RC_PORTFOLIO_PROOFS.filter(function(proof){return pstate(proof.lesson)==="mastered";}).length;
+ var cp=courseMastery(),en=englishVocabularyProgress(),d=due(),proofs=RC_PORTFOLIO_PROOFS.filter(function(proof){return proofStatus(proof)==="mastered";}).length;
  return'<section class="mod study-pulse"><div class="mh"><h2>Study Pulse</h2><span class="src">LOCAL · TRANSPARENT</span></div><div class="pulse-grid"><div class="pulse"><small>Cours acquis<br><span lang="en">Mastered lessons</span></small><b>'+cp.mastered+' / '+cp.total+'</b></div><div class="pulse"><small>Vocabulaire EN<br><span lang="en">English vocabulary</span></small><b>'+en.learned+' / '+en.total+'</b></div><div class="pulse"><small>Preuves portfolio<br><span lang="en">Portfolio proofs</span></small><b>'+proofs+' / '+RC_PORTFOLIO_PROOFS.length+'</b></div><div class="pulse"><small>Révisions dues<br><span lang="en">Reviews due</span></small><b>'+d.length+'</b></div></div><p class="muted">Aucun score magique : ces chiffres viennent directement de tes statuts locaux.</p></section>';
 }
 function dailyMissionHtml(){
@@ -297,18 +321,18 @@ function library(){
  return'<section class="mod"><div class="mh"><h2>Bibliothèque essentielle</h2><span id="library-count" class="src" role="status" aria-live="polite">'+list.length+' FICHES · NOTES</span></div><p class="en-kicker" lang="en">Essential library · search works in French and English.</p><div class="filters"><label class="field-label" for="search">Rechercher · Search<input id="search" type="search" placeholder="DNS, IAM, road surface, rollback…" value="'+esc(state.search)+'"></label><label class="field-label" for="status">Statut · Status<select id="status">'+[["all","Tous · All"],["learn","À apprendre · Learn"],["progress","En cours · Learning"],["mastered","Acquis · Mastered"]].map(function(x){return'<option value="'+x[0]+'"'+(state.status===x[0]?" selected":"")+'>'+x[1]+"</option>";}).join("")+'</select></label></div><div class="tabs"><button class="tab '+(state.section==="all"?"on":"")+'" aria-pressed="'+(state.section==="all")+'" data-section="all">◉ Tout</button>'+RC_SECTIONS.map(function(s){return'<button class="tab '+(state.section===s.id?"on":"")+'" aria-pressed="'+(state.section===s.id)+'" data-section="'+s.id+'">'+s.icon+" "+esc(s.label)+"</button>";}).join("")+'</div><div id="cards" class="grid3">'+libraryCards(list)+"</div></section>";
 }
 function labLevelLabel(level){return level==="beginner"?"🟢 Débutant · Beginner":level==="intermediate"?"🟡 Intermédiaire · Intermediate":"🔴 Pro";}
-function labStatus(lab){var s=pstate(lab.topic);return s==="mastered"?"VALIDÉ":s==="progress"?"EN COURS":"À FAIRE";}
+function labStatus(lab){var s=labProgressState(lab.id);return s==="mastered"?"VALIDÉ":s==="progress"?"EN COURS":"À FAIRE";}
 function labSourceLabels(lab){return lab.sources.map(function(id){var source=rcDriveSource(id);return source?source.title:id;});}
-function nextLab(){return RC_LABS.find(function(lab){return pstate(lab.topic)!=="mastered";})||RC_LABS[0];}
+function nextLab(){return RC_LABS.find(function(lab){return labProgressState(lab.id)!=="mastered";})||RC_LABS[0];}
 function labCardHtml(lab){
- var status=pstate(lab.topic),sources=labSourceLabels(lab),sec=section(lab.section);
- return'<article class="lab-card" data-lab="'+lab.id+'"><div class="lab-top"><span class="src">'+labLevelLabel(lab.level)+'</span><span class="lab-status '+status+'">'+labStatus(lab)+'</span></div><h3>'+esc(lab.title)+'</h3><p class="card-en-title" lang="en">🇬🇧 '+esc(lab.enTitle)+'</p><p>'+esc(lab.goal)+'</p><div class="tags"><span class="tag">⏱ '+lab.minutes+' min</span><span class="tag">'+esc(sec.icon+" "+sec.label)+'</span></div><details class="lab-detail"><summary>Ouvrir le lab · Start lab</summary><div class="lab-body"><h4>🎯 Objectif</h4><p>'+esc(lab.goal)+'</p><h4>🧪 Mission</h4><ol>'+lab.steps.map(function(step){return'<li>'+esc(step)+'</li>';}).join("")+'</ol><h4>✅ Résultat attendu</h4><p>'+esc(lab.expected)+'</p><h4>🔎 Self-check</h4><ul>'+lab.check.map(function(item){return'<li>'+esc(item)+'</li>';}).join("")+'</ul><div class="lab-english"><b>🎤 Explain it in English</b><p lang="en">'+esc(lab.english)+'</p></div><div class="lab-sources"><b>📚 Sources de travail</b><p>'+sources.map(esc).join(" · ")+'</p><small>Références issues de ta bibliothèque Drive privée. Le lab est une adaptation originale : aucun chapitre ni lien Drive privé n’est publié.</small></div><div class="seg"><button class="learn '+(status==="learn"?"on":"")+'" data-prog="learn" data-id="'+lab.topic+'">À faire<small>To do</small></button><button class="progress '+(status==="progress"?"on":"")+'" data-prog="progress" data-id="'+lab.topic+'">En cours<small>Practicing</small></button><button class="mastered '+(status==="mastered"?"on":"")+'" data-prog="mastered" data-id="'+lab.topic+'">Validé<small>Validated</small></button></div></div></details></article>';
+ var status=labProgressState(lab.id),sources=labSourceLabels(lab),sec=section(lab.section);
+ return'<article class="lab-card" data-lab="'+lab.id+'"><div class="lab-top"><span class="src">'+labLevelLabel(lab.level)+'</span><span class="lab-status '+status+'">'+labStatus(lab)+'</span></div><h3>'+esc(lab.title)+'</h3><p class="card-en-title" lang="en">🇬🇧 '+esc(lab.enTitle)+'</p><p>'+esc(lab.goal)+'</p><div class="tags"><span class="tag">⏱ '+lab.minutes+' min</span><span class="tag">'+esc(sec.icon+" "+sec.label)+'</span></div><details class="lab-detail"><summary>Ouvrir le lab · Start lab</summary><div class="lab-body"><h4>🎯 Objectif</h4><p>'+esc(lab.goal)+'</p><h4>🧪 Mission</h4><ol>'+lab.steps.map(function(step){return'<li>'+esc(step)+'</li>';}).join("")+'</ol><h4>✅ Résultat attendu</h4><p>'+esc(lab.expected)+'</p><h4>🔎 Self-check</h4><ul>'+lab.check.map(function(item){return'<li>'+esc(item)+'</li>';}).join("")+'</ul><div class="lab-english"><b>🎤 Explain it in English</b><p lang="en">'+esc(lab.english)+'</p></div><div class="lab-sources"><b>📚 Sources de travail</b><p>'+sources.map(esc).join(" · ")+'</p><small>Références issues de ta bibliothèque Drive privée. Le lab est une adaptation originale : aucun chapitre ni lien Drive privé n’est publié.</small></div><div class="seg"><button class="learn '+(status==="learn"?"on":"")+'" data-lab-prog="learn" data-lab-id="'+lab.id+'">À faire<small>To do</small></button><button class="progress '+(status==="progress"?"on":"")+'" data-lab-prog="progress" data-lab-id="'+lab.id+'">En cours<small>Practicing</small></button><button class="mastered '+(status==="mastered"?"on":"")+'" data-lab-prog="mastered" data-lab-id="'+lab.id+'">Validé<small>Validated</small></button></div></div></details></article>';
 }
 function driveShelfHtml(){
  return'<section class="mod drive-shelf"><div class="mh"><h2>📚 Drive Source Shelf</h2><span class="src">'+RC_DRIVE_SOURCES.length+' RÉFÉRENCES CURATÉES</span></div><p class="en-kicker" lang="en">Private library mapped into the learning path — references only, no private links.</p><p class="muted">J’ai sélectionné les supports les plus utiles parmi ta bibliothèque pour compléter les 42 fiches générales. Les livres restent dans ton Drive ; l’application ne publie que des références bibliographiques et nos propres adaptations pédagogiques.</p><div class="source-shelf-grid">'+RC_DRIVE_SOURCES.map(function(source){return'<article class="source-book"><span class="src">'+esc(source.domain.toUpperCase())+'</span><h3>'+esc(source.title)+'</h3><small>'+esc(source.author)+'</small><p>'+esc(source.covers)+'</p></article>';}).join("")+'</div></section>';
 }
 function labs(){
- var next=nextLab(),done=RC_LABS.filter(function(lab){return pstate(lab.topic)==="mastered";}).length,levels=["beginner","intermediate","pro"];
+ var next=nextLab(),done=RC_LABS.filter(function(lab){return labProgressState(lab.id)==="mastered";}).length,levels=["beginner","intermediate","pro"];
  return'<section class="mod labs-hero"><div class="mh"><h2>🧪 Lab Mode</h2><span class="src">'+done+" / "+RC_LABS.length+' VALIDÉS</span></div><p class="en-kicker" lang="en">Practice first. Explain second. Mark it mastered only when you can do both.</p><div class="hero"><span class="src">PROCHAIN LAB · NEXT LAB</span><h2>'+esc(next.title)+'</h2><p>'+esc(next.goal)+'</p><button class="btn pri" data-lab-jump="'+next.id+'">Commencer · Start · '+next.minutes+' min</button></div><div class="lab-rules"><span>1 · Lire l’objectif</span><span>2 · Faire sans aide</span><span>3 · Vérifier le résultat</span><span>4 · Expliquer en anglais</span></div></section>'+levels.map(function(level){var list=RC_LABS.filter(function(lab){return lab.level===level;});return'<section class="mod lab-level" data-lab-level="'+level+'"><div class="mh"><h2>'+labLevelLabel(level)+'</h2><span class="src">'+list.length+' LABS</span></div><div class="lab-grid">'+list.map(labCardHtml).join("")+'</div></section>';}).join("")+driveShelfHtml();
 }
 function course(){
@@ -363,7 +387,10 @@ function bindCards(root){
 function bind(){
  $$("[data-view]").forEach(function(b){b.onclick=function(){state.view=b.dataset.view;save();render();$("#nav [aria-current]").focus({preventScroll:true});};});
  bindCards($("#app"));
- $$("[data-daily-quiz]").forEach(function(b){b.onclick=function(){dailyAnswer("quiz",Number(b.dataset.dailyQuiz));};});
+ $("[data-lab-prog]").forEach(function(b){b.onclick=function(){setLabProgress(b.dataset.labId,b.dataset.labProg);};});
+ $("[data-proof-prog]").forEach(function(b){b.onclick=function(){setProofStatus(b.dataset.proofId,b.dataset.proofProg);};});
+ $("[data-proof-evidence]").forEach(function(field){field.onchange=function(){setProofEvidence(field.dataset.proofEvidence,field.value);};});
+ $("[data-daily-quiz]").forEach(function(b){b.onclick=function(){dailyAnswer("quiz",Number(b.dataset.dailyQuiz));};});
  $$("[data-daily-english]").forEach(function(b){b.onclick=function(){dailyAnswer("english",Number(b.dataset.dailyEnglish));};});
  $$("[data-daily-mission]").forEach(function(b){b.onclick=dailyMissionDone;});
  $$("[data-daily-complete]").forEach(function(b){b.onclick=dailyComplete;});
@@ -378,11 +405,11 @@ function bind(){
  if($("#reset"))$("#reset").onclick=function(){if(confirm("Réinitialiser toute la progression locale ?")){storageRemove(KEY);storageRemove(DAILY_KEY);state=JSON.parse(JSON.stringify(defaults));dailyState={days:{}};render();}};
 }
 function exportState(){
- var blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),progress:state.progress,review:state.review,dailyFive:dailyState},null,2)],{type:"application/json"});
+ var blob=new Blob([JSON.stringify({version:2,exportedAt:new Date().toISOString(),progress:state.progress,review:state.review,labs:state.labs,proofs:state.proofs,dailyFive:dailyState},null,2)],{type:"application/json"});
  var a=document.createElement("a"), url=URL.createObjectURL(blob);a.href=url;a.download="reconversion-control-progression.json";a.hidden=true;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},60000);
 }
 function readFile(file){return typeof file.text==="function"?file.text():new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(){resolve(reader.result);};reader.onerror=function(){reject(reader.error);};reader.readAsText(file);});}
-$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1))throw new Error("Invalid version");var imported=progression(j,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);state.progress=imported.progress;state.review=imported.review;if(importedDaily){dailyState=importedDaily;dailySave(true);}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
+$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1&&j.version!==2))throw new Error("Invalid version");var imported=progression(j,true),importedLabs=labStateSanitize(j.labs,true),importedProofs=proofStateSanitize(j.proofs,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);state.progress=imported.progress;state.review=imported.review;state.labs=importedLabs;state.proofs=importedProofs;if(importedDaily){dailyState=importedDaily;dailySave(true);}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
 function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dlg").classList.remove("dialog-fallback");var focus=detailOpener&&detailOpener.isConnected?detailOpener:$("[data-open=\""+detailId+"\"]")||$("#nav [aria-current]");if(focus)focus.focus({preventScroll:true});detailOpener=null;}
 function closeDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.close();else{dlg.removeAttribute("open");afterDetailClose();}}
 $("#close").onclick=closeDetail;$("#dlg").addEventListener("click",function(e){if(e.target===$("#dlg"))closeDetail();});$("#dlg").addEventListener("close",afterDetailClose);
