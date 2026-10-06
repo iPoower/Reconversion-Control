@@ -144,6 +144,7 @@ async function main() {
     await page.locator('#detail .chapter-navigation [data-open="rc-01"]').tap();
     assert.equal(await page.locator("#detail .lesson-detail").getAttribute("data-lesson-id"),"rc-01");
     await page.locator("#close").tap();
+    await page.waitForFunction(() => document.activeElement === document.querySelector('#course-chapters [data-open="rc-01"]'));
     assert(await page.locator('#course-chapters [data-open="rc-01"]').evaluate(el=>el===document.activeElement));
     passed("next and previous chapter navigation keeps the dialog, resets reading position and restores the course opener");
 
