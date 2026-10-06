@@ -182,3 +182,5 @@
  .daily-round{grid-template-columns:1fr}.round-num{width:44px;height:44px}
  .daily-title-card{align-items:flex-start}.daily-big-icon{font-size:28px}
 }
+
+.proof-evidence{margin-top:auto;border-top:1px solid var(--l);padding-top:4px}.proof-evidence>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}.proof-evidence-body{display:grid;gap:10px;padding-top:8px}.proof-evidence label{display:grid;gap:6px;color:var(--fg2);font-size:12px}.proof-evidence textarea{width:100%;min-height:96px;resize:vertical;border:1px solid var(--l2);background:var(--p);color:var(--fg);border-radius:6px;padding:9px;font:12px var(--mono)}
