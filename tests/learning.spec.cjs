@@ -241,11 +241,12 @@ async function main() {
     await nav(learning,"privacy");
     const [download] = await Promise.all([learning.waitForEvent("download"),learning.locator("#export").tap()]);
     const exported = JSON.parse(await fs.readFile(await download.path(),"utf8"));
-    assert.equal(exported.version,1);
+    assert.equal(exported.version,2);
     assert.deepEqual(exported.progress,mixed.progress);
     assert.deepEqual(exported.review,mixed.review);
+    assert.deepEqual(exported.labs,{});assert.deepEqual(exported.proofs,{});
     assert(!("sources" in exported) && !("lessons" in exported),"a progression backup must not export uploaded documents or course files");
-    passed("new course progress and old DNS progress coexist, persist and export through the unchanged v1 format");
+    passed("new course progress and old DNS progress coexist; V2 export adds independent mastery dimensions without private course files");
 
     const alerts = [];
     learning.on("dialog",async dialog=>{alerts.push(dialog.message());await dialog.accept();});
