@@ -118,7 +118,8 @@ async function main() {
     assert.equal(await page.evaluate(()=>RC_DRIVE_SOURCES.every(source=>Object.keys(source).sort().join(",")==="author,covers,domain,id,title")),true,"published Drive metadata must be limited to curated bibliography fields");
     passed("Drive-backed Lab Mode exposes 15 practical labs and 10 curated references without private Drive links");
 
-    const proofId=await page.evaluate(()=>RC_PORTFOLIO_PROOFS[0].lesson);
+    await nav(page,"cockpit");
+    const proofId=await page.locator(".proof-card").first().getAttribute("data-proof");
     await page.evaluate(({key,proofId})=>{const s=JSON.parse(localStorage.getItem(key));s.progress[proofId]="mastered";s.review[proofId]={step:0,due:"2099-01-01"};localStorage.setItem(key,JSON.stringify(s));},{key:KEY,proofId});
     await page.reload();
     await nav(page,"labs");
