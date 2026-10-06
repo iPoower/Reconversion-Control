@@ -2,7 +2,7 @@
 
 PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, inspirée du cockpit de Race Control mais hébergée dans un dépôt totalement indépendant.
 
-## V1.9 — Honest mastery · knowledge ≠ practice ≠ evidence
+## V2.0 — Adaptive learning · honest mastery + SRS V2
 
 - 9 domaines, 42 fiches essentielles conservées et 32 chapitres Race Control
 - parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec 32 étapes réordonnées selon leurs prérequis plutôt que selon l’ordre des supports source
@@ -11,14 +11,14 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 - 12 questions de révision, glossaire de 42 termes et six checkpoints de compréhension
 - sources et pages visibles, inventaire des sept pièces et limites de couverture
 - cockpit quotidien : Mission du jour (Learn / Review / Speak), session guidée 30 min, Study Pulse et Interview Lab
-- ⚡ 5 minutes par jour : 14 sessions tournantes, Flash Quiz, Mini-mission, English Sprint, XP et streak local
+- ⚡ 5 minutes par jour : 14 sessions mappées aux notions, sélection adaptative par révision due → erreur récente → domaine faible, Flash Quiz, Mini-mission, English Sprint, XP et streak local
 - Lab Mode : 15 exercices pratiques Débutant / Intermédiaire / Pro avec progression indépendante des cours
 - Drive Source Shelf : 10 références privées sélectionnées et adaptées sans publier d’ID, URL Drive ou chapitre intégral
 - Portfolio Proofs : sept capacités Race Control avec statut et Evidence Locker locaux, indépendants du statut des cours
 - Cap reconversion : Fondations IT → Cyber → Cloud/DevSecOps → Pentest → Sécurité IA → Portfolio
 - Knowledge Health par domaine
 - statuts À apprendre / En cours / Acquis
-- révisions espacées J+1 / J+3 / J+7 / J+14 / J+30 / J+60
+- SRS V2 : Again / Hard / Good / Easy, intervalles adaptatifs et sortie automatique de « Acquis » après deux oublis pour éviter la fausse maîtrise
 - recherche, parcours recommandé, questions d'entretien et exercices
 - portfolio Race Control
 - export/import local de progression
