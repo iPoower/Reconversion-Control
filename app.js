@@ -66,16 +66,16 @@ var RC_CAREER_STAGES=[
  {icon:"🧪",title:"Portfolio + entretien",subtitle:"Portfolio & interview",sections:["portfolio"]}
 ];
 var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{}};
-var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0;
+var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, dailyUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0;
 var state=load();
 var dailyState=dailyLoad();
 function storageStatus(key,failed){if(failed)storageFailures[key]=true;else delete storageFailures[key];storageUnavailable=Object.keys(storageFailures).length>0;}
-function storageGet(key){try{var value=localStorage.getItem(key);storageStatus(key,false);return value;}catch(e){storageStatus(key,true);if(key===KEY)progressUnread=true;return null;}}
+function storageGet(key){try{var value=localStorage.getItem(key);storageStatus(key,false);return value;}catch(e){storageStatus(key,true);if(key===KEY)progressUnread=true;if(key===DAILY_KEY)dailyUnread=true;return null;}}
 function storageSet(key,value,replace){
- if(key===KEY&&progressUnread&&!replace){storageNotice();return;}
- try{localStorage.setItem(key,value);if(key===KEY)progressUnread=false;storageStatus(key,false);}catch(e){storageStatus(key,true);}storageNotice();
+ if(!replace&&((key===KEY&&progressUnread)||(key===DAILY_KEY&&dailyUnread))){storageNotice();return;}
+ try{localStorage.setItem(key,value);if(key===KEY)progressUnread=false;if(key===DAILY_KEY)dailyUnread=false;storageStatus(key,false);}catch(e){storageStatus(key,true);}storageNotice();
 }
-function storageRemove(key){try{localStorage.removeItem(key);if(key===KEY)progressUnread=false;storageStatus(key,false);}catch(e){storageStatus(key,true);}storageNotice();}
+function storageRemove(key){try{localStorage.removeItem(key);if(key===KEY)progressUnread=false;if(key===DAILY_KEY)dailyUnread=false;storageStatus(key,false);}catch(e){storageStatus(key,true);}storageNotice();}
 function storageNotice(){
  var app=$("#app"), notice=$("#storage-notice");if(!app)return;
  if(!notice){notice=document.createElement("p");notice.id="storage-notice";notice.className="privacy";notice.setAttribute("role","status");app.parentNode.insertBefore(notice,app);}
@@ -119,7 +119,7 @@ function dailySanitize(value,strict){
  return out;
 }
 function dailyLoad(){try{return dailySanitize(JSON.parse(storageGet(DAILY_KEY)||"null"),false);}catch(e){return{days:{}};}}
-function dailySave(){storageSet(DAILY_KEY,JSON.stringify(dailyState));}
+function dailySave(replace){storageSet(DAILY_KEY,JSON.stringify(dailyState),replace);}
 function dailyRecord(date){return dailyState.days[date]||{};}
 function ensureDailyRecord(date){if(!dailyState.days[date])dailyState.days[date]={};return dailyState.days[date];}
 function load(){
@@ -382,7 +382,7 @@ function exportState(){
  var a=document.createElement("a"), url=URL.createObjectURL(blob);a.href=url;a.download="reconversion-control-progression.json";a.hidden=true;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},60000);
 }
 function readFile(file){return typeof file.text==="function"?file.text():new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(){resolve(reader.result);};reader.onerror=function(){reject(reader.error);};reader.readAsText(file);});}
-$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1))throw new Error("Invalid version");var imported=progression(j,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);state.progress=imported.progress;state.review=imported.review;if(importedDaily){dailyState=importedDaily;dailySave();}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
+$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1))throw new Error("Invalid version");var imported=progression(j,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);state.progress=imported.progress;state.review=imported.review;if(importedDaily){dailyState=importedDaily;dailySave(true);}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
 function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dlg").classList.remove("dialog-fallback");var focus=detailOpener&&detailOpener.isConnected?detailOpener:$("[data-open=\""+detailId+"\"]")||$("#nav [aria-current]");if(focus)focus.focus({preventScroll:true});detailOpener=null;}
 function closeDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.close();else{dlg.removeAttribute("open");afterDetailClose();}}
 $("#close").onclick=closeDetail;$("#dlg").addEventListener("click",function(e){if(e.target===$("#dlg"))closeDetail();});$("#dlg").addEventListener("close",afterDetailClose);
