@@ -279,6 +279,22 @@ async function main() {
     assert(await unreadPage.locator("#storage-notice").isVisible());
     passed("a temporary initial read failure never overwrites unread existing progression");
 
+    const unreadDaily = await browser.newContext(profile); contexts.push(unreadDaily);
+    const previousDaily = JSON.stringify({days:{"2099-01-01":{missionDone:true}}});
+    await unreadDaily.addInitScript(({key,old})=>{
+      const get=Storage.prototype.getItem;
+      localStorage.setItem(key,old);
+      let first=true;
+      Storage.prototype.getItem=function(k){if(k===key&&first){first=false;throw new DOMException("Temporary Daily Five read failure","SecurityError");}return get.call(this,k);};
+    },{key:DAILY_KEY,old:previousDaily});
+    const unreadDailyPage=await unreadDaily.newPage(); unreadDailyPage.on("pageerror",e=>errors.push(e.message));
+    await unreadDailyPage.goto(server.url+"/");
+    await nav(unreadDailyPage,"daily");
+    await unreadDailyPage.locator("[data-daily-mission]").tap();
+    assert.equal(await unreadDailyPage.evaluate(key=>localStorage.getItem(key),DAILY_KEY),previousDaily);
+    assert(await unreadDailyPage.locator("#storage-notice").isVisible());
+    passed("a temporary Daily Five read failure never overwrites unread daily history");
+
     const quota = await browser.newContext(profile); contexts.push(quota);
     const quotaPrevious = JSON.stringify({view:"library",section:"all",search:"",status:"all",progress:{dns:"learn"},review:{}});
     await quota.addInitScript(({key,old})=>{
