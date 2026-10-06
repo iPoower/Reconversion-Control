@@ -68,6 +68,12 @@ Tests automatisés : `npm ci`, `npx playwright install chromium webkit`, puis
 dans Chromium ; Playwright ne pilote pas les Service Workers de WebKit. Les profils iPhone sont
 des simulations navigateur ; une vérification sur l’iPhone réel complète ces contrôles.
 
+## Protection de main
+
+Le workflow de validation vérifie, après chaque push sur `main`, que le SHA est associé à une pull request fusionnée vers `main`. Un push direct peut encore exister dans l’historique tant qu’un Ruleset GitHub natif n’est pas activé, mais il fait échouer la validation et **GitHub Pages ne le déploie pas**.
+
+La protection native par Ruleset/Branch Protection reste le contrôle préventif recommandé côté réglages GitHub ; le gate CI constitue le contrôle de production défensif dans le dépôt.
+
 ## GitHub Pages
 
 Déploiement automatique depuis `main` via `.github/workflows/pages.yml`.
