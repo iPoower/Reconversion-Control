@@ -425,7 +425,7 @@ function applyRoute(){
  if(!route.topic&&dlg&&(dlg.open||dlg.hasAttribute("open"))){pendingRouteFocus=detailId;physicalCloseDetail();}
  state.view=route.view;save();render();
  if(route.topic)detail(route.topic,true,false);
- else if(pendingRouteFocus){var routedFocus=$("[data-open=\""+pendingRouteFocus+"\"]")||$("#nav [aria-current]");pendingRouteFocus=null;if(routedFocus)routedFocus.focus({preventScroll:true});}
+ else if(pendingRouteFocus){var routedFocus=$("#course-chapters [data-open=\""+pendingRouteFocus+"\"]")||$("[data-open=\""+pendingRouteFocus+"\"]")||$("#nav [aria-current]");pendingRouteFocus=null;if(routedFocus)routedFocus.focus({preventScroll:true});}
 }
 function detail(id,fromRoute,replaceRoute){
  var t=topic(id); if(!t)return;
