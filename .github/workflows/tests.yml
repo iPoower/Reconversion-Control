@@ -7,13 +7,41 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: PR validation path
+        if: github.event_name == 'pull_request'
+        run: echo "Pull request validation — provenance is enforced after merge on main."
+      - name: Refuse direct main pushes from production
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            matches="$(gh api               -H "Accept: application/vnd.github+json"               "/repos/$REPO/commits/$SHA/pulls"               --jq '[.[] | select(.merged_at != null and .base.ref == "main")] | length')"
+            if [ "$matches" -ge 1 ]; then
+              echo "Verified: $SHA is associated with a merged pull request targeting main."
+              exit 0
+            fi
+            echo "PR association not visible yet (attempt $attempt/5)."
+            sleep 3
+          done
+          echo "::error::main commit $SHA is not associated with a merged pull request. Production deployment is blocked."
+          exit 1
+
   mobile:
+    needs: provenance
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
