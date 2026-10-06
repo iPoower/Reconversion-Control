@@ -6,7 +6,7 @@ var $$=function(s){return Array.from(document.querySelectorAll(s));};
 var esc=function(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
 var section=function(id){return RC_SECTIONS.find(function(s){return s.id===id;});};
 var topic=function(id){return RC_TOPICS.find(function(t){return t.id===id;});};
-var views=["cockpit","daily","path","library","course","labs","review","privacy"], statuses=["learn","progress","mastered"];
+var views=["cockpit","daily","path","library","course","labs","review","privacy"], statuses=["learn","progress","mastered"], reviewRatings=["again","hard","good","easy"], dailyReasons=["Révision due","Erreur récente","Domaine faible","Rotation"];
 var RC_COURSE_LEVELS=[
  {id:"beginner",label:"Débutant",labelEn:"Beginner",icon:"🟢",goal:"Comprendre d’abord comment une application Web fonctionne, puis comment on la versionne, la construit et la rend installable.",goalEn:"Understand how a web app works before learning how to version, build and install it."},
  {id:"intermediate",label:"Intermédiaire",labelEn:"Intermediate",icon:"🟡",goal:"Appliquer les bases aux vraies données Race Control : météo, pneus, agenda, trajets, GPS et décision utilisateur.",goalEn:"Apply the fundamentals to real Race Control data: weather, tyres, calendar, trips, GPS and user decisions."},
@@ -88,7 +88,11 @@ function progression(data,strict){
  if(!plainObject(data)||!plainObject(data.progress)||!plainObject(data.review))throw new Error("Invalid progression");
  var result={progress:{},review:{}};
  Object.keys(data.progress).forEach(function(id){var value=data.progress[id];if(!topic(id)||statuses.indexOf(value)<0){if(strict)throw new Error("Invalid status");return;}result.progress[id]=value;});
- Object.keys(data.review).forEach(function(id){var r=data.review[id];if(!topic(id)||result.progress[id]!=="mastered"||!plainObject(r)||!Number.isInteger(r.step)||r.step<0||r.step>5||!validDate(r.due)){if(strict)throw new Error("Invalid review");return;}result.review[id]={step:r.step,due:r.due};});
+ Object.keys(data.review).forEach(function(id){
+  var r=data.review[id],validLapses=r&& (r.lapses===undefined||(Number.isInteger(r.lapses)&&r.lapses>=0&&r.lapses<=99)),validRating=r&&(r.lastRating===undefined||reviewRatings.indexOf(r.lastRating)>=0);
+  if(!topic(id)||result.progress[id]!=="mastered"||!plainObject(r)||!Number.isInteger(r.step)||r.step<0||r.step>5||!validDate(r.due)||!validLapses||!validRating){if(strict)throw new Error("Invalid review");return;}
+  var clean={step:r.step,due:r.due};if(r.lapses!==undefined)clean.lapses=r.lapses;if(r.lastRating!==undefined)clean.lastRating=r.lastRating;result.review[id]=clean;
+ });
  return result;
 }
 function labStateSanitize(value,strict){
@@ -114,7 +118,10 @@ function dailySanitize(value,strict){
  if(!plainObject(value)||!plainObject(value.days)){invalid();return out;}
  Object.keys(value.days).forEach(function(date){
   var r=value.days[date];if(!validDate(date)||!plainObject(r)){invalid();return;}
-  var clean={},session=dailySession(date);
+  var clean={},sessionId=r.sessionId,session;
+  if(sessionId!==undefined){if(typeof sessionId!=="string"||!dailyById(sessionId)){invalid();return;}clean.sessionId=sessionId;}
+  session=sessionId?dailyById(sessionId):legacyDailySession(date);if(!session){invalid();return;}
+  if(r.reason!==undefined){if(typeof r.reason!=="string"||dailyReasons.indexOf(r.reason)<0||!sessionId){invalid();return;}clean.reason=r.reason;}
   if(r.quizChoice!==undefined){
    if(!Number.isInteger(r.quizChoice)||r.quizChoice<0||r.quizChoice>2){invalid();return;}
    clean.quizChoice=r.quizChoice;clean.quizCorrect=r.quizChoice===session.quiz.answer;
@@ -138,7 +145,12 @@ function dailySanitize(value,strict){
 function dailyLoad(){try{return dailySanitize(JSON.parse(storageGet(DAILY_KEY)||"null"),false);}catch(e){return{days:{}};}}
 function dailySave(replace){storageSet(DAILY_KEY,JSON.stringify(dailyState),replace);}
 function dailyRecord(date){return dailyState.days[date]||{};}
-function ensureDailyRecord(date){if(!dailyState.days[date])dailyState.days[date]={};return dailyState.days[date];}
+function ensureDailyRecord(date,selection){
+ if(!dailyState.days[date])dailyState.days[date]={};
+ var r=dailyState.days[date],picked=selection||dailySelection(date);
+ if(!r.sessionId){r.sessionId=picked.session.id;r.reason=picked.reason;}
+ return r;
+}
 function load(){
  var initial=JSON.parse(JSON.stringify(defaults));
  try{var j=JSON.parse(storageGet(KEY)||"null");if(!plainObject(j))return initial;
@@ -163,16 +175,26 @@ function setProofStatus(id,value){if(!RC_PORTFOLIO_PROOFS.some(function(proof){r
 function setProofEvidence(id,value){if(!RC_PORTFOLIO_PROOFS.some(function(proof){return proof.lesson===id;}))return;var current=proofRecord(id);state.proofs[id]={status:current.status,evidence:String(value||"").slice(0,2000)};save();}
 function setProgress(id,value){
  state.progress[id]=value;
- if(value==="mastered"){if(!state.review[id])state.review[id]={step:0,due:addDays(today(),1)};}
+ if(value==="mastered"){if(!state.review[id])state.review[id]={step:0,due:addDays(today(),1),lapses:0};}
  else delete state.review[id];
  save(); render();
 }
 var schedule=[1,3,7,14,30,60];
-function reviewAnswer(id,ok){
- var r=state.review[id]||{step:0,due:today()};
- if(!ok){r.step=0;r.due=addDays(today(),1);}
- else {r.step=Math.min(r.step+1,schedule.length-1);r.due=addDays(today(),schedule[r.step]);}
- state.review[id]=r; save(); render();
+function reviewAnswer(id,rating){
+ if(reviewRatings.indexOf(rating)<0||pstate(id)!=="mastered")return;
+ var r=state.review[id]||{step:0,due:today(),lapses:0},lapses=Number.isInteger(r.lapses)?r.lapses:0;
+ if(rating==="again"){
+  lapses++;
+  if(lapses>=2){state.progress[id]="progress";delete state.review[id];save();render();return;}
+  r.step=Math.max(0,r.step-1);r.due=addDays(today(),1);
+ }else if(rating==="hard"){
+  r.step=Math.min(r.step+1,schedule.length-1);r.due=addDays(today(),Math.max(2,Math.ceil(schedule[r.step]*.65)));
+ }else if(rating==="good"){
+  r.step=Math.min(r.step+1,schedule.length-1);r.due=addDays(today(),schedule[r.step]);
+ }else{
+  r.step=Math.min(r.step+2,schedule.length-1);r.due=addDays(today(),schedule[r.step]);
+ }
+ r.lapses=lapses;r.lastRating=rating;state.review[id]=r;save();render();
 }
 function progressFor(list){
  var total=list.length, mastered=list.filter(function(t){return pstate(t.id)==="mastered";}).length, inprog=list.filter(function(t){return pstate(t.id)==="progress";}).length;
@@ -234,10 +256,28 @@ function careerStagePct(stage){
 function careerPathHtml(){
  return'<section class="mod career-track"><div class="mh"><h2>Cap reconversion</h2><span class="src">CYBER · CLOUD · DEVSECOPS · AI</span></div><p class="en-kicker" lang="en">Career track · build the foundations before specialization.</p><div class="career-grid">'+RC_CAREER_STAGES.map(function(stage,i){var pct=careerStagePct(stage);return'<article class="career-stage '+(pct>=80?"ready":pct>=35?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+stage.icon+" "+esc(stage.title)+'</b><small lang="en">'+esc(stage.subtitle)+'</small><div class="bar"><i style="width:'+pct+'%"></i></div></div><span class="score">'+pct+'%</span></article>';}).join("")+'</div><p class="muted">Repères : consolider les fondamentaux, puis cyber/cloud/DevSecOps, ensuite pentest et sécurité IA. Le portfolio sert de preuve tout au long du parcours.</p></section>';
 }
-function dailySession(date){
+function dailyById(id){return RC_DAILY_FIVE.find(function(session){return session.id===id;})||null;}
+function legacyDailySession(date){
  var stamp=Math.floor(Date.parse((date||today())+"T12:00:00Z")/86400000);
  return RC_DAILY_FIVE[((stamp%RC_DAILY_FIVE.length)+RC_DAILY_FIVE.length)%RC_DAILY_FIVE.length];
 }
+function dailyRecentSessionIds(date){
+ return Object.keys(dailyState.days).filter(function(d){return d<date;}).sort().reverse().slice(0,3).map(function(d){var r=dailyState.days[d];return r.sessionId||(legacyDailySession(d)||{}).id;}).filter(Boolean);
+}
+function dailySelection(date){
+ date=date||today();var record=dailyRecord(date);
+ if(record.sessionId){var locked=dailyById(record.sessionId);if(locked)return{session:locked,reason:dailyReasons.indexOf(record.reason)>=0?record.reason:"Rotation"};}
+ var recent=dailyRecentSessionIds(date),dueSessions=due().map(function(item){return RC_DAILY_FIVE.find(function(s){return s.topic===item.id;});}).filter(Boolean);
+ var picked=dueSessions.find(function(s){return recent.indexOf(s.id)<0;})||dueSessions[0];
+ if(picked)return{session:picked,reason:"Révision due"};
+ var failedDates=Object.keys(dailyState.days).filter(function(d){var r=dailyState.days[d];return d<date&&(r.quizCorrect===false||r.englishCorrect===false);}).sort().reverse();
+ for(var i=0;i<failedDates.length;i++){var failed=dailyState.days[failedDates[i]],again=dailyById(failed.sessionId||(legacyDailySession(failedDates[i])||{}).id);if(again)return{session:again,reason:"Erreur récente"};}
+ var candidates=RC_DAILY_FIVE.map(function(s){var t=topic(s.topic),sec=t&&section(t.section),pct=sec?progressFor(RC_TOPICS.filter(function(x){return x.section===sec.id;})).pct:100,bonus=pstate(s.topic)==="mastered"?30:pstate(s.topic)==="progress"?10:0;return{session:s,score:pct+bonus,recent:recent.indexOf(s.id)>=0};}).sort(function(a,b){return a.score-b.score||a.session.id.localeCompare(b.session.id);});
+ var fresh=candidates.filter(function(x){return !x.recent;}),pool=fresh.length?fresh:candidates;
+ if(pool.length)return{session:pool[0].session,reason:"Domaine faible"};
+ return{session:legacyDailySession(date),reason:"Rotation"};
+}
+function dailySession(date){return dailySelection(date||today()).session;}
 function dailyProgress(record){return (Number.isInteger(record.quizChoice)?1:0)+(record.missionDone?1:0)+(Number.isInteger(record.englishChoice)?1:0);}
 function dailyStats(){
  var dates=Object.keys(dailyState.days),xp=dates.reduce(function(sum,date){return sum+(dailyState.days[date].xp||0);},0),completed=dates.filter(function(date){return dailyState.days[date].completed;}).length;
@@ -253,22 +293,22 @@ function dailyChoiceHtml(kind,block,record){
  return'<div class="daily-choices">'+block.choices.map(function(choice,i){var cls=locked?(i===answer?" correct":i===chosen?" wrong":""):"";return'<button class="daily-choice'+cls+'" '+attr+'="'+i+'" aria-pressed="'+(chosen===i)+'"'+(locked?" disabled":"")+'><span>'+String.fromCharCode(65+i)+'</span>'+esc(choice)+'</button>';}).join("")+'</div>'+(locked?'<div class="daily-feedback '+(chosen===answer?"ok":"ko")+'"><b>'+(chosen===answer?"✅ Bien joué !":"💡 Pas grave — retiens ceci")+'</b><p>'+esc(block.explain)+'</p></div>':"");
 }
 function dailyFiveTeaserHtml(){
- var r=dailyRecord(today()),s=dailySession(),stats=dailyStats(),done=dailyProgress(r);
- return'<section class="mod daily-teaser '+(r.completed?"completed":"")+'"><div class="daily-teaser-icon">'+(r.completed?"🏆":"⚡")+'</div><div><span class="src">5 MINUTES PAR JOUR · DAILY QUEST</span><h2>⚡ 5 minutes du jour</h2><p><b>'+esc(s.icon+" "+s.title)+'</b> · '+(r.completed?"Défi terminé. Reviens demain pour une nouvelle mission.":"3 mini-défis, zéro blabla : "+done+"/3 étapes faites aujourd’hui.")+'</p></div><div class="daily-teaser-meta"><b>🔥 '+stats.streak+'</b><small>streak</small><button class="btn pri" data-view="daily">'+(r.completed?"Revoir":"Jouer · Play")+'</button></div></section>';
+ var r=dailyRecord(today()),pick=dailySelection(today()),s=pick.session,stats=dailyStats(),done=dailyProgress(r);
+ return'<section class="mod daily-teaser '+(r.completed?"completed":"")+'"><div class="daily-teaser-icon">'+(r.completed?"🏆":"⚡")+'</div><div><span class="src">5 MINUTES · '+esc(pick.reason.toUpperCase())+'</span><h2>⚡ 5 minutes du jour</h2><p><b>'+esc(s.icon+" "+s.title)+'</b> · '+(r.completed?"Défi terminé. Reviens demain pour une nouvelle mission.":"3 mini-défis adaptés à ta progression : "+done+"/3 étapes faites aujourd’hui.")+'</p></div><div class="daily-teaser-meta"><b>🔥 '+stats.streak+'</b><small>streak</small><button class="btn pri" data-view="daily">'+(r.completed?"Revoir":"Jouer · Play")+'</button></div></section>';
 }
 function dailyFive(){
- var s=dailySession(),r=dailyRecord(today()),stats=dailyStats(),done=dailyProgress(r),ready=done===3,xp=r.completed?r.xp:100+(r.quizCorrect?20:0)+(r.englishCorrect?20:0);
- return'<section class="mod daily-five"><div class="daily-game-head"><div><span class="src">⚡ DAILY QUEST · 5 MIN MAX</span><h2>⚡ 5 minutes du jour</h2><p class="en-kicker" lang="en">One tiny challenge a day. Keep the brain warm.</p></div><div class="daily-scoreboard"><span><b>🔥 '+stats.streak+'</b><small>jours</small></span><span><b>⚡ '+stats.xp+'</b><small>XP</small></span><span><b>🏆 '+stats.completed+'</b><small>sessions</small></span></div></div>'+dailyWeekHtml()+'<div class="daily-progress"><div><b>'+done+' / 3</b><span>'+(r.completed?"MISSION ACCOMPLIE":"EN COURS")+'</span></div><div class="bar"><i style="width:'+(done/3*100)+'%"></i></div></div><div class="daily-title-card"><span class="daily-big-icon">'+s.icon+'</span><div><span class="src">'+esc(s.domain.toUpperCase())+' · SESSION '+(RC_DAILY_FIVE.indexOf(s)+1)+'</span><h2>'+esc(s.title)+'</h2><p>Une session courte : réponds au feeling, apprends de la correction, puis passe à la suite.</p></div></div><div class="daily-rounds"><article class="daily-round '+(Number.isInteger(r.quizChoice)?"done":"")+'"><span class="round-num">01</span><div class="round-copy"><span class="src">⚡ FLASH QUIZ · ~90 SEC</span><h3>'+esc(s.quiz.q)+'</h3>'+dailyChoiceHtml("quiz",s.quiz,r)+'</div></article><article class="daily-round '+(r.missionDone?"done":"")+'"><span class="round-num">02</span><div class="round-copy"><span class="src">🧠 MINI-MISSION · ~2 MIN</span><h3>'+esc(s.mission.prompt)+'</h3><p class="muted">Réponds d’abord à voix haute ou dans ta tête. Pas besoin d’écrire.</p>'+(r.missionDone?'<div class="daily-feedback ok"><b>🧩 Réponse de référence</b><p>'+esc(s.mission.reveal)+'</p></div>':'<button class="btn" data-daily-mission>J’ai réfléchi · Voir la réponse</button>')+'</div></article><article class="daily-round '+(Number.isInteger(r.englishChoice)?"done":"")+'"><span class="round-num">03</span><div class="round-copy"><span class="src">🇬🇧 ENGLISH SPRINT · ~90 SEC</span><h3><span class="daily-word">'+esc(s.english.term)+'</span></h3><p>'+esc(s.english.q)+'</p>'+dailyChoiceHtml("english",s.english,r)+'</div></article></div><section class="daily-finish '+(r.completed?"won":"")+'">'+(r.completed?'<div class="celebrate" aria-hidden="true">🎉 ⚡ 🏆 🔥 🎉</div><h2>Mission accomplie · Daily quest complete!</h2><p><b>+'+r.xp+' XP</b> aujourd’hui. Le but n’est pas la perfection : c’est de garder le contact avec l’IT tous les jours.</p><p class="en-kicker" lang="en">Small steps, every day.</p>':ready?'<h2>Tu as fini les 3 rounds 👏</h2><p>Valide la session pour enregistrer ton XP et ton streak.</p><button class="btn pri daily-complete" data-daily-complete>Terminer · +'+xp+' XP</button>':'<h2>Encore '+(3-done)+' round'+(3-done>1?"s":"")+' ⚡</h2><p>5 minutes maximum. Avance sans chercher à être parfait.</p>')+'</section></section>';
+ var pick=dailySelection(today()),s=pick.session,r=dailyRecord(today()),stats=dailyStats(),done=dailyProgress(r),ready=done===3,xp=r.completed?r.xp:100+(r.quizCorrect?20:0)+(r.englishCorrect?20:0);
+ return'<section class="mod daily-five"><div class="daily-game-head"><div><span class="src">⚡ DAILY QUEST · '+esc(pick.reason.toUpperCase())+'</span><h2>⚡ 5 minutes du jour</h2><p class="en-kicker" lang="en">One tiny challenge a day. Keep the brain warm.</p></div><div class="daily-scoreboard"><span><b>🔥 '+stats.streak+'</b><small>jours</small></span><span><b>⚡ '+stats.xp+'</b><small>XP</small></span><span><b>🏆 '+stats.completed+'</b><small>sessions</small></span></div></div>'+dailyWeekHtml()+'<div class="daily-progress"><div><b>'+done+' / 3</b><span>'+(r.completed?"MISSION ACCOMPLIE":"EN COURS")+'</span></div><div class="bar"><i style="width:'+(done/3*100)+'%"></i></div></div><div class="daily-title-card"><span class="daily-big-icon">'+s.icon+'</span><div><span class="src">'+esc(s.domain.toUpperCase())+' · SESSION '+(RC_DAILY_FIVE.indexOf(s)+1)+'</span><h2>'+esc(s.title)+'</h2><p>Une session courte : réponds au feeling, apprends de la correction, puis passe à la suite.</p></div></div><div class="daily-rounds"><article class="daily-round '+(Number.isInteger(r.quizChoice)?"done":"")+'"><span class="round-num">01</span><div class="round-copy"><span class="src">⚡ FLASH QUIZ · ~90 SEC</span><h3>'+esc(s.quiz.q)+'</h3>'+dailyChoiceHtml("quiz",s.quiz,r)+'</div></article><article class="daily-round '+(r.missionDone?"done":"")+'"><span class="round-num">02</span><div class="round-copy"><span class="src">🧠 MINI-MISSION · ~2 MIN</span><h3>'+esc(s.mission.prompt)+'</h3><p class="muted">Réponds d’abord à voix haute ou dans ta tête. Pas besoin d’écrire.</p>'+(r.missionDone?'<div class="daily-feedback ok"><b>🧩 Réponse de référence</b><p>'+esc(s.mission.reveal)+'</p></div>':'<button class="btn" data-daily-mission>J’ai réfléchi · Voir la réponse</button>')+'</div></article><article class="daily-round '+(Number.isInteger(r.englishChoice)?"done":"")+'"><span class="round-num">03</span><div class="round-copy"><span class="src">🇬🇧 ENGLISH SPRINT · ~90 SEC</span><h3><span class="daily-word">'+esc(s.english.term)+'</span></h3><p>'+esc(s.english.q)+'</p>'+dailyChoiceHtml("english",s.english,r)+'</div></article></div><section class="daily-finish '+(r.completed?"won":"")+'">'+(r.completed?'<div class="celebrate" aria-hidden="true">🎉 ⚡ 🏆 🔥 🎉</div><h2>Mission accomplie · Daily quest complete!</h2><p><b>+'+r.xp+' XP</b> aujourd’hui. Le but n’est pas la perfection : c’est de garder le contact avec l’IT tous les jours.</p><p class="en-kicker" lang="en">Small steps, every day.</p>':ready?'<h2>Tu as fini les 3 rounds 👏</h2><p>Valide la session pour enregistrer ton XP et ton streak.</p><button class="btn pri daily-complete" data-daily-complete>Terminer · +'+xp+' XP</button>':'<h2>Encore '+(3-done)+' round'+(3-done>1?"s":"")+' ⚡</h2><p>5 minutes maximum. Avance sans chercher à être parfait.</p>')+'</section></section>';
 }
 function dailyAnswer(kind,index){
- var s=dailySession(),r=ensureDailyRecord(today());
+ var pick=dailySelection(today()),s=pick.session,r=ensureDailyRecord(today(),pick);
  if(kind==="quiz"&&!Number.isInteger(r.quizChoice)){r.quizChoice=index;r.quizCorrect=index===s.quiz.answer;}
  if(kind==="english"&&!Number.isInteger(r.englishChoice)){r.englishChoice=index;r.englishCorrect=index===s.english.answer;}
  dailySave();render();
 }
-function dailyMissionDone(){var r=ensureDailyRecord(today());r.missionDone=true;dailySave();render();}
+function dailyMissionDone(){var pick=dailySelection(today()),r=ensureDailyRecord(today(),pick);r.missionDone=true;dailySave();render();}
 function dailyComplete(){
- var r=ensureDailyRecord(today());if(r.completed||dailyProgress(r)<3)return;
+ var pick=dailySelection(today()),r=ensureDailyRecord(today(),pick);if(r.completed||dailyProgress(r)<3)return;
  r.completed=true;r.xp=100+(r.quizCorrect?20:0)+(r.englishCorrect?20:0);dailySave();render();
 }
 function cockpit(){
@@ -341,10 +381,10 @@ function course(){
 }
 function review(){
  var d=due(), future=Object.keys(state.review).map(function(id){return{id:id,r:state.review[id],t:topic(id)};}).filter(function(x){return x.t&&x.r.due>today();}).sort(function(a,b){return a.r.due.localeCompare(b.r.due);}).slice(0,10);
- return'<div class="grid2"><section class="mod"><div class="mh"><h2>À revoir aujourd’hui</h2><span class="src">'+d.length+'</span></div><p class="en-kicker" lang="en">Review today</p><p class="muted">Cycle : J+1 · J+3 · J+7 · J+14 · J+30 · J+60.</p>'+(d.length?d.map(reviewRow).join(""):'<div class="empty">Aucune révision due. Passe une fiche en “Acquis” pour démarrer.</div>')+'</section><section class="mod"><div class="mh"><h2>À venir</h2><span class="src">'+future.length+'</span></div>'+(future.length?future.map(function(x){return'<div class="review"><div><b>'+esc(x.t.title)+'</b><small>'+esc(x.r.due)+'</small></div><span></span><span class="due">J+'+Math.max(0,daysBetween(x.r.due,today()))+'</span></div>';}).join(""):'<div class="empty">Rien de planifié.</div>')+"</section></div>";
+ return'<div class="grid2"><section class="mod"><div class="mh"><h2>À revoir aujourd’hui</h2><span class="src">'+d.length+'</span></div><p class="en-kicker" lang="en">Review today</p><p class="muted">SRS V2 : Again · Hard · Good · Easy. Deux oublis consécutifs font redescendre la notion en “En cours” pour éviter une fausse maîtrise.</p>'+(d.length?d.map(reviewRow).join(""):'<div class="empty">Aucune révision due. Passe une fiche en “Acquis” pour démarrer.</div>')+'</section><section class="mod"><div class="mh"><h2>À venir</h2><span class="src">'+future.length+'</span></div>'+(future.length?future.map(function(x){return'<div class="review"><div><b>'+esc(x.t.title)+'</b><small>'+esc(x.r.due)+'</small></div><span></span><span class="due">J+'+Math.max(0,daysBetween(x.r.due,today()))+'</span></div>';}).join(""):'<div class="empty">Rien de planifié.</div>')+"</section></div>";
 }
 function reviewRow(x){
- return'<div class="review"><div><b>'+esc(x.t.title)+'</b><small>'+section(x.t.section).icon+" "+esc(section(x.t.section).label)+'</small></div><span></span><div class="actions"><button class="btn sm" data-bad="'+x.id+'">À revoir · Again</button><button class="btn sm pri" data-good="'+x.id+'">Bien retenu · Got it</button></div></div>';
+ return'<div class="review"><div><b>'+esc(x.t.title)+'</b><small>'+section(x.t.section).icon+" "+esc(section(x.t.section).label)+(x.r.lastRating?" · "+esc(x.r.lastRating.toUpperCase()):"")+'</small></div><span></span><div class="actions review-ratings"><button class="btn sm" data-review="again" data-review-id="'+x.id+'">Again</button><button class="btn sm" data-review="hard" data-review-id="'+x.id+'">Hard</button><button class="btn sm pri" data-review="good" data-review-id="'+x.id+'">Good</button><button class="btn sm pri" data-review="easy" data-review-id="'+x.id+'">Easy</button></div></div>';
 }
 function privacy(){
  return'<div class="grid2"><section class="mod"><div class="mh"><h2>Sources pédagogiques</h2><span class="src">7 SUPPORTS VÉRIFIÉS</span></div><p>'+RC_LESSONS.length+' chapitres adaptés du cours Race Control, recoupés avec le dossier prod15. Les PDF/DOCX originaux et la sauvegarde privée restent hors de l’application.</p><div id="support-coverage">'+RC_SUPPORTS.map(function(s){return'<article class="support" data-support-id="'+esc(s.id)+'" data-support-status="'+esc(s.status)+'"><h3>'+esc(s.title)+'</h3><p class="muted">'+esc(s.format)+' · '+esc(s.version)+'</p><p>'+esc(s.coverage)+'</p></article>';}).join("")+'</div><h3>Bibliothèque générale à compléter</h3><p class="muted">Les 42 fiches initiales sont des repères synthétiques. Les supports Race Control ne remplacent pas les cours complets de Linux, réseau, pentest, Kubernetes ou sécurité IA. Les références ci-dessous figuraient dans la bibliothèque ; leurs textes complets ne sont pas fournis dans ce lot.</p><ul>'+RC_SOURCES.filter(function(s){return s!=="Race Control expliqué de zéro à DevSecOps";}).map(function(s){return'<li>'+esc(s)+'</li>';}).join("")+'</ul></section><section class="mod"><div class="mh"><h2>Confidentialité</h2><span class="src">BY DESIGN</span></div><div class="privacy"><b>✅ Sources privées conservées hors du site</b><br>Aucun PDF/DOCX brut, aucune URL privée ni donnée de la sauvegarde dans le contenu publié.</div><div class="privacy"><b>✅ Progression locale</b><br>Statuts et révisions restent dans localStorage sur ton appareil.</div><div class="privacy"><b>✅ Aucun analytics / backend</b><br>L’application n’envoie pas ta progression.</div><div class="privacy"><b>✅ Cours hors ligne</b><br>Après un premier chargement complet avec réseau, les cours sont conservés sur l’appareil. Le navigateur peut effacer son cache ; ce n’est pas une sauvegarde de ta progression.</div><div class="privacy"><b>✅ Bibliothèque Drive cloisonnée</b><br>Les labs peuvent citer des références sélectionnées, mais aucun ID, URL Drive privée ni contenu intégral des livres n’est publié.</div><div class="actions"><button id="export" class="btn">Exporter</button><button id="import" class="btn">Importer</button><button id="reset" class="btn">Réinitialiser</button></div></section></div>';
@@ -396,8 +436,7 @@ function bind(){
  $$("[data-daily-complete]").forEach(function(b){b.onclick=dailyComplete;});
  $$("[data-lab-jump]").forEach(function(b){b.onclick=function(){var target=$("[data-lab=\""+b.dataset.labJump+"\"]");if(target){var d=target.querySelector("details");if(d)d.open=true;target.scrollIntoView({behavior:"smooth",block:"start"});}};});
  $$("[data-section]").forEach(function(b){b.onclick=function(){state.section=b.dataset.section;save();render();$("[data-section=\""+state.section+"\"]").focus({preventScroll:true});};});
- $$("[data-good]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.good,true);};});
- $$("[data-bad]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.bad,false);};});
+ $$("[data-review]").forEach(function(b){b.onclick=function(){reviewAnswer(b.dataset.reviewId,b.dataset.review);};});
  var q=$("#search"); if(q)q.oninput=function(){state.search=q.value;save();updateLibrary();};
  var st=$("#status"); if(st)st.onchange=function(){state.status=st.value;save();updateLibrary();};
  if($("#export"))$("#export").onclick=exportState;
