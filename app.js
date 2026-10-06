@@ -387,9 +387,9 @@ function bindCards(root){
 function bind(){
  $$("[data-view]").forEach(function(b){b.onclick=function(){state.view=b.dataset.view;save();render();$("#nav [aria-current]").focus({preventScroll:true});};});
  bindCards($("#app"));
- $("[data-lab-prog]").forEach(function(b){b.onclick=function(){setLabProgress(b.dataset.labId,b.dataset.labProg);};});
- $("[data-proof-prog]").forEach(function(b){b.onclick=function(){setProofStatus(b.dataset.proofId,b.dataset.proofProg);};});
- $("[data-proof-evidence]").forEach(function(field){field.onchange=function(){setProofEvidence(field.dataset.proofEvidence,field.value);};});
+ $$("[data-lab-prog]").forEach(function(b){b.onclick=function(){setLabProgress(b.dataset.labId,b.dataset.labProg);};});
+ $$("[data-proof-prog]").forEach(function(b){b.onclick=function(){setProofStatus(b.dataset.proofId,b.dataset.proofProg);};});
+ $$("[data-proof-evidence]").forEach(function(field){field.onchange=function(){setProofEvidence(field.dataset.proofEvidence,field.value);};});
  $("[data-daily-quiz]").forEach(function(b){b.onclick=function(){dailyAnswer("quiz",Number(b.dataset.dailyQuiz));};});
  $$("[data-daily-english]").forEach(function(b){b.onclick=function(){dailyAnswer("english",Number(b.dataset.dailyEnglish));};});
  $$("[data-daily-mission]").forEach(function(b){b.onclick=dailyMissionDone;});
