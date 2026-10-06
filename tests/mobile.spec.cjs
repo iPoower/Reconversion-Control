@@ -65,6 +65,27 @@ async function main() {
     assert.equal(await page.locator("#app h2").first().textContent(), headings.path);
     passed("all eight navigation tabs and cockpit’s Voir le parcours work by touch");
 
+    const routeContext=await browser.newContext(profile);contexts.push(routeContext);
+    const routePage=await routeContext.newPage();routePage.on("pageerror",e=>errors.push(e.message));
+    await routePage.goto(server.url+"/#review");
+    assert.equal(await routePage.locator("#app h2").first().textContent(),headings.review);
+    assert.equal(await routePage.locator('#nav [data-view="review"]').getAttribute("aria-current"),"page");
+    await nav(routePage,"daily");assert.equal(new URL(routePage.url()).hash,"#daily");
+    await nav(routePage,"labs");assert.equal(new URL(routePage.url()).hash,"#labs");
+    await routePage.goBack();await routePage.waitForURL(/#daily$/);
+    assert.equal(await routePage.locator("#app h2").first().textContent(),headings.daily);
+    await routePage.goto(server.url+"/#topic/dns");
+    assert.equal(await routePage.locator("#detail h2").textContent(),"DNS");
+    assert.equal(await routePage.locator('#nav [data-view="library"]').getAttribute("aria-current"),"page");
+    await routePage.locator("#close").tap();await routePage.waitForURL(/#library$/);
+    assert.equal(await routePage.locator("#dlg").evaluate(el=>el.open),false);
+    const beforeSkip=new URL(routePage.url()).hash;
+    await routePage.locator("#skip-link").focus();await routePage.locator("#skip-link").press("Enter");
+    assert.equal(await routePage.evaluate(()=>document.activeElement.id),"app");
+    assert.equal(new URL(routePage.url()).hash,beforeSkip,"skip navigation must not corrupt the application route");
+    assert.equal(await routePage.locator("#build-id").textContent(),"dev");
+    passed("deep links, browser Back, direct topic links and skip navigation work without losing route state");
+
     await nav(page, "daily");
     assert.equal(await page.locator(".daily-round").count(),3);
     assert.equal(await page.locator(".daily-scoreboard span").count(),3);

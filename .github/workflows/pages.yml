@@ -29,11 +29,37 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
+      - name: Stamp tested build SHA
+        env:
+          BUILD_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          sha = os.environ["BUILD_SHA"]
+          if len(sha) < 12:
+              raise SystemExit("Invalid build SHA")
+          for name in ("index.html", "sw.js"):
+              path = Path(name)
+              text = path.read_text()
+              if "__BUILD_SHA__" not in text:
+                  raise SystemExit("Missing build placeholder in " + name)
+              path.write_text(text.replace("__BUILD_SHA__", sha))
+          PY
+
       - name: Validate JavaScript
         run: |
-          node --check data.js
           node --check app.js
+          node --check data.js
+          node --check course-foundations.js
+          node --check course-race.js
+          node --check course-operations.js
+          node --check learning.js
+          node --check english.js
+          node --check drive-learning.js
+          node --check daily-five.js
           node --check sw.js
+          python3 -c 'from pathlib import Path; assert "__BUILD_SHA__" not in Path("index.html").read_text(); assert "__BUILD_SHA__" not in Path("sw.js").read_text()'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

@@ -2,7 +2,7 @@
 
 PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, inspirée du cockpit de Race Control mais hébergée dans un dépôt totalement indépendant.
 
-## V2.0 — Adaptive learning · honest mastery + SRS V2
+## V2.1 — Navigable PWA · adaptive learning + verifiable builds
 
 - 9 domaines, 42 fiches essentielles conservées et 32 chapitres Race Control
 - parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec 32 étapes réordonnées selon leurs prérequis plutôt que selon l’ordre des supports source
@@ -23,7 +23,9 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 - portfolio Race Control
 - export/import local de progression
 - mode sombre / clair
-- PWA installable et cache hors ligne
+- PWA installable et cache hors ligne, deep links (`#daily`, `#review`, `#labs`, `#topic/<id>`), bouton Retour cohérent et raccourcis PWA
+- build GitHub Pages identifié par le SHA réellement testé ; cache Service Worker dérivé automatiquement de ce SHA
+- notification locale lorsqu’une nouvelle version PWA prend le contrôle
 - aucun analytics ni backend
 
 ## Confidentialité
@@ -55,7 +57,7 @@ Les commandes tactiles mesurent au moins 44 px. L’affichage prévoit les zones
 le paysage et une fenêtre de fiche qui défile indépendamment. Un stockage indisponible est signalé ;
 l’application reste utilisable pendant la session et permet d’exporter la progression.
 Le cache hors connexion ne conserve que les fichiers de cette application et respecte les caches
-des autres applications du même domaine GitHub Pages.
+des autres applications du même domaine GitHub Pages. Chaque déploiement Pages injecte le SHA exact validé par la CI dans l’HTML et le Service Worker afin que l’interface, les assets et le cache portent la même identité de build.
 
 Les cours sont lisibles sans réseau après un premier chargement complet et la mise en cache.
 Le navigateur peut effacer ce cache ; la progression doit être exportée pour disposer d’une sauvegarde.
@@ -71,3 +73,7 @@ des simulations navigateur ; une vérification sur l’iPhone réel complète ce
 Déploiement automatique depuis `main` via `.github/workflows/pages.yml`.
 
 URL cible : **https://ipoower.github.io/Reconversion-Control/**.
+
+### Limite de sécurité de l’hébergement statique
+
+La CSP reste déclarée dans le document pour les directives compatibles avec `<meta>`. La protection anti-framing doit être fournie par un en-tête HTTP `Content-Security-Policy` avec `frame-ancestors` ; elle n’est donc pas annoncée comme active tant que l’hébergement ne fournit pas cet en-tête.
