@@ -75,7 +75,9 @@ jobs:
           node --check cloud-ui.js
           node --check sw.js
       - name: Exercices probants et modules IT sourcés
-        run: node tests/deep-checks.cjs
+        run: |
+          node tests/deep-checks.cjs
+          node tests/cloud-sync.spec.cjs
       - name: Navigation, recherche et affichage iPhone
         env:
           BROWSER: ${{ matrix.browser }}
