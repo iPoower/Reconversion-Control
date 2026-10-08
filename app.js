@@ -70,6 +70,7 @@ var labCheckMessage=Object.create(null);
 var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, dailyUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0, detailRoutePushed=false, pendingRouteFocus=null;
 var state=load();
 var dailyState=dailyLoad();
+var syncBridge=null;
 function storageStatus(key,failed){if(failed)storageFailures[key]=true;else delete storageFailures[key];storageUnavailable=Object.keys(storageFailures).length>0;}
 function storageGet(key){try{var value=localStorage.getItem(key);storageStatus(key,false);return value;}catch(e){storageStatus(key,true);if(key===KEY)progressUnread=true;if(key===DAILY_KEY)dailyUnread=true;return null;}}
 function storageSet(key,value,replace){
@@ -203,7 +204,7 @@ function load(){
  initial.labs=labStateSanitize(j.labs,false);initial.proofs=proofStateSanitize(j.proofs,false);initial.labChecks=labChecksSanitize(j.labChecks,false);
  }catch(e){}return initial;
 }
-function save(replace){storageSet(KEY,JSON.stringify(state),replace);}
+function save(replace){storageSet(KEY,JSON.stringify(state),replace);if(syncBridge)syncBridge.changed();}
 function today(){var now=new Date();return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");}
 function addDays(d,n){var x=new Date(d+"T12:00:00Z");x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);}
 function daysBetween(a,b){return Math.round((Date.parse(a+"T12:00:00Z")-Date.parse(b+"T12:00:00Z"))/86400000);}
@@ -427,8 +428,20 @@ function review(){
 function reviewRow(x){
  return'<div class="review"><div><b>'+esc(x.t.title)+'</b><small>'+section(x.t.section).icon+" "+esc(section(x.t.section).label)+(x.r.lastRating?" · "+esc(x.r.lastRating.toUpperCase()):"")+'</small></div><span></span><div class="actions review-ratings"><button class="btn sm" data-review="again" data-review-id="'+x.id+'">Again</button><button class="btn sm" data-review="hard" data-review-id="'+x.id+'">Hard</button><button class="btn sm pri" data-review="good" data-review-id="'+x.id+'">Good</button><button class="btn sm pri" data-review="easy" data-review-id="'+x.id+'">Easy</button></div></div>';
 }
+
+function cloudSnapshot(){
+ return {version:2,progress:state.progress,review:state.review,labs:state.labs,proofs:state.proofs,labChecks:state.labChecks,dailyFive:dailyState};
+}
+function cloudRestore(o){
+ if(!plainObject(o)||o.version!==2)throw Error("Sauvegarde cloud incompatible");
+ var v=progression(o,true),labs=labStateSanitize(o.labs,true),proofs=proofStateSanitize(o.proofs,true),checks=labChecksSanitize(o.labChecks,true),daily=dailySanitize(o.dailyFive,true);
+ state.progress=v.progress;state.review=v.review;state.labs=labs;state.proofs=proofs;state.labChecks=checks;
+ dailyState=daily;dailySave(true);save(true);render();
+}
+
 function privacy(){
- return'<div class="grid2"><section class="mod"><div class="mh"><h2>Sources pédagogiques</h2><span class="src">7 SUPPORTS VÉRIFIÉS</span></div><p>'+RC_LESSONS.length+' chapitres adaptés du cours Race Control, recoupés avec le dossier prod15. Les PDF/DOCX originaux et la sauvegarde privée restent hors de l’application.</p><div id="support-coverage">'+RC_SUPPORTS.map(function(s){return'<article class="support" data-support-id="'+esc(s.id)+'" data-support-status="'+esc(s.status)+'"><h3>'+esc(s.title)+'</h3><p class="muted">'+esc(s.format)+' · '+esc(s.version)+'</p><p>'+esc(s.coverage)+'</p></article>';}).join("")+'</div><h3>Bibliothèque générale à compléter</h3><p class="muted">Les 42 fiches initiales sont des repères synthétiques. Les supports Race Control ne remplacent pas les cours complets de Linux, réseau, pentest, Kubernetes ou sécurité IA. Les références ci-dessous figuraient dans la bibliothèque ; leurs textes complets ne sont pas fournis dans ce lot.</p><ul>'+RC_SOURCES.filter(function(s){return s!=="Race Control expliqué de zéro à DevSecOps";}).map(function(s){return'<li>'+esc(s)+'</li>';}).join("")+'</ul></section><section class="mod"><div class="mh"><h2>Confidentialité</h2><span class="src">BY DESIGN</span></div><div class="privacy"><b>✅ Sources privées conservées hors du site</b><br>Aucun PDF/DOCX brut, aucune URL privée ni donnée de la sauvegarde dans le contenu publié.</div><div class="privacy"><b>✅ Progression locale</b><br>Statuts et révisions restent dans localStorage sur ton appareil.</div><div class="privacy"><b>✅ Aucun analytics / backend</b><br>L’application n’envoie pas ta progression.</div><div class="privacy"><b>✅ Cours hors ligne</b><br>Après un premier chargement complet avec réseau, les cours sont conservés sur l’appareil. Le navigateur peut effacer son cache ; ce n’est pas une sauvegarde de ta progression.</div><div class="privacy"><b>✅ Bibliothèque Drive cloisonnée</b><br>Les labs peuvent citer des références sélectionnées, mais aucun ID, URL Drive privée ni contenu intégral des livres n’est publié.</div><div class="actions"><button id="export" class="btn">Exporter</button><button id="import" class="btn">Importer</button><button id="reset" class="btn">Réinitialiser</button></div></section></div>';
+ var syncBlock='<section class="mod" id="rc-sync">'+(syncBridge?syncBridge.render():'Synchronisation non initialisée')+'</section>';
+ return'<div class="grid2"><section class="mod"><div class="mh"><h2>Sources pédagogiques</h2><span class="src">7 SUPPORTS VÉRIFIÉS</span></div><p>'+RC_LESSONS.length+' chapitres adaptés du cours Race Control, recoupés avec le dossier prod15. Les PDF/DOCX originaux et la sauvegarde privée restent hors de l’application.</p><div id="support-coverage">'+RC_SUPPORTS.map(function(s){return'<article class="support" data-support-id="'+esc(s.id)+'" data-support-status="'+esc(s.status)+'"><h3>'+esc(s.title)+'</h3><p class="muted">'+esc(s.format)+' · '+esc(s.version)+'</p><p>'+esc(s.coverage)+'</p></article>';}).join("")+'</div><h3>Bibliothèque générale à compléter</h3><p class="muted">Les 42 fiches initiales sont des repères synthétiques. Les supports Race Control ne remplacent pas les cours complets de Linux, réseau, pentest, Kubernetes ou sécurité IA. Les références ci-dessous figuraient dans la bibliothèque ; leurs textes complets ne sont pas fournis dans ce lot.</p><ul>'+RC_SOURCES.filter(function(s){return s!=="Race Control expliqué de zéro à DevSecOps";}).map(function(s){return'<li>'+esc(s)+'</li>';}).join("")+'</ul></section><section class="mod"><div class="mh"><h2>Confidentialité</h2><span class="src">BY DESIGN</span></div><div class="privacy"><b>✅ Sources privées conservées hors du site</b><br>Aucun PDF/DOCX brut, aucune URL privée ni donnée de la sauvegarde dans le contenu publié.</div><div class="privacy"><b>✅ Progression locale</b><br>Statuts et révisions restent dans localStorage sur ton appareil.</div><div class="privacy"><b>✅ Aucun analytics / backend</b><br>L’application n’envoie pas ta progression.</div><div class="privacy"><b>✅ Cours hors ligne</b><br>Après un premier chargement complet avec réseau, les cours sont conservés sur l’appareil. Le navigateur peut effacer son cache ; ce n’est pas une sauvegarde de ta progression.</div><div class="privacy"><b>✅ Bibliothèque Drive cloisonnée</b><br>Les labs peuvent citer des références sélectionnées, mais aucun ID, URL Drive privée ni contenu intégral des livres n’est publié.</div><div class="actions"><button id="export" class="btn">Exporter</button><button id="import" class="btn">Importer</button><button id="reset" class="btn">Réinitialiser</button></div></section>'+syncBlock+'</div>';
 }
 function detailProgress(ps){
  return'<div class="seg"><button class="learn '+(ps==="learn"?"on":"")+'" data-dprog="learn">À apprendre<small>Learn</small></button><button class="progress '+(ps==="progress"?"on":"")+'" data-dprog="progress">En cours<small>Learning</small></button><button class="mastered '+(ps==="mastered"?"on":"")+'" data-dprog="mastered">Acquis<small>Mastered</small></button></div>';
@@ -495,6 +508,7 @@ function bindCards(root){
  Array.from(root.querySelectorAll("[data-prog]")).forEach(function(b){b.onclick=function(e){e.stopPropagation();setProgress(b.dataset.id,b.dataset.prog);};});
 }
 function bind(){
+ if(syncBridge)syncBridge.bind();
  $$("[data-view]").forEach(function(b){b.onclick=function(){navigateView(b.dataset.view,false);};});
  bindCards($("#app"));
  $("[data-lab-prog]").forEach(function(b){b.onclick=function(){setLabProgress(b.dataset.labId,b.dataset.labProg);};});
@@ -543,5 +557,6 @@ if("serviceWorker" in navigator){
  navigator.serviceWorker.addEventListener("controllerchange",function(){if(hadController)showUpdateNotice();hadController=true;});
  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(function(reg){if(reg.waiting&&hadController)showUpdateNotice();}).catch(function(){});
 }
+syncBridge=RC_CLOUD_UI.attach({snapshot:cloudSnapshot,restore:cloudRestore,escape:esc});
 applyRoute();
 })();
