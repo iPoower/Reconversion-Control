@@ -26,11 +26,17 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 - PWA installable et cache hors ligne, deep links (`#daily`, `#review`, `#labs`, `#topic/<id>`), bouton Retour cohérent et raccourcis PWA
 - build GitHub Pages identifié par le SHA réellement testé ; cache Service Worker dérivé automatiquement de ce SHA
 - notification locale lorsqu’une nouvelle version PWA prend le contrôle
-- aucun analytics ni backend
+- aucun analytics ; aucun backend requis (synchronisation privée optionnelle)
+
+## Extensions : cours techniques, preuves et synchronisation (en préparation)
+
+- **12 modules originaux sourcés** ajoutés aux fiches Linux, réseau, Cloud et pentest autorisé. Il s'agit de compléments issus de documentation publique, **pas** d'une couverture intégrale des ouvrages privés manquants.
+- **5 labs sur 15** comportent maintenant un contrôleur de rendu JSON strict, avec explications des échecs et empreinte SHA-256 locale du fichier vérifié. Les 10 autres continuent d'utiliser l'autoévaluation. Aucun code utilisateur n'est exécuté.
+- **Synchronisation PC/iPhone opt-in**, documentée dans [docs/cloud-sync.md](docs/cloud-sync.md) : Supabase Email OTP et AES-256-GCM local, révisions conditionnelles et choix explicite des conflits. **Aucun projet Supabase n'est activé ni configuré par défaut.**
 
 ## Confidentialité
 
-Le dépôt public ne contient **aucun document Google Drive, aucun ID de fichier Drive et aucun lien privé**. Les sessions Daily Five sont également entièrement locales et n’envoient aucun score. Les sources affichées sont uniquement des références pédagogiques. La progression reste dans `localStorage`.
+Le dépôt public ne contient **aucun document Google Drive, aucun ID de fichier Drive et aucun lien privé**. Les sessions Daily Five sont également entièrement locales et n’envoient aucun score. Les sources affichées sont uniquement des références pédagogiques. La progression reste dans `localStorage` **par défaut**. Si l'utilisateur configure volontairement son propre projet Supabase et s'authentifie, une enveloppe chiffrée de progression peut être envoyée à ce projet ; aucune donnée n'est transmise sans activation.
 
 Les adaptations reprennent le cours débutant, le dossier technique prod-15 et leurs annexes.
 Les fiches d’architecture prod-8 sont des archives, le PDF et le DOCX du dossier sont deux formats
@@ -61,6 +67,8 @@ des autres applications du même domaine GitHub Pages. Chaque déploiement Pages
 
 Les cours sont lisibles sans réseau après un premier chargement complet et la mise en cache.
 Le navigateur peut effacer ce cache ; la progression doit être exportée pour disposer d’une sauvegarde.
+
+Tests complémentaires : `node tests/deep-checks.cjs` et `node tests/cloud-sync.spec.cjs`.
 
 Tests automatisés : `npm ci`, `npx playwright install chromium webkit`, puis
 `BROWSER=chromium npm test`, `BROWSER=chromium npm run test:learning` et les mêmes commandes avec
