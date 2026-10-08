@@ -145,7 +145,7 @@ function dailySanitize(value,strict){
  return out;
 }
 function dailyLoad(){try{return dailySanitize(JSON.parse(storageGet(DAILY_KEY)||"null"),false);}catch(e){return{days:{}};}}
-function dailySave(replace){storageSet(DAILY_KEY,JSON.stringify(dailyState),replace);}
+function dailySave(replace){storageSet(DAILY_KEY,JSON.stringify(dailyState),replace);if(syncBridge)syncBridge.changed();}
 function dailyRecord(date){return dailyState.days[date]||{};}
 function ensureDailyRecord(date,selection){
  if(!dailyState.days[date])dailyState.days[date]={};
