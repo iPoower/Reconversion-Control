@@ -17,6 +17,8 @@ const RC_CLOUD_UI = (() => {
  function repaint(){
   const root=typeof document!=="undefined"&&document.querySelector("#rc-sync");
   if(!root||!env)return;
+  const label=document.querySelector("#rc-storage-label");
+  if(label)label.textContent=mode==="active"?"CLOUD CHIFFRÉ · synchronisation active":mode==="setup"?"LOCAL · aucune progression envoyée":"LOCAL + CLOUD · connexion ou conflit en cours";
   root.innerHTML=view();bind();
  }
  function warn(t){status=t;repaint();}
