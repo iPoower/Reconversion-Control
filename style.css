@@ -209,3 +209,9 @@
 .rc-sync-form input{width:100%;min-height:44px;padding:.5rem;border-radius:8px;border:1px solid #667085;background:transparent;color:inherit;font:inherit}
 #rc-sync-status{overflow-wrap:anywhere}
 #rc-sync .actions{display:flex;gap:.5rem;flex-wrap:wrap}
+
+/* Correctif petit écran Safari : les fichiers natifs ne doivent pas imposer
+   leur largeur intrinsèque à la grille des 15 labs. */
+.lab-machine,.lab-body,.lab-proof-input{min-width:0;max-width:100%;box-sizing:border-box}
+.lab-proof-input input[type="file"]{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden;white-space:normal}
+.lab-machine p,.deep-dive-card p{overflow-wrap:anywhere}
