@@ -105,6 +105,12 @@ Les adaptations de cours sont publiques. Les PDF, DOCX, sauvegarde, données per
 | Dossier · Preuves CI historiques | 30 | `rc-25`, `rc-26` |
 | Dossier · Checklist de maintenance | 30–31 | `rc-29`, `rc-30` |
 
+## Compléments publics ajoutés le 8 octobre 2026
+
+Douze fiches disposent maintenant d'un **module original sourcé**, indépendant des documents privés et du PDF historique prod-15 : Linux `linux-fs`, `linux-perms`, `linux-process` ; réseau `ipv4`, `routing`, `dns` ; Cloud `shared`, `cloud-iam`, `vpc` ; pentest autorisé `method`, `recon`, `web`.
+
+Ces fiches comportent objectifs, explications, commande ou atelier contrôlé, question d'application, pièges et lien de référence publique. **Elles ne permettent pas d'affirmer que les ouvrages privés complets ont été étudiés**, ni de remplacer tous les cours manquants. Les indications ci-dessous continuent de décrire les *supports fournis au départ*.
+
 ## Limites des fiches générales
 
 L’audit des 42 fiches initiales distingue 11 fiches avec un approfondissement contextualisé, huit avec seulement des exemples ponctuels et 23 sans cours détaillé dans les pièces. Même un chapitre lié ne couvre pas toute la théorie du titre général : JavaScript ne remplace pas Python/Bash, et les échanges HTTP ne constituent pas un cours TLS exhaustif.
