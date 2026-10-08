@@ -7,9 +7,9 @@ const RC_EVIDENCE = (() => {
    title:"Filtrer des observations météo",task:"Rends un fichier JSON avec observations = [{time,temperature,rain}] pour trois heures 08:00 (4 °C, 0 mm), 09:00 (7 °C, 2 mm), 10:00 (11 °C, 1 mm). Ajoute rainy = [{time,temperature}] contenant seulement les deux heures avec rain > 0, dans l'ordre.",
    check:o=>[
     ["Trois observations d'entrée",Array.isArray(o.observations)&&o.observations.length===3],
-    ["Données d'entrée exactes",JSON.stringify(o.observations)===JSON.stringify([{time:"08:00",temperature:4,rain:0},{time:"09:00",temperature:7,rain:2},{time:"10:00",temperature:11,rain:1}])],
+    ["Données d'entrée exactes",Array.isArray(o.observations)&&o.observations.length===3&&o.observations.every((x,i)=>x&&x.time===["08:00","09:00","10:00"][i]&&x.temperature===[4,7,11][i]&&x.rain===[0,2,1][i])],
     ["Deux résultats filtrés",Array.isArray(o.rainy)&&o.rainy.length===2],
-    ["Filtre et mapping corrects",JSON.stringify(o.rainy)===JSON.stringify([{time:"09:00",temperature:7},{time:"10:00",temperature:11}])]
+    ["Filtre et mapping corrects",Array.isArray(o.rainy)&&o.rainy.length===2&&o.rainy.every((x,i)=>x&&x.time===["09:00","10:00"][i]&&x.temperature===[7,11][i]&&Object.keys(x).sort().join(",")==="temperature,time")]
    ]},
   "lab-04":{
    title:"Décomposer les permissions POSIX",task:"Rends un JSON {mode, owner, group, others} pour chmod 640 ; owner/group/others sont des tableaux de droits parmi read, write, execute, dans cet ordre.",
