@@ -202,3 +202,10 @@
 .rc-deep-dive{margin-top:1rem}
 .rc-deep-dive pre{white-space:pre-wrap;overflow-wrap:anywhere}
 .rc-deep-dive a{overflow-wrap:anywhere}
+
+/* Opt-in cloud sync — progressive enhancement, no remote data shown in inputs */
+.rc-sync-form{display:grid;gap:.75rem;margin:1rem 0}
+.rc-sync-form label{display:grid;gap:.25rem;font-size:.9rem}
+.rc-sync-form input{width:100%;min-height:44px;padding:.5rem;border-radius:8px;border:1px solid #667085;background:transparent;color:inherit;font:inherit}
+#rc-sync-status{overflow-wrap:anywhere}
+#rc-sync .actions{display:flex;gap:.5rem;flex-wrap:wrap}
