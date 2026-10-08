@@ -19,6 +19,9 @@ async function geometry(page, label) {
     const controls = [...document.querySelectorAll("button, input:not([type=file]), select")].filter(visible);
     return {
       width: innerWidth, overflow: document.documentElement.scrollWidth,
+      overflowCandidates:[...document.querySelectorAll("body *")].map(el=>{
+        const r=el.getBoundingClientRect();return {tag:el.tagName,className:typeof el.className==="string"?el.className:"",id:el.id,right:Math.round(r.right),left:Math.round(r.left),width:Math.round(r.width),text:((el.textContent||"").slice(0,32))};
+      }).filter(x=>x.right>innerWidth+1&&x.width>0).sort((a,b)=>b.right-a.right).slice(0,12),
       short: controls.map(el => ({label: el.textContent || el.id, rect: el.getBoundingClientRect().toJSON()})).filter(x => x.rect.height < 43.5 || x.rect.width < 43.5)
     };
   });
