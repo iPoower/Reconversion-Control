@@ -511,8 +511,8 @@ function bind(){
  if(syncBridge)syncBridge.bind();
  $$("[data-view]").forEach(function(b){b.onclick=function(){navigateView(b.dataset.view,false);};});
  bindCards($("#app"));
- $("[data-lab-prog]").forEach(function(b){b.onclick=function(){setLabProgress(b.dataset.labId,b.dataset.labProg);};});
- $("[data-lab-evidence]").forEach(function(f){f.onchange=function(){checkLabEvidence(f.dataset.labEvidence,f.files&&f.files[0]);};});
+ $$("[data-lab-prog]").forEach(function(b){b.onclick=function(){setLabProgress(b.dataset.labId,b.dataset.labProg);};});
+ $$("[data-lab-evidence]").forEach(function(f){f.onchange=function(){checkLabEvidence(f.dataset.labEvidence,f.files&&f.files[0]);};});
  $$("[data-proof-prog]").forEach(function(b){b.onclick=function(){setProofStatus(b.dataset.proofId,b.dataset.proofProg);};});
  $$("[data-proof-evidence]").forEach(function(field){field.onchange=function(){setProofEvidence(field.dataset.proofEvidence,field.value);};});
  $$("[data-daily-quiz]").forEach(function(b){b.onclick=function(){dailyAnswer("quiz",Number(b.dataset.dailyQuiz));};});
