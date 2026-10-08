@@ -58,6 +58,8 @@ jobs:
           node --check english.js
           node --check drive-learning.js
           node --check daily-five.js
+          node --check deep-dives.js
+          node --check evidence-checks.js
           node --check sw.js
           python3 -c 'from pathlib import Path; assert "__BUILD_SHA__" not in Path("index.html").read_text(); assert "__BUILD_SHA__" not in Path("sw.js").read_text()'
 
