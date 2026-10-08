@@ -215,3 +215,9 @@
 .lab-machine,.lab-body,.lab-proof-input{min-width:0;max-width:100%;box-sizing:border-box}
 .lab-proof-input input[type="file"]{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden;white-space:normal}
 .lab-machine p,.deep-dive-card p{overflow-wrap:anywhere}
+
+/* Safari 320px : ne pas laisser le nouveau titre de cours élargir la page. */
+@media(max-width:430px){
+ .deep-dives-overview .mh h2{min-width:0;max-width:100%;font-size:clamp(15px,5vw,21px);letter-spacing:.01em;overflow-wrap:anywhere}
+ .deep-dives-overview .mh{min-width:0;max-width:100%}
+}
