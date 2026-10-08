@@ -75,6 +75,8 @@ async function main() {
     await routePage.goBack();await routePage.waitForURL(/#daily$/);
     assert.equal(await routePage.locator("#app h2").first().textContent(),headings.daily);
     await routePage.goto(server.url+"/#topic/dns");
+    await routePage.waitForTimeout(150);
+    if(await routePage.locator("#detail h2").count()===0){console.error("DIAG topic DNS:",JSON.stringify({errors,hash:new URL(routePage.url()).hash,html:(await routePage.locator("#app").innerHTML()).slice(0,500)}));}
     assert.equal(await routePage.locator("#detail h2").textContent(),"DNS");
     assert.equal(await routePage.locator('#nav [data-view="library"]').getAttribute("aria-current"),"page");
     await routePage.locator("#close").tap();await routePage.waitForURL(/#library$/);
