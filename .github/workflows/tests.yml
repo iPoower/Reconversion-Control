@@ -69,7 +69,11 @@ jobs:
           node --check english.js
           node --check drive-learning.js
           node --check daily-five.js
+          node --check deep-dives.js
+          node --check evidence-checks.js
           node --check sw.js
+      - name: Exercices probants et modules IT sourcés
+        run: node tests/deep-checks.cjs
       - name: Navigation, recherche et affichage iPhone
         env:
           BROWSER: ${{ matrix.browser }}
