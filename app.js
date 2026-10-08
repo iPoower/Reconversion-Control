@@ -169,7 +169,7 @@ function deepDiveHtml(d){
 }
 function deepDiveOverview(){
  var all=Object.entries(RC_DEEP_DIVES);
- return'<section class="mod"><div class="mh"><h2>📘 Approfondissements IT</h2><span class="src">'+all.length+' MODULES</span></div><p class="muted">Linux, réseau, Cloud et pentest autorisé : explications, atelier et référence publique. Ils complètent les 32 chapitres Race Control.</p><div class="grid3">'+all.map(function(entry){var id=entry[0],d=entry[1];return'<article class="deep-dive-card"><span class="src">'+esc(section(topic(id).section).label)+'</span><h3>'+esc(d.label)+'</h3><p>'+esc(d.objectives[0])+'</p><button class="btn" data-open="'+esc(id)+'">Étudier · Open</button></article>';}).join("")+'</div></section>';
+ return'<section class="mod deep-dives-overview"><div class="mh"><h2>📘 Approfondissements IT</h2><span class="src">'+all.length+' MODULES</span></div><p class="muted">Linux, réseau, Cloud et pentest autorisé : explications, atelier et référence publique. Ils complètent les 32 chapitres Race Control.</p><div class="grid3">'+all.map(function(entry){var id=entry[0],d=entry[1];return'<article class="deep-dive-card"><span class="src">'+esc(section(topic(id).section).label)+'</span><h3>'+esc(d.label)+'</h3><p>'+esc(d.objectives[0])+'</p><button class="btn" data-open="'+esc(id)+'">Étudier · Open</button></article>';}).join("")+'</div></section>';
 }
 function labEvidenceHtml(lab){
  var c=RC_EVIDENCE.cases[lab.id];if(!c)return"";
