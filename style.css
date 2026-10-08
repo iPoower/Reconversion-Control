@@ -192,3 +192,13 @@
 .update-notice[hidden]{display:none!important}
 .update-notice span{font-weight:700}
 @media(max-width:430px){.update-notice{align-items:stretch;flex-direction:column}.update-notice .btn{width:100%}}
+
+/* Exercices à preuve locale et fiches IT approfondies */
+.lab-machine{margin-top:1rem;padding:1rem;border:1px solid var(--border,#445);border-radius:12px;background:rgba(110,120,140,.06)}
+.lab-machine h4,.rc-deep-dive h4{margin:.7rem 0 .3rem}
+.lab-proof-input{display:flex;flex-direction:column;gap:.5rem;font-weight:600}
+.lab-proof-input input{font:inherit;max-width:100%;min-height:44px}
+.lab-evidence-status{font-size:.9rem;overflow-wrap:anywhere;white-space:normal}
+.rc-deep-dive{margin-top:1rem}
+.rc-deep-dive pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.rc-deep-dive a{overflow-wrap:anywhere}
