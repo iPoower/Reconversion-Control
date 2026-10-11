@@ -221,3 +221,14 @@
  .deep-dives-overview .mh h2{min-width:0;max-width:100%;font-size:clamp(15px,5vw,21px);letter-spacing:.01em;overflow-wrap:anywhere}
  .deep-dives-overview .mh{min-width:0;max-width:100%}
 }
+
+/* Réalisations publiques : réutilise la grille, détails fermés et cibles existants. */
+.project-card{min-width:0;border:1px solid var(--l);border-radius:6px;padding:14px;background:var(--p);display:flex;flex-direction:column;gap:12px;overflow-wrap:anywhere}
+.project-card h3,.project-card p{margin:0}
+.project-card>small{color:var(--fg2)}
+.project-card>.btn{margin-top:auto}
+.project-evidence,.public-source-body{padding:16px 0}
+.project-evidence ul,.lesson-sources ul{padding-left:20px}
+.public-sources>summary{min-height:44px;cursor:pointer;font-weight:700;overflow-wrap:anywhere}
+.recent-work .actions{margin-top:12px}
+.lesson-sources .actions{margin:8px 0 16px}

@@ -126,3 +126,159 @@ const RC_LABS=[
 ];
 
 function rcDriveSource(id){return RC_DRIVE_SOURCES.find(function(source){return source.id===id;})||null;}
+
+// Labs originaux fondés sur des sources publiques. Validation manuelle, indépendante.
+RC_LABS.push.apply(RC_LABS, [
+  {
+    "id": "lab-16",
+    "level": "pro",
+    "section": "fundamentals",
+    "topic": "rc-33",
+    "minutes": 25,
+    "title": "UX mobile · audit d’un formulaire vivant",
+    "enTitle": "Mobile UX · a form under background refresh",
+    "sources": [
+      "public-ux93"
+    ],
+    "goal": "Reproduire une actualisation pendant la saisie et documenter des critères de qualité mobile.",
+    "steps": [
+      "Ouvre un profil fictif et une largeur 414 × 896, puis 320 px ; garde les données personnelles hors des captures.",
+      "Choisis un formulaire, saisis un brouillon et ouvre un détail secondaire.",
+      "Déclenche une actualisation prévue par l’application et observe valeur, curseur, focus et détail ouvert.",
+      "Capture le rendu avant/après, mesure les zones tactiles et vérifie l’absence de débordement.",
+      "Note séparément ce qui exige encore un clavier iOS ou un iPhone réel."
+    ],
+    "expected": "Une courte fiche d’audit avec captures fictives, reproduction, résultat et limite explicite.",
+    "check": [
+      "La valeur saisie et le focus restent stables.",
+      "Le danger et l’action utile restent visibles.",
+      "Les contrôles font au moins 44 px dans le scénario testé.",
+      "Aucune validation sur téléphone physique n’est inventée."
+    ],
+    "english": "Explain how progressive disclosure and stable input focus improve daily mobile use.",
+    "public": true
+  },
+  {
+    "id": "lab-17",
+    "level": "pro",
+    "section": "security",
+    "topic": "rc-37",
+    "minutes": 30,
+    "title": "Coffre · échec d’import sans perte",
+    "enTitle": "Vault · failed import without data loss",
+    "sources": [
+      "public-vault",
+      "public-origin"
+    ],
+    "goal": "Préparer et vérifier une matrice d’échecs de stockage avec uniquement des données de test.",
+    "steps": [
+      "Utilise une copie locale de test, une phrase fictive et une sauvegarde synthétique ; ne teste jamais sur le coffre personnel.",
+      "Définis les états avant/après pour bonne phrase, mauvaise phrase, enveloppe altérée et écriture refusée.",
+      "Pour chaque refus, vérifie que le dernier état persistant valide reste lisible.",
+      "Explique les différences entre session ouverte, verrouillage manuel et changement d’origine.",
+      "Conserve un rapport expurgé, sans mot de passe, calendrier ni coordonnées réelles."
+    ],
+    "expected": "Un tableau de cas positifs et négatifs avec la preuve que le refus préserve les données.",
+    "check": [
+      "Le clair n’est supprimé qu’après une relecture réussie.",
+      "Le test couvre un quota ou refus d’écriture.",
+      "Aucune clé réelle n’est publiée.",
+      "Deux chemins du même hôte ne sont pas décrits comme isolés."
+    ],
+    "english": "Explain how you verify data preservation after a rejected encrypted import.",
+    "public": true
+  },
+  {
+    "id": "lab-18",
+    "level": "pro",
+    "section": "devsecops",
+    "topic": "rc-39",
+    "minutes": 20,
+    "title": "CI/CD · relier PR, SHA et production",
+    "enTitle": "CI/CD · trace a pull request to the served build",
+    "sources": [
+      "public-deploy",
+      "public-ux93",
+      "public-actions"
+    ],
+    "goal": "Construire une preuve de livraison complète à partir d’une PR publique réellement fusionnée.",
+    "steps": [
+      "Choisis une PR publique fusionnée et note son HEAD, son commit fusionné et l’heure de fusion.",
+      "Retrouve les runs sur le bon SHA ; vérifie tous les lots obligatoires et leur conclusion.",
+      "Identifie le build publié et la preuve de version réellement servie.",
+      "Explique le comportement attendu si cinq pushes sont refusés.",
+      "Rédige une conclusion qui distingue CI, publication et inspection visuelle."
+    ],
+    "expected": "Une chaîne de références publiques datées ; tout contrôle non obtenu reste marqué non vérifié.",
+    "check": [
+      "Le SHA fusionné peut différer du HEAD après squash.",
+      "Tous les shards sont présents.",
+      "Un job vert seul ne confirme pas la version HTTP.",
+      "Aucune protection native d’un autre dépôt n’est supposée."
+    ],
+    "english": "Walk me through the evidence from pull request to live deployment.",
+    "public": true
+  },
+  {
+    "id": "lab-19",
+    "level": "pro",
+    "section": "security",
+    "topic": "rc-40",
+    "minutes": 20,
+    "title": "Diagnostic · expurger les logs et garder le signal",
+    "enTitle": "Diagnostics · redact private data without hiding failures",
+    "sources": [
+      "public-relay",
+      "public-debrief"
+    ],
+    "goal": "Décrire des diagnostics utiles et des doublons possibles sans fuite ni suppression automatique.",
+    "steps": [
+      "Crée trois erreurs fictives : HTTP 503, délai dépassé et JSON invalide.",
+      "Propose un message public pour chacune, avec fournisseur et catégorie, sans URL brute.",
+      "Crée deux événements fictifs proches ; indique pourquoi ils ne sont pas forcément identiques.",
+      "Décris « Plus tard », pause quotidienne et nouvelle arrivée sans perdre le journal.",
+      "Ajoute un cas de prévision absente et annonce la comparaison indisponible."
+    ],
+    "expected": "Messages expurgés et mini-matrice de transitions avec les données fictives préservées.",
+    "check": [
+      "Aucune coordonnée, clé ou URL privée dans les messages.",
+      "Les catégories d’échec restent distinguables.",
+      "Le doublon possible ne déclenche aucune fusion destructive.",
+      "La donnée absente n’obtient pas un score inventé."
+    ],
+    "english": "Explain how data minimization can improve diagnostics without hiding a failure.",
+    "public": true
+  },
+  {
+    "id": "lab-20",
+    "level": "pro",
+    "section": "portfolio",
+    "topic": "rc-42",
+    "minutes": 30,
+    "title": "Portfolio · trois projets, preuves et limites",
+    "enTitle": "Portfolio · three projects, evidence and limits",
+    "sources": [
+      "public-ux93",
+      "public-reconversion",
+      "public-control-vault",
+      "public-cv-crypto"
+    ],
+    "goal": "Préparer un pitch honnête et une trace personnelle distincte du code livré.",
+    "steps": [
+      "Rédige une phrase FR et une phrase EN pour Race Control, Reconversion Control et Control Vault.",
+      "Pour chaque projet, choisis une preuve publique et une décision que tu sais expliquer.",
+      "Indique ton rôle personnel et celui de l’assistance ; ne copie pas une expertise que tu ne peux pas défendre.",
+      "Présente Control Vault comme prototype à données fictives, sans connexion réelle ni sauvegarde durable.",
+      "Ajoute seulement une preuve expurgée dans ton Evidence Locker local ; laisse le statut à construire tant que tu ne peux pas expliquer le cas."
+    ],
+    "expected": "Un pitch de 90 secondes et une liste de preuves, limites et prochains exercices.",
+    "check": [
+      "Les trois projets ont des statuts exacts.",
+      "La phrase anglaise est expliquée, pas simplement récitée.",
+      "Aucune certification ou idée de projet n’est marquée livrée.",
+      "La validation du lab ne change pas le statut du cours ou de la preuve."
+    ],
+    "english": "Present your three projects and explain one trade-off and one remaining limitation for each.",
+    "public": true
+  }
+]);
