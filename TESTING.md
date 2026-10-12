@@ -39,7 +39,7 @@ Playwright ne permet pas de piloter les Service Workers de WebKit.
 - [x] aucun analytics ; backend requis uniquement si la synchronisation personnelle est activée volontairement
 - [x] aucun lien/ID Google Drive privé dans le build
 - [x] vérification de la version publique de référence lors de l’audit initial
-- [ ] V2.2 publiée : à confirmer par CI main, workflow Pages et SHA du HTML servi
+- Résultat de livraison V2.2 : [PR #18](https://github.com/iPoower/Reconversion-Control/pull/18), avec CI, workflow Pages et SHA du HTML servi consignés après confirmation.
 - [ ] installation écran d'accueil iPhone
 - [x] cache offline après première visite (test automatisé Chromium)
 - [ ] validation manuelle sur l’iPhone 11 Pro Max réel, Safari et écran d’accueil

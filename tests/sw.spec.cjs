@@ -120,6 +120,7 @@ async function main() {
     await page.locator('[data-project="control-vault"] summary').tap();
     assert.match(await page.locator('[data-project="control-vault"] .project-evidence').textContent(),/Aucune connexion/);
     passed("recent vault lesson and three-project portfolio remain readable offline without opening external references");
+    await page.locator('#nav [data-view="library"]').tap();
 
     const aliases = await page.evaluate(async () => {
       const files = ["app.js?v=99","data.js?v=2","style.css?v=99","manifest.webmanifest?v=2","assets/icon-192.png?v=99","course-foundations.js?v=99","course-race.js?v=2","course-operations.js?v=99","learning.js?v=2"];

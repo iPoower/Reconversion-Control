@@ -81,3 +81,22 @@ Aucune protection ni permission administrative n'est modifiée par cette mise à
 
 Résultats CI, captures examinées, commit fusionné et contrôle HTTP de publication seront consignés dans la PR.
 Aucun essai sur iPhone physique ne peut être revendiqué à partir de WebKit simulé.
+
+
+## Examen des captures
+
+Les captures de [la CI a647633](https://github.com/iPoower/Reconversion-Control/actions/runs/38186521669)
+ont été téléchargées et leur archive comparée au SHA-256 publié par GitHub.
+Chromium : cours récents, prototype, portfolio replié/ouvert, petit écran 320 px, iPhone 414 px et PC 1280 px examinés.
+Les textes restent lisibles et les actions sont distinctes, sans débordement.
+Les nouveaux titres de cours ont été raccourcis après cette lecture ; les anciens chapitres ne changent pas.
+Les vues portfolio et accueil des cours ci-dessous ne sont pas modifiées par ce raccourcissement.
+Le socle conserve sa grande typographie et ses explications ; une nouvelle refonte globale n’est pas incluse ici.
+
+- [PC avant, production V2.1](recent-realizations-20261012/pc-course-before.jpg), capture directe de l’interface publiée.
+- [Nouveaux cours, Chromium 414 × 715](recent-realizations-20261012/iphone-recent-courses.png).
+- [Portfolio avec preuves ouvertes, Chromium 414 × 896](recent-realizations-20261012/414-project-portfolio.png).
+- [Trois projets sur PC 1280 × 900](recent-realizations-20261012/1280-project-portfolio.png).
+
+Les trois dernières captures sont issues de fixtures sans progression personnelle.
+La CI finale doit repasser sur le SHA qui contient les libellés raccourcis et le test hors ligne corrigé.

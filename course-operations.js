@@ -234,7 +234,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-33",
     "chapter": 33,
     "section": "fundamentals",
-    "title": "UX mobile · simplifier sans perdre une fonction",
+    "title": "UX mobile · détails sans surcharge",
     "summary": "Le cas prod93 : verdict, décision et action avant les détails, avec des formulaires stables sur iPhone.",
     "tags": [
       "prod93",
@@ -301,7 +301,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-34",
     "chapter": 34,
     "section": "portfolio",
-    "title": "Garage & six modules F1 · une seule source de vérité",
+    "title": "Garage & F1 · source unique",
     "summary": "Présenter les fonctions réellement livrées sans inventer des mesures, un trajet alternatif ou de la télémétrie.",
     "tags": [
       "Garage",
@@ -371,7 +371,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-35",
     "chapter": 35,
     "section": "fundamentals",
-    "title": "Données · mesuré, estimé, indisponible",
+    "title": "Données · mesure ou estimation",
     "summary": "Les corrections météo et pneus récentes montrent pourquoi la provenance compte autant que la valeur affichée.",
     "tags": [
       "provenance",
@@ -441,7 +441,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-36",
     "chapter": 36,
     "section": "devsecops",
-    "title": "Agenda & trajet · départ personnalisé sans divergence",
+    "title": "Agenda · départs personnalisés",
     "summary": "Le choix d’origine d’un rendez-vous s’applique au trajet existant, avec recalcul cohérent et reprise hors ligne.",
     "tags": [
       "agenda",
@@ -511,7 +511,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-37",
     "chapter": 37,
     "section": "security",
-    "title": "Coffre local · chiffrement, session et limites",
+    "title": "Coffre · chiffrement & session",
     "summary": "AES-256-GCM et PBKDF2 protègent les données au repos ; la session et l’origine Web restent des frontières importantes.",
     "tags": [
       "AES-GCM",
@@ -528,7 +528,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "title": "Du code d’accès à une clé",
         "body": [
-          "Le coffre local Race Control prod93 utilise AES-256-GCM et PBKDF2-HMAC-SHA-256 à 600 000 itérations, avec sel de 16 octets et nouvel IV de 12 octets à chaque écriture. Le sel ne remplace pas une phrase secrète longue ; la dérivation augmente le coût des essais.",
+          "Cette protection au repos exige le mode chiffré ; le mode sans code peut conserver des données en clair. Le coffre local Race Control prod93 utilise AES-256-GCM et PBKDF2-HMAC-SHA-256 à 600 000 itérations, avec sel de 16 octets et nouvel IV de 12 octets à chaque écriture. Le sel ne remplace pas une phrase secrète longue ; la dérivation augmente le coût des essais.",
           "Un fichier chiffré public peut être copié puis soumis à des essais hors ligne. Une limite d’essais affichée dans une interface ne bloque pas ces essais. La difficulté de deviner la phrase reste essentielle, et un hash d’intégrité ne constitue pas à lui seul un chiffrement."
         ]
       },
@@ -586,7 +586,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-38",
     "chapter": 38,
     "section": "devsecops",
-    "title": "CI sécurisée · code de PR, secrets et protections",
+    "title": "CI · secrets et contrôles",
     "summary": "Une CI fiable sépare code non fiable, données fictives et secrets de production, puis valide le bon SHA.",
     "tags": [
       "GitHub Actions",
@@ -657,7 +657,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-39",
     "chapter": 39,
     "section": "devsecops",
-    "title": "Livraison · prouver le commit réellement servi",
+    "title": "Livraison · vérifier la version servie",
     "summary": "La chaîne PR → CI → publication → HTTP doit confirmer la version livrée, y compris quand des pushes échouent.",
     "tags": [
       "SHA",
@@ -732,7 +732,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-40",
     "chapter": 40,
     "section": "security",
-    "title": "Diagnostic · logs privés et doublons possibles",
+    "title": "Diagnostics · protéger les données",
     "summary": "Conserver un diagnostic utile sans publier les coordonnées ni fusionner des événements sur une simple ressemblance.",
     "tags": [
       "logs",
@@ -803,7 +803,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-41",
     "chapter": 41,
     "section": "portfolio",
-    "title": "Reconversion Control · apprentissage, preuves et cloud optionnel",
+    "title": "Reconversion · cours, labs et preuves",
     "summary": "Notre deuxième projet : PWA bilingue, cinq minutes par jour, révisions adaptatives et progression indépendante des preuves.",
     "tags": [
       "Reconversion Control",
@@ -869,7 +869,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
     "id": "rc-42",
     "chapter": 42,
     "section": "portfolio",
-    "title": "Control Vault & portfolio · présenter trois projets honnêtement",
+    "title": "Control Vault · prototype & portfolio",
     "summary": "Notre troisième projet est un prototype avec moteurs réels sur données fictives : il complète les preuves Race et Reconversion.",
     "tags": [
       "Control Vault",
