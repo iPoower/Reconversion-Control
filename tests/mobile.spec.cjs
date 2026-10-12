@@ -54,7 +54,7 @@ async function main() {
     await nav(page, "cockpit");
     assert.equal(await page.locator(".mission-card").count(),3);
     assert.equal(await page.locator(".session-recipe span").count(),3);
-    assert.equal(await page.locator(".portfolio-proofs .proof-card").count(),7);
+    assert.equal(await page.locator(".portfolio-proofs .proof-card").count(),12);
     assert.equal(await page.locator(".interview-lab").count(),1);
     assert.equal(await page.locator(".study-pulse .pulse").count(),4);
     assert.match(await page.locator(".mission-card.english").textContent(),/English challenge/);

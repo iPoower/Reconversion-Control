@@ -252,6 +252,7 @@ async function main() {
     await page.locator("#public-coverage > summary").tap();
     assert.equal(await page.locator("[data-public-source]").count(),14);
     assert.equal(await page.locator("#public-coverage a").evaluateAll(links=>links.every(a=>a.protocol==="https:"&&a.rel.includes("noreferrer"))),true);
+    await geometry(page,"expanded public-source links");
     passed("recent public sources are folded and separate from the seven private historical references");
     await nav(page,"labs");
     for(const id of ["lab-16","lab-17","lab-18","lab-19","lab-20"]) {
@@ -363,6 +364,8 @@ async function main() {
       await layout.page.locator("#close").tap();
       await nav(layout.page,"privacy");
       await geometry(layout.page,viewport.width+" source coverage");
+      await layout.page.locator("#public-coverage > summary").tap();
+      await geometry(layout.page,viewport.width+" expanded public-source links");
       await nav(layout.page,"path");
       for(const details of await layout.page.locator(".project-portfolio details").all())await details.locator("summary").tap();
       await geometry(layout.page,viewport.width+" public project evidence");
