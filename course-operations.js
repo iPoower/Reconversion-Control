@@ -227,3 +227,721 @@ const RC_COURSE_OPERATIONS = [
     sources: [{id: "course-prod15", pages: "33–39"}, {id: "dossier-prod15", pages: "29–31"}]
   }
 ];
+
+// Cas récents originaux ; le socle historique et ses identifiants sont conservés.
+RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
+  {
+    "id": "rc-33",
+    "chapter": 33,
+    "section": "fundamentals",
+    "title": "UX mobile · détails sans surcharge",
+    "summary": "Le cas prod93 : verdict, décision et action avant les détails, avec des formulaires stables sur iPhone.",
+    "tags": [
+      "prod93",
+      "UX",
+      "WebKit",
+      "focus"
+    ],
+    "goals": [
+      "Séparer information essentielle, contexte utile et détail expert.",
+      "Préserver une saisie et le focus pendant une actualisation.",
+      "Distinguer contrôle automatique, capture et essai sur appareil réel."
+    ],
+    "sections": [
+      {
+        "title": "Une lecture en trois niveaux",
+        "body": [
+          "L’interface prod93 conserve Pneus, Météo, Garage, Analyse et Trajet, leurs couleurs F1 et les mêmes moteurs. Le premier niveau donne l’information principale et l’action utile. Les mesures, chronologies et calculs passent dans des détails dépliables : simplifier la présentation ne retire pas une fonction métier.",
+          "Un danger utile à la décision doit rester visible. Une pression basse ne devient pas un diagnostic caché pour gagner de la place. Sur Garage, on affiche le compteur réellement enregistré ; l’absence de kilométrage reste une absence, sans échéance fabriquée."
+        ]
+      },
+      {
+        "title": "Le rendu fait partie du comportement",
+        "body": [
+          "Une actualisation peut détruire puis recréer un bouton ou un champ. Le dessin paraît identique, mais un appui en cours, le curseur, un brouillon ou un menu disparaissent. Conserver les nœuds inchangés et restaurer les détails ouverts réduit cette régression.",
+          "Sur mobile, les commandes font au moins 44 px et les champs 16 px dans ce projet. Ce sont des choix ergonomiques testés ici, pas une preuve globale de conformité accessibilité. On contrôle les petites largeurs, les textes longs, les détails ouverts et la navigation au clavier."
+        ],
+        "code": "avant : focus + valeur + section ouverte\nactualisation : ne remplacer que le contenu qui change\naprès : même commande accessible, même brouillon"
+      },
+      {
+        "title": "Ce que les preuves disent vraiment",
+        "body": [
+          "La PR #118 a validé 146 exécutions : 46 unitaires, 52 Chromium, 48 WebKit, avec trois shards par navigateur. Les rendus 414 × 896, 375 et 320 px et PC complètent les tests de navigation, persistance et hors ligne.",
+          "Les captures ont été examinées. WebKit simulé n’est pas un iPhone physique, et la compréhension en trois secondes n’a pas été mesurée auprès d’utilisateurs. Une présentation professionnelle cite cette limite au lieu de transformer un objectif en résultat."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Cacher une alerte critique dans une section expert.",
+      "Confondre une carte moins haute et une interface mieux comprise.",
+      "Annoncer une validation iPhone réelle à partir d’une simulation."
+    ],
+    "interview": {
+      "question": "Comment prouver qu’une simplification mobile conserve les fonctionnalités ?",
+      "answer": "Je conserve les mêmes sources et moteurs, puis je teste les mêmes actions avec les détails fermés et ouverts. Je vérifie focus, brouillon, persistance, import et hors ligne sur Chromium et WebKit. Enfin j’examine les captures, et je distingue ces simulations d’un essai sur l’appareil réel."
+    },
+    "exercise": {
+      "prompt": "Décris un formulaire qui reçoit une actualisation météo pendant la saisie. Liste quatre critères de réussite et une limite de tes tests.",
+      "answer": "La valeur et le curseur restent cohérents, le focus reste dans le champ, les détails ouverts restent ouverts et aucun débordement horizontal n’apparaît. L’action utile reste atteignable au doigt. Un clavier iOS réel ou un retour depuis Waze reste à vérifier sur appareil physique."
+    },
+    "sources": [
+      {
+        "id": "public-ux93",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "web-stack",
+      "race-tests",
+      "race-arch"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-34",
+    "chapter": 34,
+    "section": "portfolio",
+    "title": "Garage & F1 · source unique",
+    "summary": "Présenter les fonctions réellement livrées sans inventer des mesures, un trajet alternatif ou de la télémétrie.",
+    "tags": [
+      "Garage",
+      "F1",
+      "opt-in",
+      "source de vérité"
+    ],
+    "goals": [
+      "Nommer les six extensions et leur rôle.",
+      "Différencier option de présentation et moteur de décision.",
+      "Présenter honnêtement un compteur ou un historique manquant."
+    ],
+    "sections": [
+      {
+        "title": "Les six extensions réellement livrées",
+        "body": [
+          "Race Engineer propose un briefing tiré du verdict et de la confiance existants. Track Conditions présente des secteurs issus des points météo déjà calculés. Tyre Management reprend monte, profondeur déclarée, pression cible et compteur existant.",
+          "Strategy A/B compare deux évaluations pneumatiques sur le même parcours. The Garage présente les fiches et relevés déjà renseignés. Telemetry Replay confronte le débrief existant à la prévision : il ne crée ni télémétrie automobile, ni ancien parcours GPS, ni capteur."
+        ]
+      },
+      {
+        "title": "Opt-in et cohérence",
+        "body": [
+          "Les six options ont été livrées individuellement désactivées par défaut. Leurs réglages utilisent les paramètres personnels chiffrés existants. La refonte mobile les conserve ; elle ne force pas leur activation ni un nouveau stockage.",
+          "Le module lit un résultat issu du moteur existant. S’il recalculait un second verdict avec des règles différentes, l’utilisateur pourrait recevoir deux recommandations concurrentes. La présentation doit expliquer le verdict, sa source et sa limite."
+        ],
+        "code": "mesures / réglages existants → moteur unique → verdict\n                                              ↘ modules F1"
+      },
+      {
+        "title": "Garage et maintenance",
+        "body": [
+          "L’onglet Garage remplace l’ancien onglet Tenue et met le véhicule actif au premier plan. Les deux véhicules et leurs historiques sont conservés. Un kilométrage enregistré n’est pas un kilométrage live : on le libelle selon sa provenance.",
+          "Une intervention utile peut être suggérée à partir d’un contrôle existant, mais sans inventer une date ou un compteur. Pour le portfolio, une capture utilise un profil fictif et décrit ce qui est disponible, estimé ou absent."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Présenter Strategy A/B comme deux itinéraires optimisés.",
+      "Dire que Telemetry Replay collecte des capteurs du véhicule.",
+      "Créer une seconde copie du kilométrage pour une nouvelle carte."
+    ],
+    "interview": {
+      "question": "Quelle différence fais-tu entre un module F1 et une nouvelle source de données ?",
+      "answer": "Le module est une vue sur les résultats et réglages existants. Il apporte une lecture plus pratique sans fabriquer une mesure ou concurrencer le moteur de décision. Je peux expliquer chaque source, signaler les données absentes et vérifier que désactiver l’option ne modifie pas les données métier."
+    },
+    "exercise": {
+      "prompt": "Un véhicule n’a aucun relevé de compteur. Écris le texte de la carte Garage et celui d’une comparaison Strategy A/B.",
+      "answer": "Garage : « Kilométrage non renseigné » avec une action pour ouvrir la fiche du véhicule. Strategy A/B : « Comparaison de deux montes sur le même trajet » ; aucun gain de temps ou itinéraire alternatif n’est annoncé sans donnée correspondante."
+    },
+    "sources": [
+      {
+        "id": "public-f1",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-ux93",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "race-arch",
+      "race-privacy"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-35",
+    "chapter": 35,
+    "section": "fundamentals",
+    "title": "Données · mesure ou estimation",
+    "summary": "Les corrections météo et pneus récentes montrent pourquoi la provenance compte autant que la valeur affichée.",
+    "tags": [
+      "provenance",
+      "estimation",
+      "confiance",
+      "GPS"
+    ],
+    "goals": [
+      "Distinguer mesure, prévision et estimation.",
+      "Relier la fraîcheur au bon relevé ou essieu.",
+      "Signaler une donnée absente sans donner un faux verdict rassurant."
+    ],
+    "sections": [
+      {
+        "title": "Une valeur doit conserver son origine",
+        "body": [
+          "Une profondeur saisie est une mesure déclarée. Une usure projetée est un calcul. Une durée de trajet issue d’un fournisseur est une estimation. Ces valeurs peuvent toutes être utiles, mais elles ne justifient pas le même niveau de confiance.",
+          "Une date récente sur un essieu ne rend pas l’autre essieu récemment mesuré. Les corrections pneus conservent la provenance de chaque relevé et des projections cohérentes. Le libellé permet de savoir quelle mesure soutient la recommandation."
+        ]
+      },
+      {
+        "title": "Une source météo n’est pas une position de passage",
+        "body": [
+          "La PR #117 clarifie la projection d’Analyse : progression estimée, sans mesure GPS, kilomètres précédés de ≈. Les noms de lieux identifient les sources météo. Ils ne prouvent pas qu’un véhicule est passé à ces coordonnées.",
+          "Une vigilance générale et une météo locale ne couvrent pas automatiquement le prochain trajet. L’absence de météo de parcours doit rester explicite. La règle métier et la présentation ne doivent pas transformer « inconnu » en « aucun risque »."
+        ],
+        "code": "mesuré : relevé déclaré + date + véhicule / essieu\nestimé : méthode + hypothèses + ≈\nindisponible : raison + action possible, sans valeur inventée"
+      },
+      {
+        "title": "La confiance se dégrade proprement",
+        "body": [
+          "Une prévision vieillissante, un GPS peu précis ou un trajet sans observations demandent un état dégradé compréhensible. La recommandation conserve son contexte plutôt que de masquer le problème avec un zéro.",
+          "Pour tester, utiliser des jeux fictifs : relevé avant récent et arrière ancien, météo absente, progression sans GPS. Vérifier les mots affichés, pas seulement que la page se charge. Une capture doit aussi montrer la distinction."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Appeler une projection « mesure GPS ».",
+      "Afficher 0 pour une mesure absente.",
+      "Étendre la date d’un relevé à tous les essieux."
+    ],
+    "interview": {
+      "question": "Pourquoi afficher ≈ peut-il être une correction de sécurité fonctionnelle ?",
+      "answer": "Parce que le libellé évite qu’un utilisateur traite une estimation comme une observation réelle. Je relie la valeur à sa méthode et à sa fraîcheur ; si la source manque, je garde l’état inconnu. Cela rend la décision explicable sans changer arbitrairement le moteur."
+    },
+    "exercise": {
+      "prompt": "Réécris trois libellés : « parcouru 12 km » sans GPS, « pneus mesurés aujourd’hui » avec un seul essieu relevé, « trajet sans pluie » avec une prévision absente.",
+      "answer": "« Progression estimée ≈ 12 km, sans mesure GPS » ; « Essieu avant : relevé déclaré aujourd’hui ; arrière : dernier relevé ancien » ; « Météo du trajet indisponible ». Les trois formulations conservent la provenance et ne créent aucune observation."
+    },
+    "sources": [
+      {
+        "id": "public-provenance",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-ux93",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "formats",
+      "race-tests"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-36",
+    "chapter": 36,
+    "section": "devsecops",
+    "title": "Agenda · départs personnalisés",
+    "summary": "Le choix d’origine d’un rendez-vous s’applique au trajet existant, avec recalcul cohérent et reprise hors ligne.",
+    "tags": [
+      "agenda",
+      "occurrence",
+      "hors ligne",
+      "état"
+    ],
+    "goals": [
+      "Identifier une préférence liée à une occurrence et un sens.",
+      "Garder calendrier, route et météo cohérents.",
+      "Décrire un test de reprise après déconnexion."
+    ],
+    "sections": [
+      {
+        "title": "Le bon périmètre de préférence",
+        "body": [
+          "Le bloc Prochain trajet permet de choisir domicile, lieu enregistré, adresse ou GPS ponctuel pour l’occurrence et le sens affichés. Le lieu météo général et le rendez-vous Google Agenda ne sont pas réécrits.",
+          "Le choix utilise les réglages chiffrés existants, puis le calcul de trajet central applique tags, chaînes, annulations et retours automatiques. L’interface ne fabrique pas une copie parallèle du calendrier pour afficher une autre origine."
+        ]
+      },
+      {
+        "title": "Une transition cohérente",
+        "body": [
+          "Le choix d’origine entraîne un recalcul cohérent de la route et de la météo. Hors ligne, l’interface annonce l’attente. Il vaut mieux un état d’attente explicite que juxtaposer la nouvelle adresse et la météo calculée pour l’ancienne.",
+          "Les commandes actives et le brouillon doivent survivre aux actualisations. Le test vérifie l’occurrence, le sens, la persistance du choix, les confirmations d’annulation et l’absence de modification des autres rendez-vous."
+        ],
+        "code": "choix origine → réglage de l’occurrence → calcul central\nhors ligne → attente explicite → reconnexion → recalcul"
+      },
+      {
+        "title": "Le cache négatif peut devenir un bug",
+        "body": [
+          "Une erreur météo obtenue pendant une déconnexion pouvait rester en cache négatif et empêcher une reprise immédiate. Le correctif n’interroge plus la météo de parcours hors ligne et invalide les erreurs de trajet à la reconnexion, sans jeter les modèles valides.",
+          "Ce cas montre qu’un test de réseau doit couvrir le retour du réseau. La vérification doit aussi attendre l’écriture effective du coffre avant de recharger, sinon elle mesure une course du test plutôt que la persistance réelle."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Changer le lieu global de météo quand on modifie un seul départ.",
+      "Dupliquer les règles d’annulation dans la carte.",
+      "Tester seulement la déconnexion, jamais la reconnexion."
+    ],
+    "interview": {
+      "question": "Comment éviter une seconde source de vérité quand une carte permet de modifier un trajet ?",
+      "answer": "Je stocke la préférence dans le document existant et je laisse le calcul central produire le trajet effectif. La carte lit ce résultat. Je teste l’occurrence, le sens, les annulations, le coffre et la reprise réseau ; je ne recalcule pas des règles parallèles dans le rendu."
+    },
+    "exercise": {
+      "prompt": "Propose un scénario de test pour un départ personnalisé choisi hors ligne, puis suivi d’un retour réseau.",
+      "answer": "Choisir une origine fictive sur une seule occurrence, couper réellement les requêtes, vérifier l’attente et les autres rendez-vous inchangés. Reconnecter, vérifier route et météo cohérentes, attendre l’écriture du coffre puis recharger. L’origine persiste et une ancienne erreur météo ne bloque pas le recalcul."
+    },
+    "sources": [
+      {
+        "id": "public-calendar",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-ux93",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "cicd",
+      "race-tests"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-37",
+    "chapter": 37,
+    "section": "security",
+    "title": "Coffre · chiffrement & session",
+    "summary": "AES-256-GCM et PBKDF2 protègent les données au repos ; la session et l’origine Web restent des frontières importantes.",
+    "tags": [
+      "AES-GCM",
+      "PBKDF2",
+      "sessionStorage",
+      "audit"
+    ],
+    "goals": [
+      "Expliquer sel, IV, dérivation et intégrité.",
+      "Comprendre une migration vérifiée avant suppression du clair.",
+      "Distinguer chiffrement au repos et protection d’une session ouverte."
+    ],
+    "sections": [
+      {
+        "title": "Du code d’accès à une clé",
+        "body": [
+          "Cette protection au repos exige le mode chiffré ; le mode sans code peut conserver des données en clair. Le coffre local Race Control prod93 utilise AES-256-GCM et PBKDF2-HMAC-SHA-256 à 600 000 itérations, avec sel de 16 octets et nouvel IV de 12 octets à chaque écriture. Le sel ne remplace pas une phrase secrète longue ; la dérivation augmente le coût des essais.",
+          "Un fichier chiffré public peut être copié puis soumis à des essais hors ligne. Une limite d’essais affichée dans une interface ne bloque pas ces essais. La difficulté de deviner la phrase reste essentielle, et un hash d’intégrité ne constitue pas à lui seul un chiffrement."
+        ]
+      },
+      {
+        "title": "Ne jamais perdre le dernier état valide",
+        "body": [
+          "La migration conserve le document en clair jusqu’au chiffrement, à la relecture et à la comparaison réussis. Une mauvaise phrase, un refus de stockage ou un import invalide ne doit pas détruire les données. La concurrence entre onglets et les anciennes écritures font partie des tests.",
+          "Un test pertinent compare l’état avant et après une opération refusée. Pour le portfolio, utiliser une sauvegarde synthétique et une phrase de test, jamais le coffre réel, un calendrier ou des coordonnées privées."
+        ],
+        "code": "lire → chiffrer → écrire → relire → déchiffrer → comparer\n                                               ↓\n                         supprimer le clair seulement si vérifié"
+      },
+      {
+        "title": "Ce que le coffre ne garantit pas",
+        "body": [
+          "Pendant la session déverrouillée, la clé dérivée est conservée dans sessionStorage et les données sont accessibles au code autorisé. Le verrouillage manuel efface la clé et les données en mémoire. Une fermeture d’application peut restaurer une session selon le navigateur ; aucun verrouillage automatique d’inactivité n’a été confirmé dans cette version.",
+          "Race Control, Reconversion Control et Control Vault sont sur l’origine ipoower.github.io : changer seulement le chemin ne cloisonne pas localStorage. L’isolation par origine dédiée et les en-têtes HTTP restent des axes de durcissement, pas des protections déjà acquises. Cet audit ciblé ne prouve pas l’absence de toute vulnérabilité."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Dire « AES-256 donc impossible à compromettre ».",
+      "Confondre clé de session et mot de passe stocké.",
+      "Déplacer une application vers une autre origine sans sauvegarde et restauration explicites."
+    ],
+    "interview": {
+      "question": "Quelle limite expliquerais-tu à un utilisateur malgré un coffre chiffré solide ?",
+      "answer": "Le chiffrement protège les données au repos, mais le code d’une session déverrouillée peut y accéder. Une phrase courte reste devinable hors ligne, et les applications du même hôte partagent l’origine Web. Je distingue ces limites de vulnérabilités effectivement démontrées et je propose un durcissement vérifiable."
+    },
+    "exercise": {
+      "prompt": "Un import échoue après une écriture refusée. Quelles preuves exiges-tu avant de dire que les données sont intactes ?",
+      "answer": "Comparer le document et les réglages avant et après, vérifier le dernier coffre relu et déchiffré, tester une nouvelle ouverture avec la phrase de test et vérifier qu’aucun clair n’a été supprimé prématurément. Une alerte visuelle seule ne prouve pas que l’état persistant est resté valide."
+    },
+    "sources": [
+      {
+        "id": "public-vault",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-kdf",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-origin",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "crypto",
+      "hardening",
+      "race-privacy"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-38",
+    "chapter": 38,
+    "section": "devsecops",
+    "title": "CI · secrets et contrôles",
+    "summary": "Une CI fiable sépare code non fiable, données fictives et secrets de production, puis valide le bon SHA.",
+    "tags": [
+      "GitHub Actions",
+      "secrets",
+      "shards",
+      "protection"
+    ],
+    "goals": [
+      "Identifier la frontière de confiance d’une pull request.",
+      "Comprendre les shards et l’agrégation des résultats.",
+      "Distinguer un contrôle CI d’une protection GitHub native."
+    ],
+    "sections": [
+      {
+        "title": "Une PR est une entrée non fiable",
+        "body": [
+          "Une contribution peut modifier les scripts qu’un runner exécutera. Exécuter ce code avec des secrets de production transforme une revue en accès aux données. Les tests de PR Race Control utilisent des fixtures fictives ; les clés privées restent dans le contexte de production autorisé.",
+          "Le scanner de confidentialité exécuté sur pull_request_target utilise le scanner de la branche de confiance et traite les fichiers de PR comme des données. Le seul nom de cet événement n’est pas une garantie : un checkout puis une exécution du code de PR avec des secrets recréerait le risque."
+        ]
+      },
+      {
+        "title": "146 exécutions, pas 146 garanties universelles",
+        "body": [
+          "Pour prod93, la validation compte 46 suites unitaires, 52 exécutions Chromium et 48 WebKit. Trois shards par navigateur distribuent le travail. L’agrégateur vérifie les rapports et ne doit pas compter un shard absent comme un succès.",
+          "L’obligation porte sur le SHA final réellement fusionnable. Une CI verte sur l’ancien commit de la branche ne valide pas le nouveau. Les contrôles de confidentialité, de build et de données complètent les tests d’interface."
+        ],
+        "code": "PR sans secrets → tests sur SHA exact → rapports complets\n                → revue / protections → fusion\nmain autorisée → vérifications réelles → publication"
+      },
+      {
+        "title": "Prévenir et détecter sont différents",
+        "body": [
+          "Une protection GitHub native peut empêcher une fusion sans contrôles ou une réécriture de branche. Un gate dans un workflow peut bloquer le déploiement après un push direct, mais ne prouve pas que ce push est impossible.",
+          "Race Control expose une branche main protégée et un ruleset gh-pages actif au contrôle natif. Reconversion Control possède un gate de provenance après fusion ; son audit de base n’a pas constaté de protection native active. Ne pas copier une affirmation d’un dépôt vers l’autre. Les actions figées par SHA et les permissions minimales réduisent aussi la surface de risque."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Exécuter un script de PR avec les secrets de production.",
+      "Déclarer tous les shards verts parce qu’un seul job passe.",
+      "Présenter le gate de déploiement comme une protection native de main."
+    ],
+    "interview": {
+      "question": "Pourquoi une CI verte ne suffit-elle pas pour affirmer que la livraison est sûre ?",
+      "answer": "Je vérifie le commit exact, les rapports complets, la frontière des secrets, la provenance et les protections réelles. Les tests couvrent des scénarios définis, pas toutes les attaques. Après fusion, je contrôle à nouveau la chaîne et la version effectivement servie."
+    },
+    "exercise": {
+      "prompt": "Une PR modifie un script de test et demande une clé privée pour reproduire un bug. Propose un protocole de validation.",
+      "answer": "Construire une fixture fictive qui reproduit le comportement sans la clé. Garder le scanner et les secrets dans les contextes de confiance, vérifier tous les shards sur le SHA final puis contrôler la provenance après fusion. Si une vérification réelle reste nécessaire, la réserver à un contexte main autorisé sans exécuter du code de PR non revu."
+    },
+    "sources": [
+      {
+        "id": "public-actions",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-ux93",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "cicd",
+      "supply",
+      "race-cicd"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-39",
+    "chapter": 39,
+    "section": "devsecops",
+    "title": "Livraison · vérifier la version servie",
+    "summary": "La chaîne PR → CI → publication → HTTP doit confirmer la version livrée, y compris quand des pushes échouent.",
+    "tags": [
+      "SHA",
+      "publication",
+      "rollback",
+      "preuve"
+    ],
+    "goals": [
+      "Relier PR, commit fusionné, build et version servie.",
+      "Faire échouer une publication refusée.",
+      "Préparer un retour arrière sans réécriture destructive."
+    ],
+    "sections": [
+      {
+        "title": "Les identités à relier",
+        "body": [
+          "Une PR peut être fusionnée par squash : le commit de main diffère alors de son ancien HEAD. On vérifie l’arbre validé, puis la CI du commit fusionné et les métadonnées de production. Une étiquette de version seule ne prouve pas le contenu servi.",
+          "Pour le cas prod93 vérifié : commit fusionné 2183d542, build 7d32a7e22525, publication du 11/10/2026. La vérification HTTP du pipeline a comparé le SHA-256 du HTML servi au build. Ces valeurs constituent un instantané daté, pas une promesse sur toutes les versions futures."
+        ]
+      },
+      {
+        "title": "Un faux succès reste un bug",
+        "body": [
+          "La PR #107 a reproduit un défaut de publication : cinq pushes pouvaient être refusés, les rebases réussir, puis le script finir avec code zéro. Le correctif exige un push réussi avant d’annoncer la publication.",
+          "Les scénarios couvrent succès immédiat, collisions puis succès, cinquième tentative réussie, cinq refus, rebase refusé, commit refusé et contenu déjà publié. Le comportement est testé avec un Git fictif ; aucune panne équivalente n’a été affirmée sur une production sans preuve."
+        ],
+        "code": "si aucun push ne réussit : exit 1\nsi aucun fichier ne change : résultat explicite « déjà publié »\nsinon : identifier le commit publié puis vérifier HTTP"
+      },
+      {
+        "title": "Contrôler le bon artefact",
+        "body": [
+          "Reconversion Control publie après une validation main réussie et injecte le SHA testé dans l’HTML et le service worker. Le cache dérive de ce build. Contrôler le code de main sans inspecter le déploiement laisserait un écart possible entre dépôt et application.",
+          "Un retour arrière prend la forme d’un changement explicite et testé vers une version valide. Il préserve les données et les règles de branches. Le journal doit distinguer fusion confirmée, déploiement confirmé et inspection navigateur indisponible."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Annoncer « déployé » dès que la PR est fusionnée.",
+      "Ignorer le code de sortie après cinq refus réseau.",
+      "Effacer l’historique ou les données pour revenir en arrière."
+    ],
+    "interview": {
+      "question": "Quelle preuve apporte le contrôle HTTP après une CI verte ?",
+      "answer": "Il ferme l’écart entre l’artefact testé et ce que l’hébergement sert réellement. Je relie le SHA fusionné, le build publié et le contenu reçu, en tenant compte du cache et du service worker. Si l’inspection visuelle manque, je le dis séparément."
+    },
+    "exercise": {
+      "prompt": "Le job de publication est vert, mais version.json indique un ancien build. Que peux-tu annoncer et que dois-tu vérifier ?",
+      "answer": "Je peux annoncer que le job a fini, pas que le nouveau build est servi. Je contrôle le commit attendu, l’artefact, la publication et le cache HTTP avec une requête adaptée. Je compare les identités et le contenu ; tant que l’écart subsiste, le déploiement attendu n’est pas confirmé."
+    },
+    "sources": [
+      {
+        "id": "public-deploy",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-ux93",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-reconversion",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "git",
+      "cicd",
+      "race-cicd"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-40",
+    "chapter": 40,
+    "section": "security",
+    "title": "Diagnostics · protéger les données",
+    "summary": "Conserver un diagnostic utile sans publier les coordonnées ni fusionner des événements sur une simple ressemblance.",
+    "tags": [
+      "logs",
+      "privacy",
+      "doublons",
+      "débrief"
+    ],
+    "goals": [
+      "Minimiser le contenu des diagnostics publics.",
+      "Différencier doublon possible et identité démontrée.",
+      "Tester reprise, pause et absence de données comparables."
+    ],
+    "sections": [
+      {
+        "title": "L’erreur peut révéler plus que la page",
+        "body": [
+          "Un HTTP 503 météo écrivait une URL Open-Meteo complète avec les coordonnées de la configuration chiffrée dans des logs GitHub publics. Chiffrer la configuration ne suffit donc pas si le chemin d’erreur réimprime les données sensibles.",
+          "Le correctif du relais publie fournisseur et type de panne : HTTP, réseau/délai ou JSON. La panne reste visible et bloque le verdict concerné. On ne cache pas un échec ; on enlève les informations inutiles au diagnostic."
+        ],
+        "code": "à éviter : erreur + URL complète + coordonnées\nà garder : fournisseur + catégorie + statut utile\nà tester : HTTP 503, délai, JSON invalide, retour normal"
+      },
+      {
+        "title": "Un doublon ressemble, une identité se prouve",
+        "body": [
+          "Les débriefs pouvaient rouvrir une ancienne entrée à chaque rendu, puis proposer plusieurs questionnaires. Le correctif sollicite une nouvelle arrivée, conserve « Plus tard » et ajoute une pause jusqu’à la fin de journée Europe/Paris dans le contexte existant.",
+          "Deux entrées proches avec même nom, origine et destination sont signalées comme doublons possibles. Elles ne sont ni fusionnées ni supprimées automatiquement : deux événements réels peuvent se ressembler."
+        ]
+      },
+      {
+        "title": "La comparaison exige des données valides",
+        "body": [
+          "Telemetry Replay et les débriefs comparent une prévision existante à une observation déclarée. Une prévision absente ou ancienne reste non comparable. Un score inventé rendrait le diagnostic plus joli mais moins vrai.",
+          "Pour le portfolio, raconter le symptôme, la frontière de données, le correctif et un scénario négatif. Les exemples, fichiers de test et captures restent fictifs ; un log expurgé doit encore permettre de distinguer une panne réseau d’un JSON invalide."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Publier les URL brutes pour faciliter un debug.",
+      "Supprimer un doublon sur la seule proximité temporelle.",
+      "Donner un score à une prévision absente."
+    ],
+    "interview": {
+      "question": "Comment garder un incident exploitable sans divulguer les données personnelles ?",
+      "answer": "Je conserve des catégories stables, le fournisseur et le statut utile, puis je teste les chemins d’erreur avec des données fictives. Les coordonnées, noms et calendriers privés ne sont pas nécessaires dans un log public. Je vérifie aussi la reprise normale pour ne pas masquer le problème."
+    },
+    "exercise": {
+      "prompt": "Deux trajets ressemblent à des doublons et la météo de l’un manque. Que faut-il afficher et conserver ?",
+      "answer": "Signaler « doublon possible » sans suppression ni fusion automatique ; conserver les deux événements. Pour le trajet sans prévision comparable, annoncer « comparaison indisponible » sans score. La pause de sollicitation peut être appliquée sans perdre l’historique ni les actions manuelles."
+    },
+    "sources": [
+      {
+        "id": "public-relay",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-debrief",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "race-privacy",
+      "vuln",
+      "race-tests"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-41",
+    "chapter": 41,
+    "section": "portfolio",
+    "title": "Reconversion · cours, labs et preuves",
+    "summary": "Notre deuxième projet : PWA bilingue, cinq minutes par jour, révisions adaptatives et progression indépendante des preuves.",
+    "tags": [
+      "Reconversion Control",
+      "SRS",
+      "Daily Five",
+      "portfolio"
+    ],
+    "goals": [
+      "Présenter les trois dimensions cours, lab et preuve.",
+      "Expliquer SRS et Daily Five sans confondre XP et compétence.",
+      "Décrire la synchronisation optionnelle et ses limites."
+    ],
+    "sections": [
+      {
+        "title": "Le produit est un projet IT concret",
+        "body": [
+          "Reconversion Control est une PWA séparée de Race Control. Ses 42 fiches générales, son socle de 32 chapitres historiques, ses approfondissements et ses nouveaux cas récents forment un parcours Cyber → Cloud/DevSecOps → Pentest → Sécurité IA.",
+          "L’English Coach augmente la part d’anglais de 25 % à 50 %, puis 75 %, avec aide française disponible. Les recherches et liens directs permettent de retrouver une notion ; les exemples pédagogiques ne publient aucun livre Drive brut."
+        ]
+      },
+      {
+        "title": "Ne pas confondre lecture et preuve",
+        "body": [
+          "Le statut d’un cours indique une autoévaluation des connaissances. Un lab conserve son propre état. Une preuve portfolio décrit ce qui a été construit, testé ou expliqué, dans un Evidence Locker local. Livrer du code avec une assistance ne valide pas automatiquement ces trois dimensions.",
+          "Daily Five propose quiz, mini-mission et English Sprint, avec 14 sessions existantes. La sélection privilégie révision due, erreur récente puis domaine faible. Le SRS fait sortir une notion d’Acquis après deux oublis ; les XP et séries restent des outils d’engagement, pas une certification."
+        ]
+      },
+      {
+        "title": "Une synchronisation volontaire",
+        "body": [
+          "La progression reste locale par défaut. L’utilisateur peut configurer son propre projet Supabase et s’authentifier par Email OTP ; la progression est chiffrée localement avec AES-256-GCM avant envoi. Une révision conditionnelle et un choix explicite traitent les conflits PC/iPhone.",
+          "Cette fonction n’active pas un backend par défaut. Un export local de progression contient des traces de portfolio saisies par l’utilisateur : il doit être gardé privé. L’enveloppe cloud chiffrée ne rend pas automatiquement localStorage ou l’export JSON chiffrés."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Marquer les cours Acquis parce qu’une application a été livrée.",
+      "Dire que l’export de progression est toujours chiffré.",
+      "Promettre qu’un Supabase est connecté sans vérifier la configuration."
+    ],
+    "interview": {
+      "question": "Quel problème résout Reconversion Control et quelle preuve peux-tu montrer ?",
+      "answer": "Il organise l’apprentissage, la révision et les preuves sans les confondre. Je peux montrer un parcours bilingue, un cas SRS, un lab fictif, un export/import et un rechargement hors ligne. Je présente le cloud comme opt-in et je garde les traces personnelles hors du dépôt public."
+    },
+    "exercise": {
+      "prompt": "Tu as terminé un lab mais oublié le concept lors de deux révisions. Quels états devraient changer ?",
+      "answer": "Le SRS fait passer la connaissance en En cours et retire sa révision Acquis. Le statut du lab et sa preuve restent indépendants. Une session Daily Five complétée peut conserver ses XP ; aucun de ces résultats ne certifie automatiquement une compétence ou un examen."
+    },
+    "sources": [
+      {
+        "id": "public-reconversion",
+        "location": "Code, décisions et limites du cas"
+      }
+    ],
+    "related": [
+      "race-arch",
+      "cicd",
+      "shared"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  },
+  {
+    "id": "rc-42",
+    "chapter": 42,
+    "section": "portfolio",
+    "title": "Control Vault · prototype & portfolio",
+    "summary": "Notre troisième projet est un prototype avec moteurs réels sur données fictives : il complète les preuves Race et Reconversion.",
+    "tags": [
+      "Control Vault",
+      "prototype",
+      "SHA-256",
+      "entretien"
+    ],
+    "goals": [
+      "Distinguer prototype, moteur testé et connexion réelle.",
+      "Expliquer sérialisation, empreinte, chiffrement et relecture.",
+      "Préparer un pitch des trois projets sans survente."
+    ],
+    "sections": [
+      {
+        "title": "Ce que Control Vault fait aujourd’hui",
+        "body": [
+          "Le dépôt public Control-Vault contient la Phase 1 : prototype PWA iPhone/PC. Les données de démonstration sont recréées à l’ouverture ; aucune connexion réelle à Google Drive ou Supabase n’est active dans ce prototype.",
+          "Les moteurs de sérialisation, SHA-256, AES-256-GCM, relecture et comparaison fonctionnent réellement contre un Drive de démonstration en mémoire. Hors ligne, session expirée, envoi interrompu et backend indisponible peuvent être simulés pour travailler les états de l’interface."
+        ]
+      },
+      {
+        "title": "Une empreinte n’est pas une sauvegarde durable",
+        "body": [
+          "SHA-256 permet de comparer des octets. AES-GCM peut protéger contenu et intégrité si la gestion des clés est correcte. Il faut encore une destination réelle, des permissions, une récupération durable et une restauration après fermeture pour parler d’un coffre opérationnel.",
+          "Dans le prototype, la clé de démonstration est éphémère. La gouvernance du chiffrement durable reste une étude de phase ultérieure avec revue humaine et essais sur appareils réels. Ne pas y confier une sauvegarde personnelle."
+        ],
+        "code": "objet → sérialisation → empreinte → chiffrement\n      → destination DEMO → relecture → comparaison\nproduction future : identité + permissions + clé durable + récupération"
+      },
+      {
+        "title": "Le portfolio montre décisions et limites",
+        "body": [
+          "Race Control démontre décision explicable, données privées, tests et UX mobile. Reconversion Control démontre PWA, apprentissage bilingue, états de progression et cloud opt-in. Control Vault démontre prototype, moteurs d’intégrité et scénarios d’échec.",
+          "Un pitch dit ce que tu peux expliquer personnellement, le rôle de l’assistance, la preuve publique et la limite restante. Cloud-DevSecOps-Lab reste une idée de prochain projet, sans dépôt ou certification inventés. Le cursus pentest et IA doit encore produire ses propres labs et preuves."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Présenter un Drive mémoire comme une connexion Google réelle.",
+      "Confondre empreinte SHA-256 et chiffrement.",
+      "Inscrire une certification ou un projet recommandé comme déjà acquis."
+    ],
+    "interview": {
+      "question": "Comment présenterais-tu un prototype de coffre à un recruteur ?",
+      "answer": "Je décris la Phase 1 et ses données fictives, puis les moteurs effectivement exécutés et les scénarios d’échec. Je montre une preuve de relecture et d’intégrité, et je précise que l’authentification, la destination réelle et les clés durables restent à livrer. Je peux expliquer mes décisions sans prétendre exploiter un coffre production."
+    },
+    "exercise": {
+      "prompt": "Écris un pitch de trois phrases, une par projet, avec une limite explicite pour Control Vault.",
+      "answer": "Race Control : cockpit mobile de décision météo/trajet, avec données chiffrées et livraison vérifiée. Reconversion Control : parcours bilingue et révisions, avec cours, labs et preuves indépendants. Control Vault : prototype de coffre testant intégrité et chiffrement sur données fictives, sans connexion réelle ni sauvegarde durable active."
+    },
+    "sources": [
+      {
+        "id": "public-control-vault",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-reconversion",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-ux93",
+        "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-cv-crypto",
+        "location": "Statut et tests requis avant sauvegardes réelles"
+      }
+    ],
+    "related": [
+      "race-arch",
+      "crypto",
+      "race-tests"
+    ],
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+  }
+]);

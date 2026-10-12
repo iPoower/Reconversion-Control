@@ -259,6 +259,260 @@ const RC_ENGLISH = {
   }
 };
 
+// English Coach des cas récents, sans changer les séances existantes.
+Object.assign(RC_ENGLISH, {
+  "rc-33": {
+    "title": "Mobile UX without losing features",
+    "summary": "Use progressive disclosure, preserve focus and review real mobile screenshots.",
+    "phrase": "I simplify the presentation while preserving data, decisions and user interactions.",
+    "phraseFr": "Je simplifie la présentation tout en conservant les données, les décisions et les interactions.",
+    "vocab": [
+      [
+        "progressive disclosure",
+        "déploiement progressif des détails"
+      ],
+      [
+        "touch target",
+        "zone tactile"
+      ],
+      [
+        "input focus",
+        "focus du champ"
+      ],
+      [
+        "regression",
+        "régression"
+      ]
+    ],
+    "question": "How would you test a mobile form while background data is refreshing?"
+  },
+  "rc-34": {
+    "title": "Six F1 modules, one source of truth",
+    "summary": "Explain opt-in views without inventing telemetry, maintenance dates or alternative routes.",
+    "phrase": "Each module reads existing results instead of creating a competing decision engine.",
+    "phraseFr": "Chaque module lit les résultats existants au lieu de créer un moteur de décision concurrent.",
+    "vocab": [
+      [
+        "opt-in",
+        "activation volontaire"
+      ],
+      [
+        "source of truth",
+        "source de vérité"
+      ],
+      [
+        "odometer reading",
+        "relevé de compteur"
+      ],
+      [
+        "telemetry",
+        "télémétrie"
+      ]
+    ],
+    "question": "What does Strategy A/B compare, and what does it not claim?"
+  },
+  "rc-35": {
+    "title": "Measured, estimated or unavailable",
+    "summary": "Keep the source, age and confidence of every value visible.",
+    "phrase": "An estimate is useful only when its assumptions and limitations are clear.",
+    "phraseFr": "Une estimation est utile seulement si ses hypothèses et ses limites sont claires.",
+    "vocab": [
+      [
+        "measurement",
+        "mesure"
+      ],
+      [
+        "estimate",
+        "estimation"
+      ],
+      [
+        "data provenance",
+        "provenance des données"
+      ],
+      [
+        "unavailable",
+        "indisponible"
+      ]
+    ],
+    "question": "How do you explain a projected distance when there is no GPS measurement?"
+  },
+  "rc-36": {
+    "title": "Calendar trips and offline recovery",
+    "summary": "Apply an origin preference to the right occurrence and keep route and weather consistent.",
+    "phrase": "I test both the network failure and the recovery, not just the happy path.",
+    "phraseFr": "Je teste la panne réseau et la reprise, pas seulement le parcours nominal.",
+    "vocab": [
+      [
+        "occurrence",
+        "occurrence"
+      ],
+      [
+        "origin override",
+        "départ personnalisé"
+      ],
+      [
+        "negative cache",
+        "cache d’erreur"
+      ],
+      [
+        "recovery",
+        "reprise"
+      ]
+    ],
+    "question": "How do you prevent a cached network error from blocking recovery?"
+  },
+  "rc-37": {
+    "title": "Encrypted storage and session boundaries",
+    "summary": "Explain key derivation, verified writes and the limits of an unlocked browser session.",
+    "phrase": "Encryption at rest does not isolate an unlocked session from trusted page code.",
+    "phraseFr": "Le chiffrement au repos n’isole pas une session ouverte du code de la page autorisé.",
+    "vocab": [
+      [
+        "key derivation",
+        "dérivation de clé"
+      ],
+      [
+        "initialization vector",
+        "vecteur d’initialisation"
+      ],
+      [
+        "offline guessing",
+        "essais de phrases hors ligne"
+      ],
+      [
+        "same origin",
+        "même origine Web"
+      ]
+    ],
+    "question": "Why do a long passphrase and a dedicated origin matter even with AES-GCM?"
+  },
+  "rc-38": {
+    "title": "CI trust boundaries and complete reports",
+    "summary": "Separate untrusted pull-request code from secrets and validate all shards on the exact commit.",
+    "phrase": "A green check is meaningful only for the exact commit and the complete required test set.",
+    "phraseFr": "Un contrôle vert n’a de sens que pour le commit exact et l’ensemble complet des tests requis.",
+    "vocab": [
+      [
+        "trust boundary",
+        "frontière de confiance"
+      ],
+      [
+        "least privilege",
+        "moindre privilège"
+      ],
+      [
+        "test shard",
+        "lot de tests"
+      ],
+      [
+        "branch protection",
+        "protection de branche"
+      ]
+    ],
+    "question": "What is the risk of running pull-request code with production secrets?"
+  },
+  "rc-39": {
+    "title": "Proving the build that is actually served",
+    "summary": "Connect the merged commit, tested artifact, deployment and live HTTP content.",
+    "phrase": "I verify the served build before announcing that a deployment is complete.",
+    "phraseFr": "Je vérifie le build servi avant d’annoncer que le déploiement est terminé.",
+    "vocab": [
+      [
+        "merged commit",
+        "commit fusionné"
+      ],
+      [
+        "artifact",
+        "artefact"
+      ],
+      [
+        "exit code",
+        "code de sortie"
+      ],
+      [
+        "rollback",
+        "retour arrière"
+      ]
+    ],
+    "question": "What do you investigate when CI is green but the live build is still old?"
+  },
+  "rc-40": {
+    "title": "Privacy-preserving diagnostics",
+    "summary": "Keep useful failure categories while removing private coordinates and avoiding destructive deduplication.",
+    "phrase": "I preserve useful diagnostics without publishing unnecessary personal data.",
+    "phraseFr": "Je conserve des diagnostics utiles sans publier de données personnelles inutiles.",
+    "vocab": [
+      [
+        "redaction",
+        "suppression des données sensibles"
+      ],
+      [
+        "failure category",
+        "catégorie de panne"
+      ],
+      [
+        "possible duplicate",
+        "doublon possible"
+      ],
+      [
+        "data minimization",
+        "minimisation des données"
+      ]
+    ],
+    "question": "How would you debug a weather failure without printing the full request URL?"
+  },
+  "rc-41": {
+    "title": "Learning progress is not portfolio evidence",
+    "summary": "Explain independent course, lab and proof states in a bilingual learning PWA.",
+    "phrase": "Completing a lesson, validating a lab and proving a skill are three separate achievements.",
+    "phraseFr": "Terminer un cours, valider un lab et prouver une compétence sont trois réalisations distinctes.",
+    "vocab": [
+      [
+        "spaced repetition",
+        "répétition espacée"
+      ],
+      [
+        "learning progress",
+        "progression pédagogique"
+      ],
+      [
+        "evidence locker",
+        "carnet de preuves"
+      ],
+      [
+        "opt-in sync",
+        "synchronisation volontaire"
+      ]
+    ],
+    "question": "Why should XP and a completed lesson not automatically validate a portfolio proof?"
+  },
+  "rc-42": {
+    "title": "An honest three-project portfolio",
+    "summary": "Present two applications and a vault prototype with concrete evidence and clear limits.",
+    "phrase": "The prototype runs real integrity checks on fictional data, but it is not a production backup service.",
+    "phraseFr": "Le prototype exécute de vrais contrôles d’intégrité sur des données fictives, mais ce n’est pas un service de sauvegarde en production.",
+    "vocab": [
+      [
+        "prototype",
+        "prototype"
+      ],
+      [
+        "checksum",
+        "empreinte de contrôle"
+      ],
+      [
+        "ephemeral key",
+        "clé éphémère"
+      ],
+      [
+        "durable backup",
+        "sauvegarde durable"
+      ]
+    ],
+    "question": "How would you pitch Control Vault while being clear about what remains to be built?"
+  }
+});
+
 function rcEnglishText(value){
   if(typeof value === "string") return value;
   if(Array.isArray(value)) return value.map(rcEnglishText).join(" ");

@@ -71,9 +71,9 @@ async function main() {
     assert.equal(await page.locator("#app h2").first().textContent(), "⚡ 5 minutes du jour");
     assert.equal(await page.evaluate(() => !!window.__staleReconversionScript), false);
     await page.locator('#nav [data-view="library"]').tap();
-    assert.equal(await page.locator("#cards .card").count(), 74);
+    assert.equal(await page.locator("#cards .card").count(), 84);
     await page.locator('#nav [data-view="cockpit"]').tap();
-    passed("installation bypasses a still-fresh old HTTP script and the reloaded app retains 42 fiches and 32 chapters");
+    passed("installation bypasses a still-fresh old HTTP script and the reloaded app retains 42 fiches and 42 chapters");
 
     await context.setOffline(true);
     await page.goto(server.url + "/?v=2");
@@ -92,7 +92,7 @@ async function main() {
     passed("offline navigation with ?v=2 still supports fiche search, detail and saved progression");
 
     await page.locator('#nav [data-view="course"]').tap();
-    assert.equal(await page.locator("#course-chapters [data-card]").count(),32);
+    assert.equal(await page.locator("#course-chapters [data-card]").count(),42);
     await page.locator('[data-open="rc-06"]').tap();
     assert.match(await page.locator("#detail .lesson-sections").textContent(),/AbortController/);
     assert((await page.locator('#detail [data-source-id="course-prod15"]').count()) > 0);
@@ -102,12 +102,25 @@ async function main() {
     await page.locator('[data-dprog="mastered"]').tap();
     await page.locator("#close").tap();
     await page.reload();
-    assert.equal(await page.locator("#course-chapters [data-card]").count(),32);
+    assert.equal(await page.locator("#course-chapters [data-card]").count(),42);
     assert(await page.locator('[data-card="rc-06"] [data-prog="mastered"]').evaluate(el=>el.classList.contains("on")));
     await page.locator('#nav [data-view="library"]').tap();
     await page.locator("#search").fill("DNS");
     assert(await page.locator('[data-card="dns"] [data-prog="mastered"]').evaluate(el=>el.classList.contains("on")));
     passed("all course chapters, explanations, citations, corrections and new progress work offline alongside existing fiches");
+
+    await page.locator('#nav [data-view="course"]').tap();
+    await page.locator('[data-course-level="pro"] > summary').tap();
+    await page.locator('#course-chapters [data-open="rc-37"]').tap();
+    assert.match(await page.locator('#detail .lesson-sections').textContent(),/600 000/);
+    assert((await page.locator('#detail .lesson-sources a').count())>=3);
+    await page.locator('#close').tap();
+    await page.locator('#nav [data-view="path"]').tap();
+    assert.equal(await page.locator('[data-project]').count(),3);
+    await page.locator('[data-project="control-vault"] summary').tap();
+    assert.match(await page.locator('[data-project="control-vault"] .project-evidence').textContent(),/Aucune connexion/);
+    passed("recent vault lesson and three-project portfolio remain readable offline without opening external references");
+    await page.locator('#nav [data-view="library"]').tap();
 
     const aliases = await page.evaluate(async () => {
       const files = ["app.js?v=99","data.js?v=2","style.css?v=99","manifest.webmanifest?v=2","assets/icon-192.png?v=99","course-foundations.js?v=99","course-race.js?v=2","course-operations.js?v=99","learning.js?v=2"];

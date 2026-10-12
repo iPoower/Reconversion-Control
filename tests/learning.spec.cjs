@@ -1,6 +1,7 @@
 "use strict";
 const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
+const path = require("node:path");
 const {chromium, webkit, devices} = require("playwright");
 const {startServer} = require("./server.cjs");
 const KEY = "reconversion-control.state.v1";
@@ -8,8 +9,8 @@ const browserName = process.env.BROWSER || "chromium";
 const browserType = {chromium, webkit}[browserName];
 assert(browserType, "BROWSER must be chromium or webkit");
 const profile = {...devices["iPhone 11 Pro Max"], serviceWorkers:"block", acceptDownloads:true};
-const chapterIds = Array.from({length:32}, (_, i) => "rc-" + String(i + 1).padStart(2, "0"));
-const studyIds = ["rc-01","rc-03","rc-04","rc-05","rc-06","rc-07","rc-02","rc-08","rc-09","rc-10","rc-11","rc-12","rc-13","rc-14","rc-15","rc-16","rc-18","rc-17","rc-19","rc-20","rc-21","rc-22","rc-24","rc-23","rc-29","rc-25","rc-26","rc-27","rc-28","rc-30","rc-31","rc-32"];
+const chapterIds = Array.from({length:42}, (_, i) => "rc-" + String(i + 1).padStart(2, "0"));
+const studyIds = ["rc-01","rc-03","rc-04","rc-05","rc-06","rc-07","rc-02","rc-08","rc-09","rc-10","rc-11","rc-12","rc-13","rc-14","rc-15","rc-16","rc-18","rc-17","rc-19","rc-20","rc-21","rc-22","rc-24","rc-23","rc-29","rc-25","rc-26","rc-27","rc-28","rc-30","rc-31","rc-32","rc-33","rc-34","rc-35","rc-36","rc-37","rc-38","rc-39","rc-40","rc-41","rc-42"];
 let checks = 0;
 function passed(name) {checks++; console.log("PASS " + name);}
 async function nav(page, view) {await page.locator('#nav [data-view="' + view + '"]').tap();}
@@ -25,11 +26,16 @@ async function geometry(page, label) {
     return {
       width:innerWidth,
       overflow:document.documentElement.scrollWidth,
-      short:[...document.querySelectorAll("button, input:not([type=file]), select, summary")].filter(visible).map(el=>({label:el.textContent || el.id, rect:el.getBoundingClientRect().toJSON()})).filter(x=>x.rect.width < 43.5 || x.rect.height < 43.5)
+      short:[...document.querySelectorAll("button, a.btn, input:not([type=file]), select, summary")].filter(visible).map(el=>({label:el.textContent || el.id, rect:el.getBoundingClientRect().toJSON()})).filter(x=>x.rect.width < 43.5 || x.rect.height < 43.5)
     };
   });
   assert(result.overflow <= result.width + 1, label + " must fit without horizontal overflow");
   assert.deepEqual(result.short, [], label + " touch controls, including answers, must be at least 44 × 44 px");
+}
+async function capture(page,name) {
+  if(!process.env.RC_SCREENSHOT_DIR)return;
+  await fs.mkdir(process.env.RC_SCREENSHOT_DIR,{recursive:true});
+  await page.screenshot({path:path.join(process.env.RC_SCREENSHOT_DIR,name+".png"),fullPage:false});
 }
 async function main() {
   const server = await startServer();
@@ -57,9 +63,9 @@ async function main() {
     assert.match(await page.locator('[data-level-card="beginner"]').textContent(),/Débutant|DÉBUTANT/);
     assert.match(await page.locator('[data-level-card="intermediate"]').textContent(),/Intermédiaire|INTERMÉDIAIRE/);
     assert.match(await page.locator('[data-level-card="pro"]').textContent(),/Pro|PRO/);
-    assert.equal(await page.evaluate(()=>RC_TOPICS.length),74);
+    assert.equal(await page.evaluate(()=>RC_TOPICS.length),84);
     assert.equal(await page.evaluate(()=>RC_SECTIONS.length),9);
-    passed("the course presents 32 chapters in a beginner, intermediate and pro hierarchy");
+    passed("the course presents 42 chapters in a beginner, intermediate and pro hierarchy");
 
     assert.match(await page.locator('[data-card="rc-03"] .src').textContent(),/ÉTAPE 2/);
     assert.match(await page.locator('[data-card="rc-02"] .src').textContent(),/ÉTAPE 7/);
@@ -68,7 +74,7 @@ async function main() {
     passed("study order follows prerequisites rather than source chapter numbers");
 
     const englishMeta = await page.evaluate(()=>Object.fromEntries(Object.entries(RC_ENGLISH).map(([id,item])=>[id,{title:item.title,vocab:item.vocab.length,question:item.question}])));
-    assert.equal(Object.keys(englishMeta).length,32);
+    assert.equal(Object.keys(englishMeta).length,42);
     for(const id of studyIds) {
       assert(englishMeta[id] && englishMeta[id].title && englishMeta[id].question,id+" must have English coaching");
       assert(englishMeta[id].vocab>=4,id+" must teach at least four English terms");
@@ -87,7 +93,7 @@ async function main() {
     assert.equal(await page.locator(".english-coach").getAttribute("data-english-level"),"75");
     assert.match(await page.locator(".english-coach").textContent(),/debugging process/i);
     await page.locator("#close").tap();
-    passed("all 32 lessons include progressive English coaching at 25, 50 or 75 percent");
+    passed("all 42 lessons include progressive English coaching at 25, 50 or 75 percent");
 
     const beginnerDone = Object.fromEntries(studyIds.slice(0,9).map(id=>[id,"mastered"]));
     const staged = await open({view:"course",section:"all",search:"",status:"all",progress:beginnerDone,review:{}});
@@ -111,10 +117,17 @@ async function main() {
       assert(body.length > 600,id + " must provide substantive explanations, not only a card summary");
       assert.match(body,/Question d[’']entretien/);
       assert.match(body,/Exercice/);
-      assert.match(body,/prod[- ]?15/i,id + " must identify its historical baseline");
-      const citations = detail.locator('[data-source-id="course-prod15"]');
-      assert((await citations.count()) > 0,id + " must cite the supplied course");
-      assert.match(await citations.first().textContent(),/(?:p\.|page)/i,id + " citation must include a page reference");
+      if(Number(id.slice(3))<=32) {
+        assert.match(body,/prod[- ]?15/i,id + " must identify its historical baseline");
+        const citations = detail.locator('[data-source-id="course-prod15"]');
+        assert((await citations.count()) > 0,id + " must cite the supplied course");
+        assert.match(await citations.first().textContent(),/(?:p\.|page)/i,id + " citation must include a page reference");
+      } else {
+        assert.match(await detail.locator(".source-note").textContent(),/Cas récent.*sources publiques/i);
+        assert((await detail.locator(".lesson-sources a.btn").count())>0,id+" must cite verifiable public work");
+        assert(!body.includes("p. undefined"),"public sources are not fabricated private page references");
+        assert.match(await detail.locator(".src").first().textContent(),/\/ 42/,"the lesson total must reflect the appended curriculum");
+      }
       const answers = detail.locator("details.answer");
       assert((await answers.count()) >= 2,id + " needs separate interview and exercise corrections");
       for(let i=0;i<2;i++) {
@@ -130,8 +143,8 @@ async function main() {
       }
       await page.locator("#close").tap();
     }
-    assert.equal(interviews.size,32,"interview answers must be specific to the chapter");
-    assert.equal(exercises.size,32,"exercise corrections must be specific to the chapter");
+    assert.equal(interviews.size,42,"interview answers must be specific to the chapter");
+    assert.equal(exercises.size,42,"exercise corrections must be specific to the chapter");
     passed("every chapter has explanations, page citations and its own touch-accessible folded corrections");
 
     await page.locator('#course-chapters [data-open="rc-01"]').tap();
@@ -147,6 +160,35 @@ async function main() {
     await page.waitForFunction(() => document.activeElement === document.querySelector('#course-chapters [data-open="rc-01"]'));
     assert(await page.locator('#course-chapters [data-open="rc-01"]').evaluate(el=>el===document.activeElement));
     passed("next and previous chapter navigation keeps the dialog, resets reading position and restores the course opener");
+
+    await openChapter(page,"rc-32");
+    assert.equal(await page.locator('#detail .chapter-navigation [data-open="rc-33"]').count(),1,"the old final chapter must lead to the new cases");
+    await page.locator('#detail .chapter-navigation [data-open="rc-33"]').tap();
+    assert.match(await page.locator("#detail .source-note").textContent(),/sources publiques/);
+    await page.locator("#close").tap();
+    await openChapter(page,"rc-42");
+    assert.equal(await page.locator('#detail .chapter-navigation button').count(),1,"the new final chapter has only a previous step");
+    assert.match(await page.locator("#detail .lesson-sections").textContent(),/prototype|fictif/i);
+    await capture(page,"iphone-control-vault-lesson");
+    await page.locator("#close").tap();
+    passed("historical chapters lead to recent cases without changing old IDs or pretending prototype features are deployed");
+
+    await nav(page,"path");
+    assert.equal(await page.locator("[data-project]").count(),3);
+    assert.equal(await page.locator("[data-project] details[open]").count(),0,"project references start folded");
+    assert.match(await page.locator('[data-project="control-vault"]').textContent(),/prototype.*démonstration/i);
+    await page.locator('[data-project="control-vault"] summary').tap();
+    assert.match(await page.locator('[data-project="control-vault"] .project-evidence').textContent(),/Aucune connexion Google\/Supabase/);
+    assert.equal(await page.locator(".project-portfolio a").evaluateAll(links=>links.every(a=>a.protocol==="https:"&&a.rel.includes("noopener")&&a.rel.includes("noreferrer"))),true);
+    await page.locator(".project-portfolio").evaluate(el=>el.scrollIntoView({block:"start"}));
+    await page.evaluate(()=>scrollBy(0,-80));
+    await geometry(page,"three-project portfolio");
+    await capture(page,"iphone-three-projects");
+    await nav(page,"course");
+    await page.locator(".recent-work").evaluate(el=>el.scrollIntoView({block:"start"}));
+    await page.evaluate(()=>scrollBy(0,-80));
+    await capture(page,"iphone-recent-courses");
+    passed("three public projects show accurate status, folded evidence and private-progress-independent examples");
 
     await openChapter(page,"rc-32");
     assert.equal(await page.locator("#detail .lesson-quiz .quiz-item").count(),12);
@@ -206,6 +248,26 @@ async function main() {
     assert.equal(await page.locator('#support-coverage a[href*=".pdf"], #support-coverage a[href*=".docx"], #support-coverage a[href*="sauvegarde"]').count(),0);
     passed("all seven supplied files are accounted for, with duplicates, historical versions and encrypted backup limits explicit");
 
+    assert.equal(await page.locator("#public-coverage").evaluate(el=>el.open),false);
+    await page.locator("#public-coverage > summary").tap();
+    assert.equal(await page.locator("[data-public-source]").count(),14);
+    assert.equal(await page.locator("#public-coverage a").evaluateAll(links=>links.every(a=>a.protocol==="https:"&&a.rel.includes("noreferrer"))),true);
+    await geometry(page,"expanded public-source links");
+    passed("recent public sources are folded and separate from the seven private historical references");
+    await nav(page,"labs");
+    for(const id of ["lab-16","lab-17","lab-18","lab-19","lab-20"]) {
+      const lab=page.locator('[data-lab="'+id+'"]');
+      await lab.locator("summary").tap();
+      assert.match(await lab.locator(".lab-sources").textContent(),/sources publiques/);
+      assert.equal(await lab.locator("[data-lab-evidence]").count(),0,"manual labs do not pretend to have an automatic checker");
+      await lab.locator('[data-lab-prog="mastered"]').tap();
+      assert.equal(await page.evaluate(({key,id})=>JSON.parse(localStorage.getItem(key)).labs[id],{key:KEY,id}),"mastered");
+      const topicId=await page.evaluate(id=>RC_LABS.find(l=>l.id===id).topic,id);
+      const state=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);
+      assert.notEqual(state.progress[topicId],"mastered");
+      assert.notEqual(state.proofs[topicId]?.status,"mastered");
+    }
+    passed("five new manual labs keep knowledge, lab completion and portfolio proofs independent");
     await nav(page,"course");
     await openChapter(page,"rc-30");
     const roadmap = await page.locator("#detail .lesson-detail").textContent();
@@ -225,7 +287,7 @@ async function main() {
     await page.locator("#close").tap();
     passed("roadmap stays dated and missing theory remains explicit; original fiches link to relevant course chapters");
 
-    const seeded = await open({view:"course",section:"all",search:"",status:"all",progress:{dns:"mastered","rc-06":"progress"},review:{dns:{step:1,due:"2099-01-01"}}});
+    const seeded = await open({view:"course",section:"all",search:"",status:"all",progress:{dns:"mastered","rc-06":"progress"},review:{dns:{step:1,due:"2099-01-01"}},labs:{"lab-03":"mastered"},proofs:{"rc-09":{status:"progress",evidence:"Legacy private note <keep> & preserved"}}});
     const learning = seeded.page;
     assert.equal(await learning.locator("#course-chapters").count(),1,"the course view must reload from the existing v1 storage format");
     assert(await learning.locator('[data-card="rc-06"] [data-prog="progress"]').evaluate(el=>el.classList.contains("on")));
@@ -245,7 +307,9 @@ async function main() {
     assert.equal(exported.version,2);
     assert.deepEqual(exported.progress,mixed.progress);
     assert.deepEqual(exported.review,mixed.review);
-    assert.deepEqual(exported.labs,{});assert.deepEqual(exported.proofs,{});
+    assert.deepEqual(exported.labs,{"lab-03":"mastered"});
+    assert.deepEqual(exported.proofs,{"rc-09":{status:"progress",evidence:"Legacy private note <keep> & preserved"}});
+    assert(!exported.progress["rc-33"]&&!exported.labs["lab-16"]&&!exported.proofs["rc-33"],"new content must not award achievements automatically");
     assert(!("sources" in exported) && !("lessons" in exported),"a progression backup must not export uploaded documents or course files");
     passed("new course progress and old DNS progress coexist; V2 export adds independent mastery dimensions without private course files");
 
@@ -255,6 +319,7 @@ async function main() {
     await learning.waitForFunction(()=>document.querySelector("#importer").value==="");
     const restored = await learning.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);
     assert.deepEqual(restored.progress,mixed.progress); assert.deepEqual(restored.review,mixed.review);
+    assert.deepEqual(restored.labs,exported.labs);assert.deepEqual(restored.proofs,exported.proofs);
     const oldBackup = {progress:{dns:"progress"},review:{}};
     await learning.locator("#importer").setInputFiles({name:"legacy.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(oldBackup))});
     await learning.waitForFunction(()=>document.querySelector("#importer").value==="");
@@ -299,7 +364,20 @@ async function main() {
       await layout.page.locator("#close").tap();
       await nav(layout.page,"privacy");
       await geometry(layout.page,viewport.width+" source coverage");
-      passed(viewport.width+" px: course, long corrected lesson and seven-file source inventory fit with ≥44 px touch targets");
+      await layout.page.locator("#public-coverage > summary").tap();
+      await geometry(layout.page,viewport.width+" expanded public-source links");
+      await nav(layout.page,"path");
+      for(const details of await layout.page.locator(".project-portfolio details").all())await details.locator("summary").tap();
+      await geometry(layout.page,viewport.width+" public project evidence");
+      await layout.page.locator(".project-portfolio").evaluate(el=>el.scrollIntoView({block:"start"}));
+      await layout.page.evaluate(()=>scrollBy(0,-80));
+      await capture(layout.page,viewport.width+"-project-portfolio");
+      await nav(layout.page,"course");
+      await openChapter(layout.page,"rc-37");
+      await geometry(layout.page,viewport.width+" recent vault lesson");
+      await capture(layout.page,viewport.width+"-recent-lesson");
+      await layout.page.locator("#close").tap();
+      passed(viewport.width+" px: old and recent lessons, source inventory and project evidence fit with ≥44 px touch targets");
     }
     assert.deepEqual(errors,[],"no unhandled JavaScript errors");
     assert.deepEqual(external,[],"reading lessons, citations and progression must request no external services");

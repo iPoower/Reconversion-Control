@@ -48,6 +48,58 @@ var RC_CURRICULUM=[
  {id:"rc-31",level:"pro",phase:"Consolider et expliquer"},
  {id:"rc-32",level:"pro",phase:"Consolider et expliquer"}
 ];
+RC_CURRICULUM.push.apply(RC_CURRICULUM, [
+ {
+  "id": "rc-33",
+  "level": "pro",
+  "phase": "Cas récents · UX et fonctions"
+ },
+ {
+  "id": "rc-34",
+  "level": "pro",
+  "phase": "Cas récents · UX et fonctions"
+ },
+ {
+  "id": "rc-35",
+  "level": "pro",
+  "phase": "Cas récents · données et trajets"
+ },
+ {
+  "id": "rc-36",
+  "level": "pro",
+  "phase": "Cas récents · données et trajets"
+ },
+ {
+  "id": "rc-37",
+  "level": "pro",
+  "phase": "Cas récents · sécurité et livraison"
+ },
+ {
+  "id": "rc-38",
+  "level": "pro",
+  "phase": "Cas récents · sécurité et livraison"
+ },
+ {
+  "id": "rc-39",
+  "level": "pro",
+  "phase": "Cas récents · sécurité et livraison"
+ },
+ {
+  "id": "rc-40",
+  "level": "pro",
+  "phase": "Cas récents · sécurité et livraison"
+ },
+ {
+  "id": "rc-41",
+  "level": "pro",
+  "phase": "Cas récents · nos projets"
+ },
+ {
+  "id": "rc-42",
+  "level": "pro",
+  "phase": "Cas récents · nos projets"
+ }
+]);
 var RC_PORTFOLIO_PROOFS=[
  {icon:"📱",title:"PWA & offline",lesson:"rc-09",skill:"Web · PWA",proof:"Service worker, cache versionné et reprise hors connexion."},
  {icon:"🌦️",title:"Moteurs météo & risque",lesson:"rc-12",skill:"Data · logique métier",proof:"Normalisation météo, température chaussée et risque de verglas explicable."},
@@ -57,6 +109,43 @@ var RC_PORTFOLIO_PROOFS=[
  {icon:"♾️",title:"CI/CD & rollback",lesson:"rc-27",skill:"DevSecOps",proof:"PR, SHA vérifié, pipeline, déploiement et retour arrière sûr."},
  {icon:"🔧",title:"Debug méthodique",lesson:"rc-29",skill:"Engineering",proof:"Observe → Diagnose → Fix → Test → Verify sur des incidents réels."}
 ];
+RC_PORTFOLIO_PROOFS.push.apply(RC_PORTFOLIO_PROOFS, [
+ {
+  "icon": "📱",
+  "title": "UX mobile prod93",
+  "lesson": "rc-33",
+  "skill": "Front-end · ergonomie",
+  "proof": "Reproduction, captures fictives, focus conservé et test de débordement. PR #118 = exemple public à expliquer, pas validation automatique."
+ },
+ {
+  "icon": "🔐",
+  "title": "Coffre & limites de session",
+  "lesson": "rc-37",
+  "skill": "Cyber · intégrité",
+  "proof": "Rapport d’import refusé sans perte et explication du risque d’origine partagée, sur une sauvegarde synthétique."
+ },
+ {
+  "icon": "🚀",
+  "title": "Livraison réellement servie",
+  "lesson": "rc-39",
+  "skill": "DevSecOps · provenance",
+  "proof": "PR, SHA fusionné, CI complète, build publié et contrôle HTTP reliés dans un rapport daté."
+ },
+ {
+  "icon": "🎓",
+  "title": "Reconversion Control",
+  "lesson": "rc-41",
+  "skill": "PWA · apprentissage · privacy",
+  "proof": "Démonstration bilingue, SRS, export/import et états cours/lab/preuve indépendants, avec données fictives."
+ },
+ {
+  "icon": "🗄️",
+  "title": "Control Vault · prototype",
+  "lesson": "rc-42",
+  "skill": "Architecture · intégrité",
+  "proof": "Pitch honnête et démonstration d’empreinte/relecture sur données fictives ; connexion réelle et sauvegardes durables non actives."
+ }
+]);
 var RC_CAREER_STAGES=[
  {icon:"🧱",title:"Fondations IT",subtitle:"Foundations",sections:["fundamentals","linux","network"]},
  {icon:"🛡️",title:"Cybersécurité",subtitle:"Cybersecurity",sections:["security"]},
@@ -169,7 +258,7 @@ function deepDiveHtml(d){
 }
 function deepDiveOverview(){
  var all=Object.entries(RC_DEEP_DIVES);
- return'<section class="mod deep-dives-overview"><div class="mh"><h2>📘 Approfondissements IT</h2><span class="src">'+all.length+' MODULES</span></div><p class="muted">Linux, réseau, Cloud et pentest autorisé : explications, atelier et référence publique. Ils complètent les 32 chapitres Race Control.</p><div class="grid3">'+all.map(function(entry){var id=entry[0],d=entry[1];return'<article class="deep-dive-card"><span class="src">'+esc(section(topic(id).section).label)+'</span><h3>'+esc(d.label)+'</h3><p>'+esc(d.objectives[0])+'</p><button class="btn" data-open="'+esc(id)+'">Étudier · Open</button></article>';}).join("")+'</div></section>';
+ return'<section class="mod deep-dives-overview"><div class="mh"><h2>📘 Approfondissements IT</h2><span class="src">'+all.length+' MODULES</span></div><p class="muted">Linux, réseau, Cloud et pentest autorisé : explications, atelier et référence publique. Ils complètent le socle Race Control et les cas récents.</p><div class="grid3">'+all.map(function(entry){var id=entry[0],d=entry[1];return'<article class="deep-dive-card"><span class="src">'+esc(section(topic(id).section).label)+'</span><h3>'+esc(d.label)+'</h3><p>'+esc(d.objectives[0])+'</p><button class="btn" data-open="'+esc(id)+'">Étudier · Open</button></article>';}).join("")+'</div></section>';
 }
 function labEvidenceHtml(lab){
  var c=RC_EVIDENCE.cases[lab.id];if(!c)return"";
@@ -353,12 +442,36 @@ function dailyComplete(){
  var pick=dailySelection(today()),r=ensureDailyRecord(today(),pick);if(r.completed||dailyProgress(r)<3)return;
  r.completed=true;r.xp=100+(r.quizCorrect?20:0)+(r.englishCorrect?20:0);dailySave();render();
 }
+
+function publicLink(url,label){
+ var parsed;try{parsed=new URL(url);}catch(e){return"";}
+ var hosts=["github.com","ipoower.github.io","developer.mozilla.org","cheatsheetseries.owasp.org","docs.github.com"];
+ if(parsed.protocol!=="https:"||hosts.indexOf(parsed.hostname)<0||parsed.username||parsed.password)return"";
+ return'<a class="btn" href="'+esc(parsed.href)+'" target="_blank" rel="noopener noreferrer">'+esc(label)+'</a>';
+}
+function lessonSourceHtml(ref){
+ var support=RC_SUPPORTS.find(function(item){return item.id===ref.id;});
+ var location=ref.pages?" · p. "+ref.pages:ref.location?" · "+ref.location:"";
+ return'<li data-source-id="'+esc(ref.id)+'">'+esc(support?support.title:ref.id)+esc(location)+' · '+esc(support?support.version:"source non identifiée")+(support&&support.url?'<div class="actions">'+publicLink(support.url,"Consulter la source publique")+'</div>':"")+'</li>';
+}
+function publicSourcesHtml(){
+ var sources=RC_SUPPORTS.filter(function(source){return source.status==="public";});
+ return'<details class="mod public-sources" id="public-coverage"><summary>Sources publiques récentes · '+sources.length+' références</summary><div class="public-source-body"><p class="muted">Cas vérifiés le 12/10/2026, séparés du socle historique prod15. Les liens sont consultables sur demande ; la lecture des cours reste locale et hors ligne.</p>'+sources.map(function(source){return'<article class="support" data-public-source="'+esc(source.id)+'"><h3>'+esc(source.title)+'</h3><p class="muted">'+esc(source.format)+" · "+esc(source.version)+'</p><p>'+esc(source.coverage)+'</p>'+publicLink(source.url,"Consulter la source publique")+'</article>';}).join("")+'</div></details>';
+}
+function projectPortfolioHtml(){
+ return'<section class="mod project-portfolio"><div class="mh"><h2>Nos trois projets · Portfolio</h2><span class="src">PREUVES & LIMITES</span></div><p class="muted">Des exemples publics pour apprendre et préparer un entretien. Ta maîtrise et tes preuves personnelles restent à construire, indépendamment du code livré.</p><div class="grid3">'+RC_PROJECTS.map(function(project){return'<article class="project-card" data-project="'+esc(project.id)+'"><span class="src">'+esc(project.status)+'</span><h3>'+esc(project.title)+'</h3><p>'+esc(project.summary)+'</p><small>'+esc(project.skills)+'</small><button class="btn" data-open="'+esc(project.lesson)+'">Étudier le cas · Study</button><details class="answer"><summary>Preuves publiques et limites</summary><div class="project-evidence"><p>'+esc(project.limit)+'</p><div class="actions">'+publicLink(project.url,"Ouvrir l’application")+publicLink(project.repository,"Voir le dépôt")+'</div><ul>'+project.sources.map(function(id){return lessonSourceHtml({id:id});}).join("")+'</ul></div></details></article>';}).join("")+'</div><p class="muted">Cloud-DevSecOps-Lab reste une idée de prochain projet. Aucun dépôt, lab ni certification n’est ajouté comme déjà acquis.</p></section>';
+}
+function recentWorkHtml(){
+ var recent=RC_LESSONS.filter(function(lesson){return !!lesson.provenance;});
+ return'<div class="privacy recent-work"><b>✨ Nos dernières réalisations · '+recent.length+' nouveaux cours</b><p>UX prod93, Garage et F1, données fiables, départs personnalisés, coffre, CI/CD, diagnostics et trois projets. Cours FR/EN, labs et preuves restent indépendants.</p><div class="actions"><button class="btn" data-open="rc-33">Étudier les cas récents</button><button class="btn" data-view="path">Voir nos trois projets</button></div></div>';
+}
+
 function cockpit(){
  var p=progressFor(RC_TOPICS), d=due(), f=focusTopic();
  return dailyFiveTeaserHtml()+dailyMissionHtml()+'<div class="grid2"><section class="mod"><div class="mh"><h2>Knowledge Health</h2><span class="src">LOCAL</span></div><div class="hero"><h2>'+(p.pct>=80?"PRÊT À CONSOLIDER":p.pct>=45?"PROGRESSION ACTIVE":"BASES À CONSTRUIRE")+'</h2><p><strong>'+p.pct+' %</strong> de couverture pondérée · '+p.mastered+" acquis · "+p.inprog+' en cours</p></div><div class="health">'+healthRows()+'</div></section>'+studyPulseHtml()+'</div>'+interviewLabHtml()+portfolioProofsHtml()+'<section class="mod"><div class="mh"><h2>Priorités ★★★★★</h2><span class="src">À SAVOIR</span></div><div class="grid3">'+RC_TOPICS.filter(function(t){return t.p===5&&pstate(t.id)!=="mastered";}).slice(0,6).map(cardHtml).join("")+'</div></section>';
 }
 function path(){
- return'<section class="mod"><div class="mh"><h2>Parcours recommandé</h2><span class="src">9 DOMAINES</span></div><p class="muted">On consolide les couches dans l’ordre. Kubernetes, pentest avancé et sécurité IA deviennent beaucoup plus simples quand Linux, réseau et IAM sont solides.</p>'+RC_SECTIONS.map(function(s,i){var p=progressFor(RC_TOPICS.filter(function(t){return t.section===s.id;}));var active=p.pct<80&&RC_SECTIONS.slice(0,i).every(function(x){return progressFor(RC_TOPICS.filter(function(t){return t.section===x.id;})).pct>=50;});return'<div class="pathrow '+(active?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+s.icon+" "+esc(s.label)+'</b><div class="muted">'+esc(s.goal)+'</div></div><span class="score">'+p.pct+"%</span></div>";}).join("")+'</section>'+careerPathHtml();
+ return'<section class="mod"><div class="mh"><h2>Parcours recommandé</h2><span class="src">9 DOMAINES</span></div><p class="muted">On consolide les couches dans l’ordre. Kubernetes, pentest avancé et sécurité IA deviennent beaucoup plus simples quand Linux, réseau et IAM sont solides.</p>'+RC_SECTIONS.map(function(s,i){var p=progressFor(RC_TOPICS.filter(function(t){return t.section===s.id;}));var active=p.pct<80&&RC_SECTIONS.slice(0,i).every(function(x){return progressFor(RC_TOPICS.filter(function(t){return t.section===x.id;})).pct>=50;});return'<div class="pathrow '+(active?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+s.icon+" "+esc(s.label)+'</b><div class="muted">'+esc(s.goal)+'</div></div><span class="score">'+p.pct+"%</span></div>";}).join("")+'</section>'+careerPathHtml()+projectPortfolioHtml();
 }
 function curriculumItem(id){return RC_CURRICULUM.find(function(item){return item.id===id;})||null;}
 function studyStep(id){var i=RC_CURRICULUM.findIndex(function(item){return item.id===id;});return i<0?0:i+1;}
@@ -404,11 +517,11 @@ function library(){
 }
 function labLevelLabel(level){return level==="beginner"?"🟢 Débutant · Beginner":level==="intermediate"?"🟡 Intermédiaire · Intermediate":"🔴 Pro";}
 function labStatus(lab){var s=labProgressState(lab.id);return s==="mastered"?"VALIDÉ":s==="progress"?"EN COURS":"À FAIRE";}
-function labSourceLabels(lab){return lab.sources.map(function(id){var source=rcDriveSource(id);return source?source.title:id;});}
+function labSourceLabels(lab){return lab.sources.map(function(id){var source=rcDriveSource(id)||RC_SUPPORTS.find(function(item){return item.id===id;});return source?source.title:id;});}
 function nextLab(){return RC_LABS.find(function(lab){return labProgressState(lab.id)!=="mastered";})||RC_LABS[0];}
 function labCardHtml(lab){
  var status=labProgressState(lab.id),sources=labSourceLabels(lab),sec=section(lab.section);
- return'<article class="lab-card" data-lab="'+lab.id+'"><div class="lab-top"><span class="src">'+labLevelLabel(lab.level)+'</span><span class="lab-status '+status+'">'+labStatus(lab)+'</span></div><h3>'+esc(lab.title)+'</h3><p class="card-en-title" lang="en">🇬🇧 '+esc(lab.enTitle)+'</p><p>'+esc(lab.goal)+'</p><div class="tags"><span class="tag">⏱ '+lab.minutes+' min</span><span class="tag">'+esc(sec.icon+" "+sec.label)+'</span></div><details class="lab-detail"><summary>Ouvrir le lab · Start lab</summary><div class="lab-body"><h4>🎯 Objectif</h4><p>'+esc(lab.goal)+'</p><h4>🧪 Mission</h4><ol>'+lab.steps.map(function(step){return'<li>'+esc(step)+'</li>';}).join("")+'</ol><h4>✅ Résultat attendu</h4><p>'+esc(lab.expected)+'</p><h4>🔎 Self-check</h4><ul>'+lab.check.map(function(item){return'<li>'+esc(item)+'</li>';}).join("")+'</ul><div class="lab-english"><b>🎤 Explain it in English</b><p lang="en">'+esc(lab.english)+'</p></div><div class="lab-sources"><b>📚 Sources de travail</b><p>'+sources.map(esc).join(" · ")+'</p><small>Références issues de ta bibliothèque Drive privée. Le lab est une adaptation originale : aucun chapitre ni lien Drive privé n’est publié.</small></div>'+labEvidenceHtml(lab)+'<div class="seg"><button class="learn '+(status==="learn"?"on":"")+'" data-lab-prog="learn" data-lab-id="'+lab.id+'">À faire<small>To do</small></button><button class="progress '+(status==="progress"?"on":"")+'" data-lab-prog="progress" data-lab-id="'+lab.id+'">En cours<small>Practicing</small></button><button class="mastered '+(status==="mastered"?"on":"")+'" data-lab-prog="mastered" data-lab-id="'+lab.id+'">Validé<small>Validated</small></button></div></div></details></article>';
+ return'<article class="lab-card" data-lab="'+lab.id+'"><div class="lab-top"><span class="src">'+labLevelLabel(lab.level)+'</span><span class="lab-status '+status+'">'+labStatus(lab)+'</span></div><h3>'+esc(lab.title)+'</h3><p class="card-en-title" lang="en">🇬🇧 '+esc(lab.enTitle)+'</p><p>'+esc(lab.goal)+'</p><div class="tags"><span class="tag">⏱ '+lab.minutes+' min</span><span class="tag">'+esc(sec.icon+" "+sec.label)+'</span></div><details class="lab-detail"><summary>Ouvrir le lab · Start lab</summary><div class="lab-body"><h4>🎯 Objectif</h4><p>'+esc(lab.goal)+'</p><h4>🧪 Mission</h4><ol>'+lab.steps.map(function(step){return'<li>'+esc(step)+'</li>';}).join("")+'</ol><h4>✅ Résultat attendu</h4><p>'+esc(lab.expected)+'</p><h4>🔎 Self-check</h4><ul>'+lab.check.map(function(item){return'<li>'+esc(item)+'</li>';}).join("")+'</ul><div class="lab-english"><b>🎤 Explain it in English</b><p lang="en">'+esc(lab.english)+'</p></div><div class="lab-sources"><b>📚 Sources de travail</b><p>'+sources.map(esc).join(" · ")+'</p><small>'+(lab.public?'Cas récent original fondé sur des sources publiques. Aucun correcteur automatique : documente ton résultat puis autoévalue le lab.':'Références issues de ta bibliothèque Drive privée. Le lab est une adaptation originale : aucun chapitre ni lien Drive privé n’est publié.')+'</small>'+(lab.public?'<div class="actions"><button class="btn" data-open="'+esc(lab.topic)+'">Lire le cours et ses sources</button></div>':'')+'</div>'+labEvidenceHtml(lab)+'<div class="seg"><button class="learn '+(status==="learn"?"on":"")+'" data-lab-prog="learn" data-lab-id="'+lab.id+'">À faire<small>To do</small></button><button class="progress '+(status==="progress"?"on":"")+'" data-lab-prog="progress" data-lab-id="'+lab.id+'">En cours<small>Practicing</small></button><button class="mastered '+(status==="mastered"?"on":"")+'" data-lab-prog="mastered" data-lab-id="'+lab.id+'">Validé<small>Validated</small></button></div></div></details></article>';
 }
 function driveShelfHtml(){
  return'<section class="mod drive-shelf"><div class="mh"><h2>📚 Drive Source Shelf</h2><span class="src">'+RC_DRIVE_SOURCES.length+' RÉFÉRENCES CURATÉES</span></div><p class="en-kicker" lang="en">Private library mapped into the learning path — references only, no private links.</p><p class="muted">J’ai sélectionné les supports les plus utiles parmi ta bibliothèque pour compléter les 42 fiches générales. Les livres restent dans ton Drive ; l’application ne publie que des références bibliographiques et nos propres adaptations pédagogiques.</p><div class="source-shelf-grid">'+RC_DRIVE_SOURCES.map(function(source){return'<article class="source-book"><span class="src">'+esc(source.domain.toUpperCase())+'</span><h3>'+esc(source.title)+'</h3><small>'+esc(source.author)+'</small><p>'+esc(source.covers)+'</p></article>';}).join("")+'</div></section>';
@@ -419,7 +532,7 @@ function labs(){
 }
 function course(){
  var ordered=orderedLessons(),p=progressFor(ordered),active=activeCourseLevel(),next=ordered.find(function(lesson){return pstate(lesson.id)!=="mastered";}),action=next?(p.mastered||p.inprog?'Continuer · Continue':'Commencer · Start'):'Revoir · Review';next=next||ordered[0];
- return'<section class="mod"><div class="mh"><h2>Parcours de révision</h2><span class="src">'+ordered.length+' ÉTAPES · 3 NIVEAUX</span></div><p class="en-kicker" lang="en">Study path · French for understanding, English for your IT career.</p><p class="source-note">L’ordre suit les prérequis. L’anglais est progressif : 🟢 25 % en Débutant, 🟡 50 % en Intermédiaire, 🔴 75 % en Pro. Le français reste toujours disponible pour vérifier ta compréhension.</p><div class="hero"><span class="src">'+active.icon+" NIVEAU ACTUEL · "+esc(active.label.toUpperCase())+" / "+esc(active.labelEn.toUpperCase())+'</span><h2>'+esc(active.goal)+'</h2><p class="hero-en" lang="en">'+esc(active.goalEn)+'</p><p>'+p.mastered+' étapes acquises · '+p.inprog+' en cours sur 32</p>'+(next?'<button class="btn pri" data-open="'+next.id+'">'+action+' · étape '+studyStep(next.id)+' · '+esc(next.title)+'</button>':'')+'</div><div class="english-ladder"><div><b>🟢 Débutant · Beginner</b><span>25% English · comprendre puis reformuler</span></div><div><b>🟡 Intermédiaire · Intermediate</b><span>50% English · répondre en anglais avec aide FR</span></div><div><b>🔴 Pro</b><span>75% English · simulation d’entretien IT</span></div></div><div class="course-roadmap" aria-label="Progression des niveaux">'+RC_COURSE_LEVELS.map(function(level){return courseRoadmapCard(level,active);}).join("")+'</div><p class="muted">Règle simple · Simple rule: travaille la prochaine étape proposée, puis fais le défi oral English Coach avant de marquer le cours “Acquis / Mastered”.</p><div id="course-chapters" class="course-levels">'+RC_COURSE_LEVELS.map(function(level){return courseLevelSection(level,active);}).join("")+'</div></section>';
+ return'<section class="mod"><div class="mh"><h2>Parcours de révision</h2><span class="src">'+ordered.length+' ÉTAPES · 3 NIVEAUX</span></div><p class="en-kicker" lang="en">Study path · French for understanding, English for your IT career.</p><p class="source-note">L’ordre suit les prérequis. L’anglais est progressif : 🟢 25 % en Débutant, 🟡 50 % en Intermédiaire, 🔴 75 % en Pro. Le français reste toujours disponible pour vérifier ta compréhension.</p>'+recentWorkHtml()+'<div class="hero"><span class="src">'+active.icon+" NIVEAU ACTUEL · "+esc(active.label.toUpperCase())+" / "+esc(active.labelEn.toUpperCase())+'</span><h2>'+esc(active.goal)+'</h2><p class="hero-en" lang="en">'+esc(active.goalEn)+'</p><p>'+p.mastered+' étapes acquises · '+p.inprog+' en cours sur '+ordered.length+'</p>'+(next?'<button class="btn pri" data-open="'+next.id+'">'+action+' · étape '+studyStep(next.id)+' · '+esc(next.title)+'</button>':'')+'</div><div class="english-ladder"><div><b>🟢 Débutant · Beginner</b><span>25% English · comprendre puis reformuler</span></div><div><b>🟡 Intermédiaire · Intermediate</b><span>50% English · répondre en anglais avec aide FR</span></div><div><b>🔴 Pro</b><span>75% English · simulation d’entretien IT</span></div></div><div class="course-roadmap" aria-label="Progression des niveaux">'+RC_COURSE_LEVELS.map(function(level){return courseRoadmapCard(level,active);}).join("")+'</div><p class="muted">Règle simple · Simple rule: travaille la prochaine étape proposée, puis fais le défi oral English Coach avant de marquer le cours “Acquis / Mastered”.</p><div id="course-chapters" class="course-levels">'+RC_COURSE_LEVELS.map(function(level){return courseLevelSection(level,active);}).join("")+'</div></section>';
 }
 function review(){
  var d=due(), future=Object.keys(state.review).map(function(id){return{id:id,r:state.review[id],t:topic(id)};}).filter(function(x){return x.t&&x.r.due>today();}).sort(function(a,b){return a.r.due.localeCompare(b.r.due);}).slice(0,10);
@@ -440,8 +553,9 @@ function cloudRestore(o){
 }
 
 function privacy(){
+ var historical=RC_SUPPORTS.filter(function(source){return source.status!=="public";});
  var syncBlock='<section class="mod" id="rc-sync">'+(syncBridge?syncBridge.render():'Synchronisation non initialisée')+'</section>';
- return'<div class="grid2"><section class="mod"><div class="mh"><h2>Sources pédagogiques</h2><span class="src">7 SUPPORTS VÉRIFIÉS</span></div><p>'+RC_LESSONS.length+' chapitres adaptés du cours Race Control, recoupés avec le dossier prod15. Les PDF/DOCX originaux et la sauvegarde privée restent hors de l’application.</p><div id="support-coverage">'+RC_SUPPORTS.map(function(s){return'<article class="support" data-support-id="'+esc(s.id)+'" data-support-status="'+esc(s.status)+'"><h3>'+esc(s.title)+'</h3><p class="muted">'+esc(s.format)+' · '+esc(s.version)+'</p><p>'+esc(s.coverage)+'</p></article>';}).join("")+'</div><h3>Bibliothèque générale à compléter</h3><p class="muted">Les 42 fiches initiales sont des repères synthétiques. Les supports Race Control ne remplacent pas les cours complets de Linux, réseau, pentest, Kubernetes ou sécurité IA. Les références ci-dessous figuraient dans la bibliothèque ; leurs textes complets ne sont pas fournis dans ce lot.</p><ul>'+RC_SOURCES.filter(function(s){return s!=="Race Control expliqué de zéro à DevSecOps";}).map(function(s){return'<li>'+esc(s)+'</li>';}).join("")+'</ul></section><section class="mod"><div class="mh"><h2>Confidentialité</h2><span class="src">BY DESIGN</span></div><div class="privacy"><b>✅ Sources privées conservées hors du site</b><br>Aucun PDF/DOCX brut, aucune URL privée ni donnée de la sauvegarde dans le contenu publié.</div><div class="privacy"><b>✅ Progression locale par défaut</b><br>Statuts et révisions restent dans localStorage. Une copie chiffrée n’est transmise qu’après connexion cloud volontaire.</div><div class="privacy"><b>✅ Aucun analytics · cloud facultatif</b><br>Aucune progression envoyée tant que la synchronisation personnelle n’est pas activée.</div><div class="privacy"><b>✅ Cours hors ligne</b><br>Après un premier chargement complet avec réseau, les cours sont conservés sur l’appareil. Le navigateur peut effacer son cache ; ce n’est pas une sauvegarde de ta progression.</div><div class="privacy"><b>✅ Bibliothèque Drive cloisonnée</b><br>Les labs peuvent citer des références sélectionnées, mais aucun ID, URL Drive privée ni contenu intégral des livres n’est publié.</div><div class="actions"><button id="export" class="btn">Exporter</button><button id="import" class="btn">Importer</button><button id="reset" class="btn">Réinitialiser</button></div></section>'+syncBlock+'</div>';
+ return'<div class="grid2"><section class="mod"><div class="mh"><h2>Sources pédagogiques</h2><span class="src">'+historical.length+' SUPPORTS HISTORIQUES</span></div><p>32 chapitres historiques adaptés du cours Race Control, recoupés avec le dossier prod15, puis '+RC_LESSONS.filter(function(lesson){return !!lesson.provenance;}).length+' cas récents issus de sources publiques. Les PDF/DOCX originaux et la sauvegarde privée restent hors de l’application.</p><div id="support-coverage">'+historical.map(function(s){return'<article class="support" data-support-id="'+esc(s.id)+'" data-support-status="'+esc(s.status)+'"><h3>'+esc(s.title)+'</h3><p class="muted">'+esc(s.format)+' · '+esc(s.version)+'</p><p>'+esc(s.coverage)+'</p></article>';}).join("")+'</div><h3>Bibliothèque générale à compléter</h3><p class="muted">Les 42 fiches initiales sont des repères synthétiques. Les supports Race Control ne remplacent pas les cours complets de Linux, réseau, pentest, Kubernetes ou sécurité IA. Les références ci-dessous figuraient dans la bibliothèque ; leurs textes complets ne sont pas fournis dans ce lot.</p><ul>'+RC_SOURCES.filter(function(s){return s!=="Race Control expliqué de zéro à DevSecOps";}).map(function(s){return'<li>'+esc(s)+'</li>';}).join("")+'</ul></section><section class="mod"><div class="mh"><h2>Confidentialité</h2><span class="src">BY DESIGN</span></div><div class="privacy"><b>✅ Sources privées conservées hors du site</b><br>Aucun PDF/DOCX brut, aucune URL privée ni donnée de la sauvegarde dans le contenu publié.</div><div class="privacy"><b>✅ Progression locale par défaut</b><br>Statuts et révisions restent dans localStorage. Une copie chiffrée n’est transmise qu’après connexion cloud volontaire.</div><div class="privacy"><b>✅ Aucun analytics · cloud facultatif</b><br>Aucune progression envoyée tant que la synchronisation personnelle n’est pas activée.</div><div class="privacy"><b>✅ Cours hors ligne</b><br>Après un premier chargement complet avec réseau, les cours sont conservés sur l’appareil. Le navigateur peut effacer son cache ; ce n’est pas une sauvegarde de ta progression.</div><div class="privacy"><b>✅ Bibliothèque Drive cloisonnée</b><br>Les labs peuvent citer des références sélectionnées, mais aucun ID, URL Drive privée ni contenu intégral des livres n’est publié.</div><div class="actions"><button id="export" class="btn">Exporter</button><button id="import" class="btn">Importer</button><button id="reset" class="btn">Réinitialiser</button></div></section>'+syncBlock+'</div>'+publicSourcesHtml();
 }
 function detailProgress(ps){
  return'<div class="seg"><button class="learn '+(ps==="learn"?"on":"")+'" data-dprog="learn">À apprendre<small>Learn</small></button><button class="progress '+(ps==="progress"?"on":"")+'" data-dprog="progress">En cours<small>Learning</small></button><button class="mastered '+(ps==="mastered"?"on":"")+'" data-dprog="mastered">Acquis<small>Mastered</small></button></div>';
@@ -456,7 +570,7 @@ function relatedHtml(id){
 function lessonHtml(lesson,t,s,ps){
  var ordered=orderedLessons(), index=ordered.findIndex(function(item){return item.id===lesson.id;}), previous=ordered[index-1], next=ordered[index+1], level=courseLevelFor(lesson), entry=curriculumItem(lesson.id), step=studyStep(lesson.id);
  var quiz=lesson.quiz || [], glossary=lesson.glossary || [];
- return'<div class="detail lesson-detail" data-lesson-id="'+esc(lesson.id)+'"><span class="src">'+level.icon+" "+esc(level.label.toUpperCase())+" / "+esc(level.labelEn.toUpperCase())+" · ÉTAPE "+step+" / 32 · "+esc(entry.phase.toUpperCase())+'</span><h2 id="detail-title" tabindex="-1">'+esc(t.title)+'</h2><p class="lesson-title-en" lang="en">🇬🇧 '+esc(englishData(lesson.id).title)+'</p><p class="muted">'+esc(t.summary)+'</p>'+detailProgress(ps)+'<p class="study-why"><b>Pourquoi maintenant ? · Why now?</b> Cette étape appartient au bloc « '+esc(entry.phase)+' » et prépare la suite du parcours.</p>'+englishCoachHtml(lesson,level)+'<p class="source-note">Support prod15 · instantané historique. Le numéro du chapitre source est '+lesson.chapter+' ; l’ordre affiché ici est l’ordre pédagogique de révision.</p><section class="lesson-goals"><h3>À savoir avant de passer à la suite</h3><ul>'+lesson.goals.map(function(goal){return'<li>'+esc(goal)+'</li>';}).join("")+'</ul></section><div class="lesson-sections">'+lesson.sections.map(function(part){return'<section><h3>'+esc(part.title)+'</h3>'+part.body.map(function(paragraph){return'<p>'+esc(paragraph)+'</p>';}).join("")+(part.code?'<pre class="code"><code>'+esc(part.code)+'</code></pre>':'')+'</section>';}).join("")+'</div><section class="box"><h3>Pièges à éviter</h3><ul>'+lesson.pitfalls.map(function(pitfall){return'<li>'+esc(pitfall)+'</li>';}).join("")+'</ul></section><section class="box"><h3>🎙️ Question d’entretien</h3><p>'+esc(lesson.interview.question)+'</p>'+answerHtml("Voir une réponse possible",lesson.interview.answer)+'</section><section class="box"><h3>🧪 Exercice</h3><p>'+esc(lesson.exercise.prompt)+'</p>'+answerHtml("Afficher le corrigé",lesson.exercise.answer)+'</section>'+(quiz.length?'<section class="lesson-quiz"><h3>Révision : teste-toi avant de lire</h3>'+quiz.map(function(item,i){return'<article class="quiz-item"><h4>'+(i+1)+'. '+esc(item.question)+'</h4>'+answerHtml("Voir la réponse "+(i+1),item.answer)+'</article>';}).join("")+'</section>':'')+(glossary.length?'<section class="lesson-glossary"><h3>Glossaire</h3><dl>'+glossary.map(function(item){return'<dt>'+esc(item.term)+'</dt><dd>'+esc(item.definition)+'</dd>';}).join("")+'</dl></section>':'')+'<section class="lesson-sources"><h3>Sources et version</h3><ul>'+lesson.sources.map(function(ref){var support=RC_SUPPORTS.find(function(item){return item.id===ref.id;});return'<li data-source-id="'+esc(ref.id)+'">'+esc(support?support.title:ref.id)+' · p. '+esc(ref.pages)+' · '+esc(support?support.version:"prod15")+'</li>';}).join("")+'</ul><p class="muted">Adaptation pédagogique, sans documents bruts ni données opérationnelles privées.</p></section><div class="actions chapter-navigation" aria-label="Navigation entre étapes">'+(previous?'<button class="btn" data-open="'+esc(previous.id)+'">← Étape '+studyStep(previous.id)+'</button>':'')+(next?'<button class="btn pri" data-open="'+esc(next.id)+'">Étape '+studyStep(next.id)+' →</button>':'')+'</div></div>';
+ return'<div class="detail lesson-detail" data-lesson-id="'+esc(lesson.id)+'"><span class="src">'+level.icon+" "+esc(level.label.toUpperCase())+" / "+esc(level.labelEn.toUpperCase())+" · ÉTAPE "+step+" / "+ordered.length+" · "+esc(entry.phase.toUpperCase())+'</span><h2 id="detail-title" tabindex="-1">'+esc(t.title)+'</h2><p class="lesson-title-en" lang="en">🇬🇧 '+esc(englishData(lesson.id).title)+'</p><p class="muted">'+esc(t.summary)+'</p>'+detailProgress(ps)+'<p class="study-why"><b>Pourquoi maintenant ? · Why now?</b> Cette étape appartient au bloc « '+esc(entry.phase)+' » et prépare la suite du parcours.</p>'+englishCoachHtml(lesson,level)+'<p class="source-note">'+esc(lesson.provenance || ('Support prod15 · instantané historique. Le numéro du chapitre source est '+lesson.chapter+' ; l’ordre affiché ici est l’ordre pédagogique de révision.'))+'</p><section class="lesson-goals"><h3>À savoir avant de passer à la suite</h3><ul>'+lesson.goals.map(function(goal){return'<li>'+esc(goal)+'</li>';}).join("")+'</ul></section><div class="lesson-sections">'+lesson.sections.map(function(part){return'<section><h3>'+esc(part.title)+'</h3>'+part.body.map(function(paragraph){return'<p>'+esc(paragraph)+'</p>';}).join("")+(part.code?'<pre class="code"><code>'+esc(part.code)+'</code></pre>':'')+'</section>';}).join("")+'</div><section class="box"><h3>Pièges à éviter</h3><ul>'+lesson.pitfalls.map(function(pitfall){return'<li>'+esc(pitfall)+'</li>';}).join("")+'</ul></section><section class="box"><h3>🎙️ Question d’entretien</h3><p>'+esc(lesson.interview.question)+'</p>'+answerHtml("Voir une réponse possible",lesson.interview.answer)+'</section><section class="box"><h3>🧪 Exercice</h3><p>'+esc(lesson.exercise.prompt)+'</p>'+answerHtml("Afficher le corrigé",lesson.exercise.answer)+'</section>'+(quiz.length?'<section class="lesson-quiz"><h3>Révision : teste-toi avant de lire</h3>'+quiz.map(function(item,i){return'<article class="quiz-item"><h4>'+(i+1)+'. '+esc(item.question)+'</h4>'+answerHtml("Voir la réponse "+(i+1),item.answer)+'</article>';}).join("")+'</section>':'')+(glossary.length?'<section class="lesson-glossary"><h3>Glossaire</h3><dl>'+glossary.map(function(item){return'<dt>'+esc(item.term)+'</dt><dd>'+esc(item.definition)+'</dd>';}).join("")+'</dl></section>':'')+'<section class="lesson-sources"><h3>Sources et version</h3><ul>'+lesson.sources.map(lessonSourceHtml).join("")+'</ul><p class="muted">Adaptation pédagogique, sans documents bruts ni données opérationnelles privées.</p></section><div class="actions chapter-navigation" aria-label="Navigation entre étapes">'+(previous?'<button class="btn" data-open="'+esc(previous.id)+'">← Étape '+studyStep(previous.id)+'</button>':'')+(next?'<button class="btn pri" data-open="'+esc(next.id)+'">Étape '+studyStep(next.id)+' →</button>':'')+'</div></div>';
 }
 function topicView(id){return RC_LESSON_MAP[id]?"course":"library";}
 function readRoute(){

@@ -1,5 +1,7 @@
 # Couverture des supports pédagogiques
 
+> V2.2 : cette cartographie conserve le socle historique de 32 chapitres. Dix cas récents (`rc-33` à `rc-42`), cinq labs et cinq preuves s’y ajoutent sans remplacer les références privées ni leurs pages. Leur provenance publique et leurs limites sont détaillées dans [Réalisations récentes du 12/10/2026](recent-realizations-20261012.md). Les notions livrées après prod15 ne sont pas attribuées rétroactivement aux anciens PDF.
+
 Adaptation vérifiée le 4 octobre 2026. Le cours décrit **Race Control prod-15**, au commit historique `4b6f6dcf115b539eff98db92e1df5351a26d7ac9`. Ces documents ne certifient pas les fonctionnalités de la production actuelle. Les chiffres CI rapportés dans les supports sont des preuves historiques, distinctes de la CI de cette application.
 
 ## Ce qui est intégré

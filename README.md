@@ -2,25 +2,25 @@
 
 PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, inspirée du cockpit de Race Control mais hébergée dans un dépôt totalement indépendant.
 
-## V2.1 — Navigable PWA · adaptive learning + verifiable builds
+## V2.2 — Réalisations récentes · cours, labs et portfolio
 
-- 9 domaines, 42 fiches essentielles conservées et 32 chapitres Race Control
-- parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec 32 étapes réordonnées selon leurs prérequis plutôt que selon l’ordre des supports source
+- 9 domaines, 42 fiches essentielles conservées et 42 cours : 32 chapitres historiques Race Control + 10 cas récents
+- parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec le socle de 32 étapes réordonnées selon leurs prérequis puis dix cas récents Pro ; aucun ancien identifiant modifié
 - apprentissage bilingue progressif FR + EN : English Coach à 25 % en Débutant, 50 % en Intermédiaire et 75 % en Pro, recherche bilingue et défis oraux
 - cours guidé : objectifs, explications, exemples, pièges, entretien et exercice corrigé
 - 12 questions de révision, glossaire de 42 termes et six checkpoints de compréhension
 - sources et pages visibles, inventaire des sept pièces et limites de couverture
 - cockpit quotidien : Mission du jour (Learn / Review / Speak), session guidée 30 min, Study Pulse et Interview Lab
 - ⚡ 5 minutes par jour : 14 sessions mappées aux notions, sélection adaptative par révision due → erreur récente → domaine faible, Flash Quiz, Mini-mission, English Sprint, XP et streak local
-- Lab Mode : 15 exercices pratiques Débutant / Intermédiaire / Pro avec progression indépendante des cours
+- Lab Mode : 20 exercices pratiques Débutant / Intermédiaire / Pro avec progression indépendante des cours
 - Drive Source Shelf : 10 références privées sélectionnées et adaptées sans publier d’ID, URL Drive ou chapitre intégral
-- Portfolio Proofs : sept capacités Race Control avec statut et Evidence Locker locaux, indépendants du statut des cours
+- Portfolio Proofs : 12 capacités des projets avec statut et Evidence Locker locaux, indépendants du statut des cours
 - Cap reconversion : Fondations IT → Cyber → Cloud/DevSecOps → Pentest → Sécurité IA → Portfolio
 - Knowledge Health par domaine
 - statuts À apprendre / En cours / Acquis
 - SRS V2 : Again / Hard / Good / Easy, intervalles adaptatifs et sortie automatique de « Acquis » après deux oublis pour éviter la fausse maîtrise
 - recherche, parcours recommandé, questions d'entretien et exercices
-- portfolio Race Control
+- portfolio public de trois projets : Race Control, Reconversion Control et Control Vault, avec statut, sources et limites explicites
 - export/import local de progression
 - mode sombre / clair
 - PWA installable et cache hors ligne, deep links (`#daily`, `#review`, `#labs`, `#topic/<id>`), bouton Retour cohérent et raccourcis PWA
@@ -28,10 +28,18 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 - notification locale lorsqu’une nouvelle version PWA prend le contrôle
 - aucun analytics ; aucun backend requis (synchronisation privée optionnelle)
 
-## Extensions : cours techniques, preuves et synchronisation (en préparation)
+## Réalisations récentes — instantané vérifié le 12/10/2026
+
+Dix cours FR/EN (`rc-33` à `rc-42`) couvrent UX prod93, Garage et les six modules F1, provenance des mesures, départs personnalisés, coffre local, CI sécurisée, version réellement servie, diagnostics privés, Reconversion Control et Control Vault. Cinq labs manuels (`lab-16` à `lab-20`) et cinq nouvelles preuves portfolio restent indépendants des statuts des cours. Les 14 séances Daily Five et leurs identifiants sont conservés.
+
+Quatorze références publiques sont disponibles dans les cours et une section Sources repliée. Les sept pièces historiques restent séparées : aucun contenu récent n’est faussement attribué au PDF prod15. Le détail des ajouts et de leur provenance est dans [docs/recent-realizations-20261012.md](docs/recent-realizations-20261012.md).
+
+Control Vault est une **Phase 1 de démonstration**, avec des moteurs réels sur données fictives, sans connexion Google/Supabase ni sauvegarde personnelle durable active. Cloud-DevSecOps-Lab reste une idée de prochain projet. Aucun cours, lab, preuve ou certification n’est acquis automatiquement.
+
+## Cours techniques, preuves et synchronisation
 
 - **12 modules originaux sourcés** ajoutés aux fiches Linux, réseau, Cloud et pentest autorisé. Il s'agit de compléments issus de documentation publique, **pas** d'une couverture intégrale des ouvrages privés manquants.
-- **5 labs sur 15** comportent maintenant un contrôleur de rendu JSON strict, avec explications des échecs et empreinte SHA-256 locale du fichier vérifié. Les 10 autres continuent d'utiliser l'autoévaluation. Aucun code utilisateur n'est exécuté.
+- **5 labs sur 20** comportent maintenant un contrôleur de rendu JSON strict, avec explications des échecs et empreinte SHA-256 locale du fichier vérifié. Les 15 autres continuent d'utiliser l'autoévaluation. Aucun code utilisateur n'est exécuté.
 - **Synchronisation PC/iPhone opt-in**, documentée dans [docs/cloud-sync.md](docs/cloud-sync.md) : Supabase Email OTP et AES-256-GCM local, révisions conditionnelles et choix explicite des conflits. **Aucun projet Supabase n'est activé ni configuré par défaut.**
 
 ## Confidentialité
@@ -42,7 +50,7 @@ Les adaptations reprennent le cours débutant, le dossier technique prod-15 et l
 Les fiches d’architecture prod-8 sont des archives, le PDF et le DOCX du dossier sont deux formats
 d’un même contenu. La sauvegarde Race Control chiffrée reste privée et n’a pas été déchiffrée.
 Les fonctions annoncées en roadmap dans ces documents restent identifiées comme telles au baseline
-prod-15. Ces sources historiques ne certifient pas la version actuelle de Race Control.
+prod-15. Ces sources historiques ne certifient pas la version actuelle de Race Control. Les cas récents utilisent des sources publiques datées et distinguent ce qui est livré, simulé ou encore à construire.
 
 La [cartographie des sources](docs/source-coverage.md) relie les 32 chapitres, les 27 sections du dossier
 et les annexes aux cours. Elle indique également quelles fiches générales restent à compléter :

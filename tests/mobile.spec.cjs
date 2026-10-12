@@ -54,7 +54,7 @@ async function main() {
     await nav(page, "cockpit");
     assert.equal(await page.locator(".mission-card").count(),3);
     assert.equal(await page.locator(".session-recipe span").count(),3);
-    assert.equal(await page.locator(".portfolio-proofs .proof-card").count(),7);
+    assert.equal(await page.locator(".portfolio-proofs .proof-card").count(),12);
     assert.equal(await page.locator(".interview-lab").count(),1);
     assert.equal(await page.locator(".study-pulse .pulse").count(),4);
     assert.match(await page.locator(".mission-card.english").textContent(),/English challenge/);
@@ -141,12 +141,12 @@ async function main() {
     passed("Daily Five prioritizes a due mapped review, then a recent mistake, and locks the chosen session");
 
     await nav(page, "labs");
-    assert.equal(await page.locator(".lab-card").count(),15);
+    assert.equal(await page.locator(".lab-card").count(),20);
     assert.equal(await page.locator(".source-book").count(),10);
-    assert.deepEqual(await page.evaluate(()=>({labs:RC_LABS.length,sources:RC_DRIVE_SOURCES.length})),{labs:15,sources:10});
+    assert.deepEqual(await page.evaluate(()=>({labs:RC_LABS.length,sources:RC_DRIVE_SOURCES.length})),{labs:20,sources:10});
     assert.equal(await page.locator('[data-lab-level="beginner"] .lab-card').count(),6);
     assert.equal(await page.locator('[data-lab-level="intermediate"] .lab-card').count(),6);
-    assert.equal(await page.locator('[data-lab-level="pro"] .lab-card').count(),3);
+    assert.equal(await page.locator('[data-lab-level="pro"] .lab-card').count(),8);
     await page.locator("[data-lab-jump]").tap();
     assert.equal(await page.locator('[data-lab="lab-01"] details').evaluate(el=>el.open),true);
     assert.match(await page.locator('[data-lab="lab-01"]').textContent(),/Python Crash Course/);
@@ -158,7 +158,7 @@ async function main() {
     const publicLabText=await page.locator(".drive-shelf").textContent();
     assert(!/drive\.google\.com|docs\.google\.com|usp=drivesdk/i.test(publicLabText),"public source shelf must not expose private Drive links");
     assert.equal(await page.evaluate(()=>RC_DRIVE_SOURCES.every(source=>Object.keys(source).sort().join(",")==="author,covers,domain,id,title")),true,"published Drive metadata must be limited to curated bibliography fields");
-    passed("Drive-backed Lab Mode exposes 15 practical labs and 10 curated references without private Drive links");
+    passed("Drive-backed Lab Mode exposes 20 practical labs and 10 curated references without private Drive links");
 
     await nav(page,"cockpit");
     const proofId=await page.locator(".proof-card").first().getAttribute("data-proof");
@@ -178,7 +178,7 @@ async function main() {
 
     await nav(page, "library");
     const topics = await page.evaluate(() => RC_TOPICS.map(t => ({id:t.id, section:t.section, title:t.title})));
-    assert.equal(topics.length, 74);
+    assert.equal(topics.length, 84);
     assert.equal(topics.filter(t => !/^rc-\d{2}$/.test(t.id)).length, 42, "the original 42 topics stay available");
     const sections = await page.evaluate(() => RC_SECTIONS.map(s => s.id));
     assert.equal(sections.length, 9);
@@ -187,7 +187,7 @@ async function main() {
       assert.deepEqual(await visibleIds(page), topics.filter(t => t.section === section).map(t => t.id).sort());
     }
     await page.locator('[data-section="all"]').tap();
-    assert.equal((await visibleIds(page)).length, 74);
+    assert.equal((await visibleIds(page)).length, 84);
     passed("all nine domain tabs and Tout filter the actual cards");
 
     const search = page.locator("#search");
@@ -217,7 +217,7 @@ async function main() {
       await page.locator("#close").tap();
       assert.equal(await page.locator("#dlg").evaluate(el => el.open), false);
     }
-    passed("all 74 fiche dialogs open the right content and close on iPhone");
+    passed("all 84 fiche dialogs open the right content and close on iPhone");
     await page.locator('#cards [data-open="dns"]').tap();
     await page.locator('[data-dprog="mastered"]').tap();
     assert.equal(await page.locator("#dlg").evaluate(el => el.open), true);

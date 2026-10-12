@@ -85,7 +85,16 @@ jobs:
       - name: Cours, sources, corrigés et progression
         env:
           BROWSER: ${{ matrix.browser }}
+          RC_SCREENSHOT_DIR: artifacts/reconversion-${{ matrix.browser }}
         run: npm run test:learning
       - name: Cache et redémarrage hors connexion
         if: matrix.browser == 'chromium'
         run: npm run test:sw
+      - name: Captures mobile et PC à examiner
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reconversion-visual-${{ matrix.browser }}
+          path: artifacts/reconversion-${{ matrix.browser }}/
+          if-no-files-found: warn
+          retention-days: 14
