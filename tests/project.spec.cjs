@@ -55,7 +55,7 @@ async function main(){
   const legacy={version:2,progress:seed.progress,review:seed.review,labs:seed.labs,proofs:seed.proofs,labChecks:{}};
   await page.locator("#importer").setInputFiles({name:"legacy.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(legacy))});
   await page.waitForTimeout(200);assert.deepEqual((await read()).career,saved.career,"legacy import must keep the new dossier");
-  const before=await read();const malformed={...saved,progress:{dns:"learn"},career:{drills:{linux:{status:"demonstrated",date:"",evidence:""}}}};
+  const before=await read();const malformed={...saved,progress:{...saved.progress,"rc-02":"learn"},career:{drills:{linux:{status:"demonstrated",date:"",evidence:""}}}};
   await page.locator("#importer").setInputFiles({name:"invalid.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(malformed))});
   await page.waitForTimeout(200);assert.deepEqual((await read()).progress,before.progress,"invalid dossier must reject the entire import atomically");
   await page.locator("#importer").setInputFiles({name:"new.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(saved))});
