@@ -33,8 +33,11 @@ async function main(){
   await form.locator("select").selectOption("verified");await form.locator("button").click();
   assert.match(await form.locator('[role="status"]').textContent(),/preuve et une date/);
   assert.equal((await read()).career.schools.jedha.answers.title,undefined);
+  const otherDraft=page.locator('[data-project-answer="eni:title"] textarea');
+  await otherDraft.fill("Brouillon ENI non encore enregistré");
   await form.locator("textarea").fill("Courriel test anonymisé");await form.locator('[type="date"]').fill("2026-10-15");await form.locator("button").click();
   assert.equal((await read()).career.schools.jedha.answers.title.status,"verified");
+  assert.equal(await otherDraft.inputValue(),"Brouillon ENI non encore enregistré","saving one school must retain unsaved text in the other school");
   let drill=page.locator('[data-project-drill="linux"]');await drill.locator("select").selectOption("demonstrated");await drill.locator("button").click();
   assert.match(await drill.locator('[role="status"]').textContent(),/preuve et une date/);
   await drill.locator("textarea").fill("Manipulation expliquée sans aide");await drill.locator('[type="date"]').fill("2026-10-15");await drill.locator("button").click();

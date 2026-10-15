@@ -472,7 +472,18 @@ function cockpit(){
 }
 function project(){return RC_PROJECT_PLAN.render({data:state.career,escape:esc,topicTitle:function(id){return topic(id).title;}});}
 function projectSaved(selector,message){
- var y=window.scrollY;save();render();window.scrollTo(0,y);
+ var y=window.scrollY,drafts=[],opened={};
+ // Saving one school must not erase text being drafted in the other school.
+ $$("#project-profile-form,[data-project-answer],[data-project-drill],[data-project-cost]").forEach(function(form){
+  if(form.matches(selector))return;
+  var key=form.id?"#"+form.id:["data-project-answer","data-project-drill","data-project-cost"].filter(function(a){return form.hasAttribute(a);}).map(function(a){return'['+a+'="'+form.getAttribute(a)+'"]';})[0];
+  drafts.push({key:key,values:Array.from(form.querySelectorAll("input,select,textarea")).map(function(f){return f.value;})});
+ });
+ ["#project-schools","#project-drills"].forEach(function(id){opened[id]=Array.from($(id).querySelectorAll("details")).map(function(d){return d.open;});});
+ save();render();
+ drafts.forEach(function(d){var form=$(d.key);if(form)Array.from(form.querySelectorAll("input,select,textarea")).forEach(function(f,i){f.value=d.values[i];});});
+ Object.keys(opened).forEach(function(id){Array.from($(id).querySelectorAll("details")).forEach(function(d,i){d.open=opened[id][i];});});
+ window.scrollTo(0,y);
  var form=$(selector),status=form&&form.querySelector('[role="status"]'),button=form&&form.querySelector('button[type="submit"]');
  if(status)status.textContent=storageUnavailable?"Conservé en mémoire seulement : exporte ton dossier pour le sauvegarder.":message||"Enregistré sur cet appareil.";
  if(button)button.focus({preventScroll:true});
