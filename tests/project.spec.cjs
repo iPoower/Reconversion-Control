@@ -11,9 +11,10 @@ async function main(){
  const context=await browser.newContext({...devices["iPhone 11 Pro Max"],serviceWorkers:"block",acceptDownloads:true});
  const page=await context.newPage(),errors=[],external=[];
  page.on("pageerror",e=>errors.push(e.message));page.on("request",r=>{if(!r.url().startsWith(server.url))external.push(r.url());});
+ const dailySeed={days:{"2026-10-01":{sessionId:"d01",reason:"Rotation",missionDone:true}}};
  const seed={view:"cockpit",section:"all",search:"",status:"all",progress:{dns:"mastered","rc-02":"progress"},review:{dns:{step:0,due:"2099-01-01"}},labs:{"lab-01":"progress"},proofs:{"rc-25":{status:"progress",evidence:"Preuve historique"}},labChecks:{}};
  try{
-  await context.addInitScript(({KEY,seed})=>{if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(seed));},{KEY,seed});
+  await context.addInitScript(({KEY,DAILY,seed,dailySeed})=>{if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(seed));if(!localStorage.getItem(DAILY))localStorage.setItem(DAILY,JSON.stringify(dailySeed));},{KEY,DAILY,seed,dailySeed});
   await page.goto(server.url+"/#project");
   assert.equal(await page.locator("#app h2").first().textContent(),"Mon projet de reconversion");
   assert.equal(await page.locator("[data-project-answer]").count(),16);
@@ -63,7 +64,7 @@ async function main(){
    if(process.env.RC_SCREENSHOT_DIR){await fs.mkdir(process.env.RC_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.RC_SCREENSHOT_DIR,width+"-project-2027.png"),fullPage:false});}
   }
   assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
-  assert.equal(await page.evaluate(k=>localStorage.getItem(k),DAILY),null,"project work must not change Daily Five");
+  assert.deepEqual(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),DAILY),dailySeed,"project work must not change Daily Five");
   console.log("PASS project routes, touch targets, no overflow at 320/414/1280px, no unsolicited external requests");
  }finally{await context.close();await browser.close();await server.close();}
 }
