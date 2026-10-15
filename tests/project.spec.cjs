@@ -13,8 +13,8 @@ async function main(){
  page.on("pageerror",e=>errors.push(e.message));page.on("request",r=>{if(!r.url().startsWith(server.url))external.push(r.url());});
  const seed={view:"cockpit",section:"all",search:"",status:"all",progress:{dns:"mastered","rc-02":"progress"},review:{dns:{step:0,due:"2099-01-01"}},labs:{"lab-01":"progress"},proofs:{"rc-25":{status:"progress",evidence:"Preuve historique"}},labChecks:{}};
  try{
-  await page.goto(server.url+"/");await page.evaluate(({KEY,seed})=>localStorage.setItem(KEY,JSON.stringify(seed)),{KEY,seed});
-  await page.goto(server.url+"/#project");await page.reload();
+  await context.addInitScript(({KEY,seed})=>{if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(seed));},{KEY,seed});
+  await page.goto(server.url+"/#project");
   assert.equal(await page.locator("#app h2").first().textContent(),"Mon projet de reconversion");
   assert.equal(await page.locator("[data-project-answer]").count(),16);
   assert.equal(await page.locator("[data-project-drill]").count(),8);

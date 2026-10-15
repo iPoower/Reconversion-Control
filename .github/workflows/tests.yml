@@ -80,6 +80,11 @@ jobs:
           node tests/deep-checks.cjs
           node tests/project-checks.cjs
           node tests/cloud-sync.spec.cjs
+      - name: Dossier reconversion, écoles, budget et compatibilité
+        env:
+          BROWSER: ${{ matrix.browser }}
+          RC_SCREENSHOT_DIR: artifacts/reconversion-${{ matrix.browser }}
+        run: node tests/project.spec.cjs
       - name: Navigation, recherche et affichage iPhone
         env:
           BROWSER: ${{ matrix.browser }}
@@ -89,11 +94,6 @@ jobs:
           BROWSER: ${{ matrix.browser }}
           RC_SCREENSHOT_DIR: artifacts/reconversion-${{ matrix.browser }}
         run: npm run test:learning
-      - name: Dossier reconversion, écoles, budget et compatibilité
-        env:
-          BROWSER: ${{ matrix.browser }}
-          RC_SCREENSHOT_DIR: artifacts/reconversion-${{ matrix.browser }}
-        run: node tests/project.spec.cjs
       - name: Cache et redémarrage hors connexion
         if: matrix.browser == 'chromium'
         run: npm run test:sw
