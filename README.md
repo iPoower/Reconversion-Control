@@ -2,7 +2,21 @@
 
 PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, inspirée du cockpit de Race Control mais hébergée dans un dépôt totalement indépendant.
 
-## V2.2 — Réalisations récentes · cours, labs et portfolio
+## V3.0 — Projet 2027 · dossier de décision privé
+
+L’onglet **Projet 2027** (`#project`) relie le bilan de reconversion au travail quotidien : six étapes du socle IT à la sécurité IA, huit démonstrations sans assistance, six actions de dossier, un comparatif Jedha/ENI sur huit questions et une simulation du coût total. Les 42 fiches, 42 cours, 20 labs, Daily Five et identifiants existants sont conservés.
+
+Les références publiques ont été vérifiées le **15 octobre 2026** : AIS RNCP37680, niveau 6, échéance 28/02/2027 ; TSSR RNCP42463, niveau 5, échéance 31/08/2031. Ces faits sont séparés des déclarations des écoles, de l’habilitation du centre, des conditions de la cohorte 2027 et du financement individuel restant à confirmer. Aucune inscription, durée de parcours personnel, prise en charge ni compétence n’est validée automatiquement.
+
+Le diplôme de départ, le dispositif, la zone d’emploi, les durées, le budget et le bilan personnel sont saisis localement ou importés via un fichier privé au format `reconversion-control.project.v1`. **Aucun profil personnel réel n’est embarqué dans le dépôt public.** L’import de profil remplace seulement le cadre personnel ; il conserve les cours, labs, révisions, réponses d’école et preuves existants. La demande de devis peut être copiée ; aucun message n’est envoyé par le site.
+
+Le dossier est ajouté au champ optionnel `career` de l’état existant et des exports/snapshots V2. Les anciennes sauvegardes restent lisibles et leur import conserve le dossier courant lorsqu’elles ne contiennent pas ce champ. Le profil privé ne doit pas être confondu avec une sauvegarde complète de progression. Les exports restent des fichiers JSON en clair : les conserver dans un emplacement privé. En cas de synchronisation volontaire, le dossier utilise l’enveloppe chiffrée existante ; mettre à jour les deux appareils avant de l’utiliser. L’activation et la disponibilité d’un projet cloud personnel ne sont pas vérifiées par la livraison de code.
+
+Une ligne de coût vide demeure inconnue ; un zéro doit être explicite. La marge sous plafond n’est pas un reste à charge et ne prouve aucun financement. Les démonstrations et les réponses contrôlées restent des déclarations de l’utilisateur avec trace datée, indépendantes de la progression pédagogique et d’une certification externe.
+
+Validation du dossier : `node tests/project-checks.cjs`, puis `BROWSER=chromium node tests/project.spec.cjs` et `BROWSER=webkit node tests/project.spec.cjs`. Voir [docs/project-2027.md](docs/project-2027.md).
+
+## Corpus V2.2 conservé — Réalisations récentes · cours, labs et portfolio
 
 - 9 domaines, 42 fiches essentielles conservées et 42 cours : 32 chapitres historiques Race Control + 10 cas récents
 - parcours guidé en 3 niveaux : Débutant, Intermédiaire, Pro, avec le socle de 32 étapes réordonnées selon leurs prérequis puis dix cas récents Pro ; aucun ancien identifiant modifié

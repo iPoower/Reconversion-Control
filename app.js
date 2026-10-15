@@ -6,7 +6,7 @@ var $$=function(s){return Array.from(document.querySelectorAll(s));};
 var esc=function(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
 var section=function(id){return RC_SECTIONS.find(function(s){return s.id===id;});};
 var topic=function(id){return RC_TOPICS.find(function(t){return t.id===id;});};
-var views=["cockpit","daily","path","library","course","labs","review","privacy"], statuses=["learn","progress","mastered"], reviewRatings=["again","hard","good","easy"], dailyReasons=["Révision due","Erreur récente","Domaine faible","Rotation"];
+var views=["cockpit","project","daily","path","library","course","labs","review","privacy"], statuses=["learn","progress","mastered"], reviewRatings=["again","hard","good","easy"], dailyReasons=["Révision due","Erreur récente","Domaine faible","Rotation"];
 var RC_COURSE_LEVELS=[
  {id:"beginner",label:"Débutant",labelEn:"Beginner",icon:"🟢",goal:"Comprendre d’abord comment une application Web fonctionne, puis comment on la versionne, la construit et la rend installable.",goalEn:"Understand how a web app works before learning how to version, build and install it."},
  {id:"intermediate",label:"Intermédiaire",labelEn:"Intermediate",icon:"🟡",goal:"Appliquer les bases aux vraies données Race Control : météo, pneus, agenda, trajets, GPS et décision utilisateur.",goalEn:"Apply the fundamentals to real Race Control data: weather, tyres, calendar, trips, GPS and user decisions."},
@@ -154,7 +154,7 @@ var RC_CAREER_STAGES=[
  {icon:"🤖",title:"Sécurité IA",subtitle:"AI security",sections:["ai"]},
  {icon:"🧪",title:"Portfolio + entretien",subtitle:"Portfolio & interview",sections:["portfolio"]}
 ];
-var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{},labs:{},proofs:{},labChecks:{}};
+var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{},labs:{},proofs:{},labChecks:{},career:RC_PROJECT_PLAN.empty()};
 var labCheckMessage=Object.create(null);
 var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, dailyUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0, detailRoutePushed=false, pendingRouteFocus=null;
 var state=load();
@@ -290,7 +290,7 @@ function load(){
  if(j.section==="all"||section(j.section))initial.section=j.section;
  if(typeof j.search==="string")initial.search=j.search;
  if(j.status==="all"||statuses.indexOf(j.status)>=0)initial.status=j.status;
- initial.labs=labStateSanitize(j.labs,false);initial.proofs=proofStateSanitize(j.proofs,false);initial.labChecks=labChecksSanitize(j.labChecks,false);
+ initial.labs=labStateSanitize(j.labs,false);initial.proofs=proofStateSanitize(j.proofs,false);initial.labChecks=labChecksSanitize(j.labChecks,false);initial.career=RC_PROJECT_PLAN.sanitize(j.career,false);
  }catch(e){}return initial;
 }
 function save(replace){storageSet(KEY,JSON.stringify(state),replace);if(syncBridge)syncBridge.changed();}
@@ -346,7 +346,7 @@ function englishCoachHtml(lesson,level){
  return'<section class="english-coach" data-english-level="'+pct+'"><div class="mh"><h3>🇬🇧 English Coach</h3><span class="src">'+pct+'% EN</span></div><p class="en-mode">'+esc(englishSupport(level))+'</p><h4 lang="en">'+esc(en.title)+'</h4><p class="en-summary" lang="en">'+esc(en.summary)+'</p><div class="en-phrase"><b>Key sentence · Phrase clé</b><p lang="en">'+esc(en.phrase)+'</p>'+frHelp+'</div><div class="en-vocab"><b>Vocabulary · Vocabulaire</b><div class="en-vocab-grid">'+en.vocab.map(function(pair){return'<span><strong lang="en">'+esc(pair[0])+'</strong><small>'+esc(pair[1])+'</small></span>';}).join("")+'</div></div><div class="en-speaking"><b>🎤 Speaking challenge · Défi oral</b><p lang="en">'+esc(en.question)+'</p><small>Objectif : réponds à voix haute, même avec des phrases simples.</small></div></section>';
 }
 function nav(){
- var items=[["cockpit","◉ Cockpit"],["daily","⚡ 5 min"],["path","↗ Parcours · Path"],["library","▦ Fiches · Notes"],["course","▤ Cours · Study"],["labs","🧪 Labs"],["review","↻ Révisions · Review"],["privacy","⌾ Sources & privacy"]];
+ var items=[["cockpit","◉ Cockpit"],["project","◎ Projet 2027"],["daily","⚡ 5 min"],["path","↗ Parcours · Path"],["library","▦ Fiches · Notes"],["course","▤ Cours · Study"],["labs","🧪 Labs"],["review","↻ Révisions · Review"],["privacy","⌾ Sources & privacy"]];
  $("#nav").innerHTML=items.map(function(x){return'<button class="chip '+(state.view===x[0]?"on":"")+'" data-view="'+x[0]+'"'+(state.view===x[0]?' aria-current="page"':"")+'>'+x[1]+"</button>";}).join("");
 }
 function healthRows(){
@@ -468,7 +468,47 @@ function recentWorkHtml(){
 
 function cockpit(){
  var p=progressFor(RC_TOPICS), d=due(), f=focusTopic();
- return dailyFiveTeaserHtml()+dailyMissionHtml()+'<div class="grid2"><section class="mod"><div class="mh"><h2>Knowledge Health</h2><span class="src">LOCAL</span></div><div class="hero"><h2>'+(p.pct>=80?"PRÊT À CONSOLIDER":p.pct>=45?"PROGRESSION ACTIVE":"BASES À CONSTRUIRE")+'</h2><p><strong>'+p.pct+' %</strong> de couverture pondérée · '+p.mastered+" acquis · "+p.inprog+' en cours</p></div><div class="health">'+healthRows()+'</div></section>'+studyPulseHtml()+'</div>'+interviewLabHtml()+portfolioProofsHtml()+'<section class="mod"><div class="mh"><h2>Priorités ★★★★★</h2><span class="src">À SAVOIR</span></div><div class="grid3">'+RC_TOPICS.filter(function(t){return t.p===5&&pstate(t.id)!=="mastered";}).slice(0,6).map(cardHtml).join("")+'</div></section>';
+ return dailyFiveTeaserHtml()+dailyMissionHtml()+'<section class="mod project-teaser"><span class="src">NOUVEAU · PROJET 2027</span><h2>Construire le parcours. Sécuriser le choix.</h2><p>Bilan depuis le début, critères privés, RNCP vérifiés, Jedha / ENI, budget et démonstrations de compétences.</p><button class="btn pri" data-view="project">Ouvrir mon projet de reconversion →</button></section><div class="grid2"><section class="mod"><div class="mh"><h2>Knowledge Health</h2><span class="src">LOCAL</span></div><div class="hero"><h2>'+(p.pct>=80?"PRÊT À CONSOLIDER":p.pct>=45?"PROGRESSION ACTIVE":"BASES À CONSTRUIRE")+'</h2><p><strong>'+p.pct+' %</strong> de couverture pondérée · '+p.mastered+" acquis · "+p.inprog+' en cours</p></div><div class="health">'+healthRows()+'</div></section>'+studyPulseHtml()+'</div>'+interviewLabHtml()+portfolioProofsHtml()+'<section class="mod"><div class="mh"><h2>Priorités ★★★★★</h2><span class="src">À SAVOIR</span></div><div class="grid3">'+RC_TOPICS.filter(function(t){return t.p===5&&pstate(t.id)!=="mastered";}).slice(0,6).map(cardHtml).join("")+'</div></section>';
+}
+function project(){return RC_PROJECT_PLAN.render({data:state.career,escape:esc,topicTitle:function(id){return topic(id).title;}});}
+function projectSaved(selector,message){
+ var y=window.scrollY;save();render();window.scrollTo(0,y);
+ var form=$(selector),status=form&&form.querySelector('[role="status"]'),button=form&&form.querySelector('button[type="submit"]');
+ if(status)status.textContent=storageUnavailable?"Conservé en mémoire seulement : exporte ton dossier pour le sauvegarder.":message||"Enregistré sur cet appareil.";
+ if(button)button.focus({preventScroll:true});
+}
+function bindProject(){
+ $$("[data-project-jump]").forEach(function(b){b.onclick=function(){var el=document.getElementById(b.dataset.projectJump);if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.tabIndex=-1;el.focus({preventScroll:true});}};});
+ $("#project-profile-form").onsubmit=function(event){
+  event.preventDefault();var profile={};
+  this.querySelectorAll('[data-project-profile]').forEach(function(field){var value=field.value.trim();if(value!=="")profile[field.dataset.projectProfile]=field.type==="number"?Number(value):value;});
+  if(profile.budgetMin!==undefined&&profile.budgetMax!==undefined&&profile.budgetMin>profile.budgetMax){$("#project-profile-status").textContent="Le budget bas doit être inférieur ou égal au plafond.";return;}
+  if(profile.durationMonths!==undefined&&profile.maxMonths!==undefined&&profile.durationMonths>profile.maxMonths){$("#project-profile-status").textContent="La durée visée dépasse le maximum indiqué.";return;}
+  try{state.career.profile=RC_PROJECT_PLAN.sanitize({profile:profile},true).profile;projectSaved("#project-profile-form");}catch(e){$("#project-profile-status").textContent="Vérifie les valeurs du profil.";}
+ };
+ function bindEvidence(attribute,target){
+  $$('['+attribute+']').forEach(function(form){form.onsubmit=function(event){
+   event.preventDefault();var values=new FormData(form),item={status:values.get("status"),evidence:values.get("evidence").trim(),date:values.get("date")};
+   if((item.status==="verified"||item.status==="demonstrated")&&(!item.evidence||!validDate(item.date))){form.querySelector('[role="status"]').textContent="Ajoute une preuve et une date avant de déclarer ce point contrôlé ou démontré.";return;}
+   var next=JSON.parse(JSON.stringify(state.career)),id=form.getAttribute(attribute);
+   if(target==="answers"){var parts=id.split(":");next.schools[parts[0]].answers[parts[1]]=item;}else next.drills[id]=item;
+   try{state.career=RC_PROJECT_PLAN.sanitize(next,true);projectSaved('['+attribute+'="'+id+'"]');}catch(e){form.querySelector('[role="status"]').textContent="Vérifie le statut, la date et la longueur de la preuve.";}
+  };});
+ }
+ bindEvidence("data-project-answer","answers");bindEvidence("data-project-drill","drills");
+ $$("[data-project-cost]").forEach(function(form){form.onsubmit=function(event){event.preventDefault();var costs={};new FormData(form).forEach(function(v,k){if(v!=="")costs[k]=Number(v);});var id=form.dataset.projectCost;state.career.schools[id].costs=costs;projectSaved('[data-project-cost="'+id+'"]');};});
+ $$("[data-project-task]").forEach(function(field){field.onchange=function(){state.career.tasks[field.dataset.projectTask]=field.value;save();};});
+ $$("[data-project-copy]").forEach(function(button){button.onclick=async function(){try{await navigator.clipboard.writeText(RC_PROJECT_PLAN.draft(state.career.profile,button.dataset.projectCopy==="jedha"?"Jedha":"ENI"));$("#project-copy-status").textContent="Demande copiée. Aucun message envoyé.";}catch(e){$("#project-copy-status").textContent="Copie automatique indisponible. Sélectionne le texte de la demande pour le copier.";}};});
+ $("#project-import").onclick=function(){$("#project-profile-file").click();};
+ $("#project-profile-file").onchange=async function(event){
+  var file=event.target.files&&event.target.files[0];if(!file)return;
+  try{
+   if(file.size>32768)throw Error("size");var data=JSON.parse(await readFile(file));
+   if(!plainObject(data)||data.format!=="reconversion-control.project.v1"||!plainObject(data.profile))throw Error("format");
+   var clean=RC_PROJECT_PLAN.sanitize({profile:data.profile},true);
+   state.career.profile=clean.profile;projectSaved("#project-profile-form","Profil importé. Cours, labs, réponses écoles et preuves conservés.");
+  }catch(e){$("#project-import-status").textContent="Profil invalide ou trop volumineux. Le dossier actuel est conservé.";event.target.value="";}
+ };
 }
 function path(){
  return'<section class="mod"><div class="mh"><h2>Parcours recommandé</h2><span class="src">9 DOMAINES</span></div><p class="muted">On consolide les couches dans l’ordre. Kubernetes, pentest avancé et sécurité IA deviennent beaucoup plus simples quand Linux, réseau et IAM sont solides.</p>'+RC_SECTIONS.map(function(s,i){var p=progressFor(RC_TOPICS.filter(function(t){return t.section===s.id;}));var active=p.pct<80&&RC_SECTIONS.slice(0,i).every(function(x){return progressFor(RC_TOPICS.filter(function(t){return t.section===x.id;})).pct>=50;});return'<div class="pathrow '+(active?"active":"")+'"><span class="num">'+(i+1)+'</span><div><b>'+s.icon+" "+esc(s.label)+'</b><div class="muted">'+esc(s.goal)+'</div></div><span class="score">'+p.pct+"%</span></div>";}).join("")+'</section>'+careerPathHtml()+projectPortfolioHtml();
@@ -543,13 +583,13 @@ function reviewRow(x){
 }
 
 function cloudSnapshot(){
- return {version:2,progress:state.progress,review:state.review,labs:state.labs,proofs:state.proofs,labChecks:state.labChecks,dailyFive:dailyState};
+ return {version:2,progress:state.progress,review:state.review,labs:state.labs,proofs:state.proofs,labChecks:state.labChecks,dailyFive:dailyState,career:state.career||RC_PROJECT_PLAN.empty()};
 }
 function cloudRestore(o){
  if(!plainObject(o)||o.version!==2)throw Error("Sauvegarde cloud incompatible");
- var v=progression(o,true),labs=labStateSanitize(o.labs,true),proofs=proofStateSanitize(o.proofs,true),checks=labChecksSanitize(o.labChecks,true),daily=dailySanitize(o.dailyFive,true);
+ var v=progression(o,true),labs=labStateSanitize(o.labs,true),proofs=proofStateSanitize(o.proofs,true),checks=labChecksSanitize(o.labChecks,true),daily=dailySanitize(o.dailyFive,true),career=o.career===undefined?state.career:RC_PROJECT_PLAN.sanitize(o.career,true);
  state.progress=v.progress;state.review=v.review;state.labs=labs;state.proofs=proofs;state.labChecks=checks;
- dailyState=daily;dailySave(true);save(true);render();
+ state.career=career;dailyState=daily;dailySave(true);save(true);render();
 }
 
 function privacy(){
@@ -623,6 +663,7 @@ function bindCards(root){
 }
 function bind(){
  if(syncBridge)syncBridge.bind();
+ if(state.view==="project")bindProject();
  $$("[data-view]").forEach(function(b){b.onclick=function(){navigateView(b.dataset.view,false);};});
  bindCards($("#app"));
  $$("[data-lab-prog]").forEach(function(b){b.onclick=function(){setLabProgress(b.dataset.labId,b.dataset.labProg);};});
@@ -643,11 +684,11 @@ function bind(){
  if($("#reset"))$("#reset").onclick=function(){if(confirm("Réinitialiser toute la progression locale ?")){storageRemove(KEY);storageRemove(DAILY_KEY);state=JSON.parse(JSON.stringify(defaults));dailyState={days:{}};render();}};
 }
 function exportState(){
- var blob=new Blob([JSON.stringify({version:2,exportedAt:new Date().toISOString(),progress:state.progress,review:state.review,labs:state.labs,proofs:state.proofs,labChecks:state.labChecks,dailyFive:dailyState},null,2)],{type:"application/json"});
+ var blob=new Blob([JSON.stringify({version:2,exportedAt:new Date().toISOString(),progress:state.progress,review:state.review,labs:state.labs,proofs:state.proofs,labChecks:state.labChecks,dailyFive:dailyState,career:state.career},null,2)],{type:"application/json"});
  var a=document.createElement("a"), url=URL.createObjectURL(blob);a.href=url;a.download="reconversion-control-progression.json";a.hidden=true;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},60000);
 }
 function readFile(file){return typeof file.text==="function"?file.text():new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(){resolve(reader.result);};reader.onerror=function(){reject(reader.error);};reader.readAsText(file);});}
-$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1&&j.version!==2))throw new Error("Invalid version");var imported=progression(j,true),importedLabs=labStateSanitize(j.labs,true),importedProofs=proofStateSanitize(j.proofs,true),importedChecks=labChecksSanitize(j.labChecks,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);state.progress=imported.progress;state.review=imported.review;state.labs=importedLabs;state.proofs=importedProofs;state.labChecks=importedChecks;if(importedDaily){dailyState=importedDaily;dailySave(true);}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
+$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1&&j.version!==2))throw new Error("Invalid version");var imported=progression(j,true),importedLabs=labStateSanitize(j.labs,true),importedProofs=proofStateSanitize(j.proofs,true),importedChecks=labChecksSanitize(j.labChecks,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);var importedCareer=j.career===undefined?state.career:RC_PROJECT_PLAN.sanitize(j.career,true);state.career=importedCareer;state.progress=imported.progress;state.review=imported.review;state.labs=importedLabs;state.proofs=importedProofs;state.labChecks=importedChecks;if(importedDaily){dailyState=importedDaily;dailySave(true);}save(true);render();alert(storageUnavailable?"Progression importée en mémoire. Le stockage local reste indisponible.":"Progression importée.");}catch(err){alert("Fichier invalide. La progression actuelle est conservée.");}e.target.value="";};
 function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dlg").classList.remove("dialog-fallback");var focus=detailOpener&&detailOpener.isConnected?detailOpener:$("#course-chapters [data-open=\""+detailId+"\"]")||$("[data-open=\""+detailId+"\"]")||$("#nav [aria-current]");if(focus)focus.focus({preventScroll:true});detailOpener=null;detailRoutePushed=false;}
 function physicalCloseDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.close();else{dlg.removeAttribute("open");afterDetailClose();}}
 function closeDetail(fromRoute){
@@ -660,7 +701,7 @@ function closeDetail(fromRoute){
 $("#close").onclick=function(){closeDetail(false);};$("#dlg").addEventListener("click",function(e){if(e.target===$("#dlg"))closeDetail(false);});$("#dlg").addEventListener("close",afterDetailClose);
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&$("#dlg").classList.contains("dialog-fallback"))closeDetail(false);});
 var theme=storageGet(THEME)==="light"?"light":"dark";document.documentElement.dataset.theme=theme;$("#theme").onclick=function(){theme=document.documentElement.dataset.theme==="dark"?"light":"dark";document.documentElement.dataset.theme=theme;storageSet(THEME,theme);};
-function render(){var navScroll=$("#nav").scrollLeft, tabs=$(".tabs");if(tabs)libraryTabsScroll=tabs.scrollLeft;nav();var f={cockpit:cockpit,daily:dailyFive,path:path,library:library,course:course,labs:labs,review:review,privacy:privacy}[state.view]||cockpit;$("#app").innerHTML=f();$("#nav").scrollLeft=navScroll;tabs=$(".tabs");if(tabs)tabs.scrollLeft=libraryTabsScroll;bind();storageNotice();}
+function render(){var navScroll=$("#nav").scrollLeft, tabs=$(".tabs");if(tabs)libraryTabsScroll=tabs.scrollLeft;nav();var f={cockpit:cockpit,project:project,daily:dailyFive,path:path,library:library,course:course,labs:labs,review:review,privacy:privacy}[state.view]||cockpit;$("#app").innerHTML=f();$("#nav").scrollLeft=navScroll;tabs=$(".tabs");if(tabs)tabs.scrollLeft=libraryTabsScroll;bind();storageNotice();}
 function showUpdateNotice(){var notice=$("#update-notice");if(notice)notice.hidden=false;}
 var build=document.documentElement.dataset.build||"__BUILD_SHA__",buildLabel=$("#build-id");if(buildLabel)buildLabel.textContent=build.indexOf("__")===0?"dev":build.slice(0,8);
 var skip=$("#skip-link");if(skip)skip.onclick=function(e){e.preventDefault();$("#app").focus({preventScroll:false});};

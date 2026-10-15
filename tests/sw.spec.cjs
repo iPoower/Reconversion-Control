@@ -57,7 +57,7 @@ async function main() {
     assert.equal(await page.evaluate(async () => (await caches.match("/Race-Control/protected-marker")).text()), "preserved");
     passed("build-derived cache activates, purges its old caches and preserves other applications’ caches");
     const entryPaths = await page.evaluate(async cacheName => (await (await caches.open(cacheName)).keys()).map(request => new URL(request.url).pathname),activeCache);
-    for (const file of ["index.html","app.js","data.js","course-foundations.js","course-race.js","course-operations.js","learning.js","english.js","drive-learning.js","daily-five.js","style.css","manifest.webmanifest","assets/icon-192.png","assets/icon-512.png"]) assert(entryPaths.includes("/Reconversion-Control/" + file));
+    for (const file of ["index.html","project-plan.js","app.js","data.js","course-foundations.js","course-race.js","course-operations.js","learning.js","english.js","drive-learning.js","daily-five.js","style.css","manifest.webmanifest","assets/icon-192.png","assets/icon-512.png"]) assert(entryPaths.includes("/Reconversion-Control/" + file));
     passed("first installation precaches every file needed by the app");
     const manifest=await page.evaluate(async()=>await (await fetch("manifest.webmanifest")).json());
     assert.deepEqual(manifest.shortcuts.map(item=>item.url),["./#daily","./#review","./#labs"]);
@@ -145,6 +145,9 @@ async function main() {
     assert(await page.locator('[data-card="dns"] [data-prog="mastered"]').evaluate(el => el.classList.contains("on")));
     passed("a 503 navigation uses the existing offline app and preserves local progress");
     server.failures.clear();
+    await page.goto(server.url + "/#project");
+    assert.equal(await page.locator("#app h2").first().textContent(),"Mon projet de reconversion");
+    assert.equal(await page.locator("[data-project-answer]").count(),16);
     const cacheBefore = await page.evaluate(async cacheName => (await (await caches.open(cacheName)).keys()).map(r=>r.url).sort(),activeCache);
     const outsideScope = await page.evaluate(async () => {const r=await fetch("/Other/unknown-script.js");return {status:r.status,type:r.headers.get("content-type"),body:await r.text()};});
     assert.equal(outsideScope.status,404); assert(!/^\s*<!doctype html/i.test(outsideScope.body));

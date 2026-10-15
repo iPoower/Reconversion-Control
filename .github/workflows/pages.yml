@@ -49,6 +49,7 @@ jobs:
 
       - name: Validate JavaScript
         run: |
+          node --check project-plan.js
           node --check app.js
           node --check data.js
           node --check course-foundations.js
