@@ -1,0 +1,35 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
+const env=vm.createContext({});
+vm.runInContext(fs.readFileSync(path.join(__dirname,"../project-plan.js"),"utf8")+";globalThis.P=RC_PROJECT_PLAN;",env);
+const P=env.P,clean=v=>JSON.parse(JSON.stringify(v));
+assert.equal(P.questions.length,8);assert.equal(P.drills.length,8);
+assert.equal(P.stages.length,6);assert.equal(P.sources.length,6);
+assert.match(P.sources.find(s=>s.id==="ais").fact,/28\/02\/2027/);
+assert.match(P.sources.find(s=>s.id==="tssr").fact,/31\/08\/2031/);
+assert.equal(P.completeness(P.empty().schools.jedha),0);
+assert.equal(P.budget(P.empty().schools.jedha,{}).known,false,"unknown costs must not become free tuition");
+const record={answers:{},costs:{tuition:11000,exam:300,equipment:500,travel:200}};
+assert.deepEqual(clean(P.budget(record,{budgetMax:13000})),{known:true,total:12000,remaining:1000});
+assert.equal(P.budget(record,{budgetMax:10000}).remaining,-2000);
+assert.equal(P.budget({costs:{...record.costs,travel:undefined}},{}).known,false);
+assert.deepEqual(clean(P.budget({costs:{tuition:0,exam:0,equipment:0,travel:0}},{})),{known:true,total:0,remaining:null});
+for(const q of P.questions)record.answers[q.id]={status:"verified",evidence:"Document école anonymisé",date:"2026-10-15"};
+assert.equal(P.completeness(record),8);record.answers.entry.status="received";assert.equal(P.completeness(record),7);
+const good=P.empty();good.profile={diploma:"Bac",budgetMax:13000,durationMonths:18,startMonth:"2027-03",history:"Décisions privées"};
+good.schools.jedha=record;good.drills.linux={status:"demonstrated",evidence:"Lab local expliqué",date:"2026-10-15"};
+assert.deepEqual(clean(P.sanitize(good,true)),clean(good));
+for(const invalid of [null,[],{profile:{budgetMax:-1}},{profile:{durationMonths:61}},{profile:{durationMonths:1.5}},{profile:{durationMonths:24,maxMonths:18}},{profile:{budgetMin:2,budgetMax:1}},{profile:{startMonth:"2027-13"}},{profile:{history:"x".repeat(6001)}},{schools:{jedha:{answers:{title:{status:"verified",evidence:"",date:"2026-10-15"}}}}},{drills:{linux:{status:"demonstrated",evidence:"trace",date:"2026-02-30"}}},{tasks:{pse:"auto-approved"}}])assert.throws(()=>P.sanitize(invalid,true));
+const downgraded=P.sanitize({drills:{linux:{status:"demonstrated",evidence:"",date:""}}},false);
+assert.equal(downgraded.drills.linux.status,"practice");
+assert.deepEqual(clean(P.sanitize(undefined,true)),clean(P.empty()),"legacy snapshots have an optional dossier");
+const escaped=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const malicious=P.empty();malicious.profile.history='<img src=x onerror="alert(1)">';
+const html=P.render({data:malicious,escape:escaped,topicTitle:id=>id});
+assert(!html.includes('<img src=x'));assert(html.includes('&lt;img'));
+assert(!html.includes("undefined"));
+assert.match(P.draft(good.profile,"ENI"),/2027-03/);
+assert(!P.draft(good.profile,"ENI").includes(good.profile.history),"private history is not copied to the school letter");
+for(const source of P.sources){const u=new URL(source.url);assert.equal(u.protocol,"https:");assert(["www.jedha.co","www.eni-ecole.fr","www.francecompetences.fr"].includes(u.hostname));}
+for(const f of ["index.html","sw.js","tests/server.cjs"]){assert(fs.readFileSync(path.join(__dirname,"..",f),"utf8").includes("project-plan.js"));}
+console.log("PASS: dossier compatible, 8 questions, preuves datées, budgets inconnus/zero/dépassement, échappement et sources RNCP.");

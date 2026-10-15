@@ -55,3 +55,8 @@ Les tests conservent les anciens IDs et vérifient le passage du chapitre 32 aux
 La CI produit l’artefact `reconversion-visual-<browser>` : captures iPhone et PC, sans données personnelles. Les captures doivent être examinées ; leur existence seule ne prouve pas la qualité ergonomique. Les changements n’ajoutent aucune dépendance et conservent les moteurs de sync, le SQL, les formats de stockage et le service worker.
 
 Le téléchargement local des navigateurs Playwright a échoué (archive reçue invalide). Les tests unitaires de contenu et de transport sont exécutés localement ; les validations navigateur obligatoires utilisent les runners GitHub avec Playwright 1.63.0 du lockfile. Cette limite locale ne remplace pas les contrôles CI.
+# V3.0 — Projet 2027
+
+`node tests/project-checks.cjs` vérifie le schéma optionnel du dossier, les preuves datées, les montants inconnus, le zéro explicite, les dépassements, le rejet des entrées invalides et l’échappement HTML. `node tests/project.spec.cjs` ajoute une validation Chromium/WebKit de l’import de profil privé sans perte de cours/labs/preuves, de l’export/import complet, de l’ancien format et du rejet atomique, puis des contrôles de mise en page à 320, 414 et 1280 px. Le Service Worker conserve le nouvel onglet hors ligne. Ces suites rejoignent la CI existante.
+
+Le dossier est conservé lors d’un import ancien qui ne possède pas de champ `career`. Le fichier de profil est un import de cadre personnel uniquement ; il ne remplace aucune progression ni réponse d’école. Les données de test sont fictives. Aucun essai sur iPhone physique ni activation cloud réelle n’est déduit des simulations.

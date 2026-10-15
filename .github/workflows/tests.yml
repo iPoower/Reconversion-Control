@@ -60,6 +60,7 @@ jobs:
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Syntaxe
         run: |
+          node --check project-plan.js
           node --check app.js
           node --check data.js
           node --check course-foundations.js
@@ -77,7 +78,13 @@ jobs:
       - name: Exercices probants et modules IT sourcés
         run: |
           node tests/deep-checks.cjs
+          node tests/project-checks.cjs
           node tests/cloud-sync.spec.cjs
+      - name: Dossier reconversion, écoles, budget et compatibilité
+        env:
+          BROWSER: ${{ matrix.browser }}
+          RC_SCREENSHOT_DIR: artifacts/reconversion-${{ matrix.browser }}
+        run: node tests/project.spec.cjs
       - name: Navigation, recherche et affichage iPhone
         env:
           BROWSER: ${{ matrix.browser }}

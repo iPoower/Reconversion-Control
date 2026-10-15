@@ -30,7 +30,7 @@ async function run(){
  assert.throws(()=>T.config("https://rc-project.supabase.co","sb_secret_abcdef"));
  assert.throws(()=>T.config("https://rc-project.supabase.co","service_role"));
  const cfg=T.config("https://rc-project.supabase.co","sb_publishable_example");assert.equal(cfg.url,"https://rc-project.supabase.co");
- const original={version:2,progress:{dns:"mastered"},dailyFive:{days:{"2026-10-08":{xp:20}}}};
+ const original={version:2,career:{profile:{diploma:"Diplôme fictif"},schools:{jedha:{answers:{title:{status:"received",evidence:"Preuve fictive",date:"2026-10-15"}}}}},progress:{dns:"mastered"},dailyFive:{days:{"2026-10-08":{xp:20}}}};
  const enc=await T.seal(original,"phrase secrète assez longue");
  assert.equal(enc.v,1);assert(enc.ciphertext.length>20);
  const plain=await T.open(enc,"phrase secrète assez longue");assert.equal(JSON.stringify(plain),JSON.stringify(original));
