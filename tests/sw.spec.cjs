@@ -60,8 +60,8 @@ async function main() {
     for (const file of ["index.html","project-plan.js","app.js","data.js","course-foundations.js","course-race.js","course-operations.js","learning.js","english.js","drive-learning.js","daily-five.js","style.css","manifest.webmanifest","assets/icon-192.png","assets/icon-512.png"]) assert(entryPaths.includes("/Reconversion-Control/" + file));
     passed("first installation precaches every file needed by the app");
     const manifest=await page.evaluate(async()=>await (await fetch("manifest.webmanifest")).json());
-    assert.deepEqual(manifest.shortcuts.map(item=>item.url),["./#daily","./#review","./#labs"]);
-    passed("manifest exposes direct Daily Five, Review and Labs shortcuts");
+    assert.deepEqual(manifest.shortcuts.map(item=>item.url),["./#project","./#daily","./#review","./#labs"]);
+    passed("manifest exposes direct Project, Daily Five, Review and Labs shortcuts");
 
     const installedScript = await page.evaluate(async cacheName => (await (await (await caches.open(cacheName)).match("./app.js")).text()),activeCache);
     assert(!installedScript.includes("__staleReconversionScript"), "installation must replace a fresh HTTP-cached v2 script");
@@ -76,6 +76,10 @@ async function main() {
     passed("installation bypasses a still-fresh old HTTP script and the reloaded app retains 42 fiches and 42 chapters");
 
     await context.setOffline(true);
+    await page.goto(server.url + "/#project");
+    assert.equal(await page.locator("#app h2").first().textContent(),"Mon projet de reconversion");
+    assert.equal(await page.locator("[data-project-answer]").count(),16);
+    await page.locator('#nav [data-view="cockpit"]').tap();
     await page.goto(server.url + "/?v=2");
     assert.equal(await page.locator("#app h2").first().textContent(), "⚡ 5 minutes du jour");
     await page.locator('#nav [data-view="daily"]').tap();
@@ -145,9 +149,6 @@ async function main() {
     assert(await page.locator('[data-card="dns"] [data-prog="mastered"]').evaluate(el => el.classList.contains("on")));
     passed("a 503 navigation uses the existing offline app and preserves local progress");
     server.failures.clear();
-    await page.goto(server.url + "/#project");
-    assert.equal(await page.locator("#app h2").first().textContent(),"Mon projet de reconversion");
-    assert.equal(await page.locator("[data-project-answer]").count(),16);
     const cacheBefore = await page.evaluate(async cacheName => (await (await caches.open(cacheName)).keys()).map(r=>r.url).sort(),activeCache);
     const outsideScope = await page.evaluate(async () => {const r=await fetch("/Other/unknown-script.js");return {status:r.status,type:r.headers.get("content-type"),body:await r.text()};});
     assert.equal(outsideScope.status,404); assert(!/^\s*<!doctype html/i.test(outsideScope.body));
