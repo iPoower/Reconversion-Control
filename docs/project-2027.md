@@ -43,3 +43,9 @@ Le profil personnel n’est pas chiffré au repos dans localStorage ; les export
 Les tests Node couvrent les dates de référence, statuts avec traces, entrées malformées, limites de taille, coûts inconnus, zéro explicite, dépassement et échappement HTML. Les tests Chromium/WebKit couvrent import privé, indépendance des progressions, refus d’une preuve vide, coût complet, rechargement, export/import V2, compatibilité ancienne, rejet atomique, navigation, absence de requêtes externes spontanées, cibles de 44 px et largeurs 320/414/1280. Le test Service Worker Chromium couvre l’ouverture du nouvel onglet hors ligne.
 
 Les contrôles navigateur sont effectués par la CI existante, sans installation de navigateur dans l’environnement local de cette livraison. Une simulation iPhone ne remplace pas un essai sur appareil physique.
+
+## Réexamen public du 21/10/2026
+
+Les deux fiches France compétences et les quatre pages ENI/Jedha citées dans l’application ont été relues. Les dates RNCP précédentes sont conservées : AIS RNCP37680, niveau 6, échéance 28/02/2027 ; TSSR RNCP42463, niveau 5, échéance 31/08/2031, dernière délivrance possible 31/08/2032. Le TSSR inclut l’usage encadré de l’IA et l’optimisation de scripts ; l’épreuve complète dure 7 h et comprend de l’anglais technique. Ces précisions sont des exigences du référentiel, pas une validation individuelle.
+
+Les mentions ENI de reconversion en 8 mois, de distanciel, de tests et entretien, et les annonces Jedha restent des déclarations d’école. La page alternance conserve des mentions de 16 mois et de 12 mois ainsi que 350 h d’expérience pour le titre : le rythme, la cohorte et la délivrance doivent toujours être confirmés par écrit. Aucun formulaire personnel, état, import/export ou financement n’a été modifié.

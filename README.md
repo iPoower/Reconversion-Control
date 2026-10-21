@@ -6,7 +6,7 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 
 L’onglet **Projet 2027** (`#project`) relie le bilan de reconversion au travail quotidien : six étapes du socle IT à la sécurité IA, huit démonstrations sans assistance, six actions de dossier, un comparatif Jedha/ENI sur huit questions et une simulation du coût total. Les 42 fiches, 42 cours, 20 labs, Daily Five et identifiants existants sont conservés.
 
-Les références publiques ont été vérifiées le **15 octobre 2026** : AIS RNCP37680, niveau 6, échéance 28/02/2027 ; TSSR RNCP42463, niveau 5, échéance 31/08/2031. Ces faits sont séparés des déclarations des écoles, de l’habilitation du centre, des conditions de la cohorte 2027 et du financement individuel restant à confirmer. Aucune inscription, durée de parcours personnel, prise en charge ni compétence n’est validée automatiquement.
+Les références publiques ont été revérifiées le **21 octobre 2026** : AIS RNCP37680, niveau 6, échéance 28/02/2027 ; TSSR RNCP42463, niveau 5, échéance 31/08/2031. Ces faits sont séparés des déclarations des écoles, de l’habilitation du centre, des conditions de la cohorte 2027 et du financement individuel restant à confirmer. Aucune inscription, durée de parcours personnel, prise en charge ni compétence n’est validée automatiquement.
 
 Le diplôme de départ, le dispositif, la zone d’emploi, les durées, le budget et le bilan personnel sont saisis localement ou importés via un fichier privé au format `reconversion-control.project.v1`. **Aucun profil personnel réel n’est embarqué dans le dépôt public.** L’import de profil remplace seulement le cadre personnel ; il conserve les cours, labs, révisions, réponses d’école et preuves existants. La demande de devis peut être copiée ; aucun message n’est envoyé par le site.
 
@@ -41,6 +41,14 @@ Validation du dossier : `node tests/project-checks.cjs`, puis `BROWSER=chromium 
 - build GitHub Pages identifié par le SHA réellement testé ; cache Service Worker dérivé automatiquement de ce SHA
 - notification locale lorsqu’une nouvelle version PWA prend le contrôle
 - aucun analytics ; aucun backend requis (synchronisation privée optionnelle)
+
+## Actualisation pédagogique — 21/10/2026
+
+Sept cours existants (`rc-34`, `rc-35`, `rc-36`, `rc-39` à `rc-42`) reçoivent un complément daté : Twin Garage et LIVE ROUTE, fraîcheur et source canonique du GPS, prévisions ponctuelles, Journey Replay historique, chaîne de livraison, Projet 2027 et contrat d’intégration de Control Vault. Les exercices et défis anglais suivent ces cas ; trois labs existants proposent une variante sourcée. Les 42 cours, 20 labs, 14 séances Daily Five, vocabulaires et identifiants restent conservés.
+
+Le portfolio distingue l’instantané Race Control prod-151 vérifié le 21/10 du prototype Control Vault toujours sans connexion réelle. Sept références publiques supplémentaires sont figées ou datées ; les quatorze précédentes restent disponibles. Les références formation ont été relues le 21/10 et le TSSR précise les compétences IA ainsi que l’épreuve de 7 h. Aucune admission, certification, progression ou prise en charge n’est validée automatiquement.
+
+Voir [sources, périmètre et limites de l’actualisation](docs/content-refresh-20261021.md). Les instantanés antérieurs ci-dessous sont conservés avec leur date.
 
 ## Réalisations récentes — instantané vérifié le 12/10/2026
 
