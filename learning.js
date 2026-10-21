@@ -138,14 +138,77 @@ RC_SUPPORTS.push.apply(RC_SUPPORTS, [
     "status": "public",
     "url": "https://github.com/iPoower/Control-Vault/blob/0647b4f666533447e6f549de0cffc3a1bf6d44e4/docs/CRYPTO.md",
     "coverage": "Clé éphémère du prototype ; sauvegardes durables et récupération non activées."
+  },
+  {
+    "id": "public-gps-gate-20261021",
+    "title": "Race Control · origine GPS validée",
+    "format": "PR fusionnée",
+    "version": "#196 · 20/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/pull/196",
+    "coverage": "Origine canonique, refus explicite et conservation des trajets déjà programmés."
+  },
+  {
+    "id": "public-live-route-20261021",
+    "title": "Race Control · LIVE ROUTE et prévisions ponctuelles",
+    "format": "Code et documentation publics",
+    "version": "120b10d · publié dans prod-151 · relevé le 21/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/blob/120b10d04c63f9cb882157150f647befc287f95c/docs/live-route-premium.md",
+    "coverage": "Simulation et GPS séparés, fraîcheur, tracé réel, météo ponctuelle et limites des essais."
+  },
+  {
+    "id": "public-replay-20261021",
+    "title": "Race Control · noyau Journey Replay",
+    "format": "Code public",
+    "version": "120b10d · instantané publié relevé le 21/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/blob/120b10d04c63f9cb882157150f647befc287f95c/src/app/journey-replay-core.js",
+    "coverage": "Prévision archivée et retour déclaré, contexte historique, données manquantes et parcours illustratif."
+  },
+  {
+    "id": "public-release-20261021",
+    "title": "Race Control · manifeste de publication figé",
+    "format": "Manifeste public",
+    "version": "prod-151 · 120b10d · 21/10/2026 à 03:39 UTC",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/blob/dc858644760c1455631bde25f9b01c2e45e8f37a/race-control/version.json",
+    "coverage": "SHA source et build 41f1fb5747b9 du cas daté ; une autre livraison peut le remplacer."
+  },
+  {
+    "id": "public-project-v3-20261021",
+    "title": "Reconversion Control · Projet 2027",
+    "format": "Code et documentation publics",
+    "version": "V3 · 82dfcb5 · 15/10/2026 · relu le 21/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/Reconversion-Control/blob/82dfcb5489ee19bd216448d2ae185c88c9bf7f62/README.md",
+    "coverage": "Décision de formation, preuves datées et montants inconnus ; aucun financement ni acquis automatiques."
+  },
+  {
+    "id": "public-vault-contract-20261021",
+    "title": "Control Vault · contrat d’intégration V1, lot 1",
+    "format": "Contrat public",
+    "version": "07d6de0 · 16/10/2026 · relu le 21/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/Control-Vault/blob/07d6de09e60ff36061a9b45bc5bbc07ecdee68a2/docs/INTEGRATION.md",
+    "coverage": "Contrat et tests indépendants ; aucune connexion Google réelle ni activation de sauvegarde durable."
+  },
+  {
+    "id": "public-geolocation-20261021",
+    "title": "MDN · coordonnées et date d’acquisition",
+    "format": "Documentation publique",
+    "version": "Consultée le 21/10/2026",
+    "status": "public",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/API/GeolocationPosition",
+    "coverage": "La date du relevé est distincte de sa réception ; les seuils d’acceptation appartiennent à l’application."
   }
 ]);
 const RC_PROJECTS = [
   {
     "id": "race-control",
     "title": "Race Control",
-    "status": "Application publiée · prod93 vérifiée",
-    "summary": "Cockpit F1, météo, pneus, Garage, agenda et trajets. Six modules optionnels, coffre local et UX mobile simplifiée.",
+    "status": "Application publiée · instantané prod-151 du 21/10/2026",
+    "summary": "Cockpit météo et pneus, Twin Garage, LIVE ROUTE et Journey Replay. Simulation, GPS accepté et prévisions restent explicitement distingués.",
     "skills": "Front-end · UX mobile · tests · DevSecOps · confidentialité",
     "limit": "Simulation Chromium/WebKit ; aucun essai sur iPhone physique revendiqué. Origine partagée et session ouverte : durcissement à poursuivre.",
     "url": "https://ipoower.github.io/iPoower/race-control/",
@@ -153,7 +216,10 @@ const RC_PROJECTS = [
     "sources": [
       "public-ux93",
       "public-f1",
-      "public-vault"
+      "public-vault",
+      "public-live-route-20261021",
+      "public-replay-20261021",
+      "public-release-20261021"
     ],
     "lesson": "rc-33"
   },
@@ -161,13 +227,14 @@ const RC_PROJECTS = [
     "id": "reconversion-control",
     "title": "Reconversion Control",
     "status": "Application publiée · parcours enrichi",
-    "summary": "PWA bilingue, Daily Five, SRS adaptatif, cours, labs et preuves indépendants. Synchronisation chiffrée facultative.",
+    "summary": "PWA bilingue, Daily Five, SRS adaptatif, cours, labs et preuves indépendants. Synchronisation chiffrée facultative. Projet 2027 : décision de formation et preuves datées.",
     "skills": "PWA · JavaScript · pédagogie · validation · cloud opt-in",
     "limit": "Les statuts sont déclarés par l’utilisateur ; XP et lecture ne certifient pas une compétence. Aucun Supabase configuré par défaut.",
     "url": "https://ipoower.github.io/Reconversion-Control/",
     "repository": "https://github.com/iPoower/Reconversion-Control",
     "sources": [
-      "public-reconversion"
+      "public-reconversion",
+      "public-project-v3-20261021"
     ],
     "lesson": "rc-41"
   },
@@ -177,12 +244,13 @@ const RC_PROJECTS = [
     "status": "Phase 1 · prototype de démonstration",
     "summary": "Interface de coffre et moteurs de sérialisation, SHA-256, AES-GCM et relecture sur un Drive fictif en mémoire.",
     "skills": "TypeScript · architecture · intégrité · scénarios d’échec",
-    "limit": "Données fictives recréées à l’ouverture, clé éphémère. Aucune connexion Google/Supabase ni sauvegarde personnelle durable active.",
+    "limit": "Données fictives recréées à l’ouverture, clé éphémère. Aucune connexion Google/Supabase ni sauvegarde personnelle durable active. Le lot 1 du 16/10 documente un contrat ; il n’active aucun transport réel.",
     "url": "https://ipoower.github.io/Control-Vault/",
     "repository": "https://github.com/iPoower/Control-Vault",
     "sources": [
       "public-control-vault",
-      "public-cv-crypto"
+      "public-cv-crypto",
+      "public-vault-contract-20261021"
     ],
     "lesson": "rc-42"
   }

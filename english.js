@@ -288,7 +288,7 @@ Object.assign(RC_ENGLISH, {
   },
   "rc-34": {
     "title": "Six F1 modules, one source of truth",
-    "summary": "Explain opt-in views without inventing telemetry, maintenance dates or alternative routes.",
+    "summary": "Explain opt-in views without inventing telemetry, maintenance dates or alternative routes. Explain why an animated route is not evidence of a real journey.",
     "phrase": "Each module reads existing results instead of creating a competing decision engine.",
     "phraseFr": "Chaque module lit les résultats existants au lieu de créer un moteur de décision concurrent.",
     "vocab": [
@@ -309,11 +309,11 @@ Object.assign(RC_ENGLISH, {
         "télémétrie"
       ]
     ],
-    "question": "What does Strategy A/B compare, and what does it not claim?"
+    "question": "What does Strategy A/B compare, and what does it not claim? Case dated 2026-10-21: what changes when LIVE ROUTE switches from simulation to accepted GPS?"
   },
   "rc-35": {
     "title": "Measured, estimated or unavailable",
-    "summary": "Keep the source, age and confidence of every value visible.",
+    "summary": "Keep the source, age and confidence of every value visible. Distinguish simulated, active, stale and unavailable positions.",
     "phrase": "An estimate is useful only when its assumptions and limitations are clear.",
     "phraseFr": "Une estimation est utile seulement si ses hypothèses et ses limites sont claires.",
     "vocab": [
@@ -334,11 +334,11 @@ Object.assign(RC_ENGLISH, {
         "indisponible"
       ]
     ],
-    "question": "How do you explain a projected distance when there is no GPS measurement?"
+    "question": "How do you explain a projected distance when there is no GPS measurement? Case dated 2026-10-21: why must a stale GPS marker stop moving?"
   },
   "rc-36": {
     "title": "Calendar trips and offline recovery",
-    "summary": "Apply an origin preference to the right occurrence and keep route and weather consistent.",
+    "summary": "Apply an origin preference to the right occurrence and keep route and weather consistent. Reject a raw GPS origin while keeping previously scheduled trips.",
     "phrase": "I test both the network failure and the recovery, not just the happy path.",
     "phraseFr": "Je teste la panne réseau et la reprise, pas seulement le parcours nominal.",
     "vocab": [
@@ -359,7 +359,7 @@ Object.assign(RC_ENGLISH, {
         "reprise"
       ]
     ],
-    "question": "How do you prevent a cached network error from blocking recovery?"
+    "question": "How do you prevent a cached network error from blocking recovery? Case dated 2026-10-21: what should happen when the validated GPS source is unavailable?"
   },
   "rc-37": {
     "title": "Encrypted storage and session boundaries",
@@ -413,7 +413,7 @@ Object.assign(RC_ENGLISH, {
   },
   "rc-39": {
     "title": "Proving the build that is actually served",
-    "summary": "Connect the merged commit, tested artifact, deployment and live HTTP content.",
+    "summary": "Connect the merged commit, tested artifact, deployment and live HTTP content. Use a dated release snapshot without calling it the latest forever.",
     "phrase": "I verify the served build before announcing that a deployment is complete.",
     "phraseFr": "Je vérifie le build servi avant d’annoncer que le déploiement est terminé.",
     "vocab": [
@@ -434,11 +434,11 @@ Object.assign(RC_ENGLISH, {
         "retour arrière"
       ]
     ],
-    "question": "What do you investigate when CI is green but the live build is still old?"
+    "question": "What do you investigate when CI is green but the live build is still old? Case dated 2026-10-21: what can you claim if main is newer than the public manifest?"
   },
   "rc-40": {
     "title": "Privacy-preserving diagnostics",
-    "summary": "Keep useful failure categories while removing private coordinates and avoiding destructive deduplication.",
+    "summary": "Keep useful failure categories while removing private coordinates and avoiding destructive deduplication. Keep the departure forecast separate from present-day weather.",
     "phrase": "I preserve useful diagnostics without publishing unnecessary personal data.",
     "phraseFr": "Je conserve des diagnostics utiles sans publier de données personnelles inutiles.",
     "vocab": [
@@ -459,11 +459,11 @@ Object.assign(RC_ENGLISH, {
         "minimisation des données"
       ]
     ],
-    "question": "How would you debug a weather failure without printing the full request URL?"
+    "question": "How would you debug a weather failure without printing the full request URL? Case dated 2026-10-21: why can current weather not fill a missing departure forecast?"
   },
   "rc-41": {
     "title": "Learning progress is not portfolio evidence",
-    "summary": "Explain independent course, lab and proof states in a bilingual learning PWA.",
+    "summary": "Explain independent course, lab and proof states in a bilingual learning PWA. Separate a registered qualification from admission and confirmed funding.",
     "phrase": "Completing a lesson, validating a lab and proving a skill are three separate achievements.",
     "phraseFr": "Terminer un cours, valider un lab et prouver une compétence sont trois réalisations distinctes.",
     "vocab": [
@@ -484,11 +484,11 @@ Object.assign(RC_ENGLISH, {
         "synchronisation volontaire"
       ]
     ],
-    "question": "Why should XP and a completed lesson not automatically validate a portfolio proof?"
+    "question": "Why should XP and a completed lesson not automatically validate a portfolio proof? Case dated 2026-10-21: which evidence is still needed after checking a qualification register?"
   },
   "rc-42": {
     "title": "An honest three-project portfolio",
-    "summary": "Present two applications and a vault prototype with concrete evidence and clear limits.",
+    "summary": "Present two applications and a vault prototype with concrete evidence and clear limits. Distinguish an integration contract from a connected backup service.",
     "phrase": "The prototype runs real integrity checks on fictional data, but it is not a production backup service.",
     "phraseFr": "Le prototype exécute de vrais contrôles d’intégrité sur des données fictives, mais ce n’est pas un service de sauvegarde en production.",
     "vocab": [
@@ -509,7 +509,7 @@ Object.assign(RC_ENGLISH, {
         "sauvegarde durable"
       ]
     ],
-    "question": "How would you pitch Control Vault while being clear about what remains to be built?"
+    "question": "How would you pitch Control Vault while being clear about what remains to be built? Case dated 2026-10-21: why do schema tests not prove a live Google Drive connection?"
   }
 });
 

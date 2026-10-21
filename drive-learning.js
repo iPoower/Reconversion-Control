@@ -199,7 +199,8 @@ RC_LABS.push.apply(RC_LABS, [
     "sources": [
       "public-deploy",
       "public-ux93",
-      "public-actions"
+      "public-actions",
+      "public-release-20261021"
     ],
     "goal": "Construire une preuve de livraison complète à partir d’une PR publique réellement fusionnée.",
     "steps": [
@@ -207,7 +208,8 @@ RC_LABS.push.apply(RC_LABS, [
       "Retrouve les runs sur le bon SHA ; vérifie tous les lots obligatoires et leur conclusion.",
       "Identifie le build publié et la preuve de version réellement servie.",
       "Explique le comportement attendu si cinq pushes sont refusés.",
-      "Rédige une conclusion qui distingue CI, publication et inspection visuelle."
+      "Rédige une conclusion qui distingue CI, publication et inspection visuelle.",
+      "Variante du 21/10 : compare le SHA de main au manifeste figé prod-151. Si main est plus récent, distingue fusion, publication et version HTTP ; ne prétends pas que le manifeste historique désigne encore la dernière livraison."
     ],
     "expected": "Une chaîne de références publiques datées ; tout contrôle non obtenu reste marqué non vérifié.",
     "check": [
@@ -229,7 +231,8 @@ RC_LABS.push.apply(RC_LABS, [
     "enTitle": "Diagnostics · redact private data without hiding failures",
     "sources": [
       "public-relay",
-      "public-debrief"
+      "public-debrief",
+      "public-replay-20261021"
     ],
     "goal": "Décrire des diagnostics utiles et des doublons possibles sans fuite ni suppression automatique.",
     "steps": [
@@ -237,7 +240,8 @@ RC_LABS.push.apply(RC_LABS, [
       "Propose un message public pour chacune, avec fournisseur et catégorie, sans URL brute.",
       "Crée deux événements fictifs proches ; indique pourquoi ils ne sont pas forcément identiques.",
       "Décris « Plus tard », pause quotidienne et nouvelle arrivée sans perdre le journal.",
-      "Ajoute un cas de prévision absente et annonce la comparaison indisponible."
+      "Ajoute un cas de prévision absente et annonce la comparaison indisponible.",
+      "Variante du 21/10 : un Journey Replay fictif sans prévision archivée doit rester non comparable. Explique pourquoi la météo actuelle ne doit pas compléter son historique."
     ],
     "expected": "Messages expurgés et mini-matrice de transitions avec les données fictives préservées.",
     "check": [
@@ -261,7 +265,8 @@ RC_LABS.push.apply(RC_LABS, [
       "public-ux93",
       "public-reconversion",
       "public-control-vault",
-      "public-cv-crypto"
+      "public-cv-crypto",
+      "public-vault-contract-20261021"
     ],
     "goal": "Préparer un pitch honnête et une trace personnelle distincte du code livré.",
     "steps": [
@@ -269,7 +274,8 @@ RC_LABS.push.apply(RC_LABS, [
       "Pour chaque projet, choisis une preuve publique et une décision que tu sais expliquer.",
       "Indique ton rôle personnel et celui de l’assistance ; ne copie pas une expertise que tu ne peux pas défendre.",
       "Présente Control Vault comme prototype à données fictives, sans connexion réelle ni sauvegarde durable.",
-      "Ajoute seulement une preuve expurgée dans ton Evidence Locker local ; laisse le statut à construire tant que tu ne peux pas expliquer le cas."
+      "Ajoute seulement une preuve expurgée dans ton Evidence Locker local ; laisse le statut à construire tant que tu ne peux pas expliquer le cas.",
+      "Variante du 21/10 : retrouve le contrat du lot 1 de Control Vault et formule la différence entre tests de schéma et connexion durable. Les blocages du document sont datés du 16/10, sans déduire l’état actuel d’un autre dépôt."
     ],
     "expected": "Un pitch de 90 secondes et une liste de preuves, limites et prochains exercices.",
     "check": [

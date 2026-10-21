@@ -336,6 +336,13 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "L’onglet Garage remplace l’ancien onglet Tenue et met le véhicule actif au premier plan. Les deux véhicules et leurs historiques sont conservés. Un kilométrage enregistré n’est pas un kilométrage live : on le libelle selon sa provenance.",
           "Une intervention utile peut être suggérée à partir d’un contrôle existant, mais sans inventer une date ou un compteur. Pour le portfolio, une capture utilise un profil fictif et décrit ce qui est disponible, estimé ou absent."
         ]
+      },
+      {
+        "title": "Complément du 21/10/2026 · un Garage, plusieurs vues",
+        "body": [
+          "Twin Garage et LIVE ROUTE réutilisent le même contexte de trajet et les fiches existantes. Dans le code publié étudié, la carte n’est pas un second Garage : elle affiche la géométrie routière déjà disponible. Une ligne droite de secours ne devient pas un itinéraire réel.",
+          "La simulation avant départ anime le parcours à allure uniforme. Pendant un trajet actif, la vue utilise uniquement le fix GPS accepté par le système. Elle ne déduit jamais le déplacement réel de l’heure prévue. Un cockpit animé démontre une représentation ; il ne démontre ni télémétrie automobile ni navigation avec trafic."
+        ]
       }
     ],
     "pitfalls": [
@@ -348,8 +355,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Le module est une vue sur les résultats et réglages existants. Il apporte une lecture plus pratique sans fabriquer une mesure ou concurrencer le moteur de décision. Je peux expliquer chaque source, signaler les données absentes et vérifier que désactiver l’option ne modifie pas les données métier."
     },
     "exercise": {
-      "prompt": "Un véhicule n’a aucun relevé de compteur. Écris le texte de la carte Garage et celui d’une comparaison Strategy A/B.",
-      "answer": "Garage : « Kilométrage non renseigné » avec une action pour ouvrir la fiche du véhicule. Strategy A/B : « Comparaison de deux montes sur le même trajet » ; aucun gain de temps ou itinéraire alternatif n’est annoncé sans donnée correspondante."
+      "prompt": "Un véhicule n’a aucun relevé de compteur. Écris le texte de la carte Garage et celui d’une comparaison Strategy A/B.\n\nVariante du 21/10 : la voiture avance sur une carte avant tout départ. Quelle preuve manque pour parler de déplacement réel ?",
+      "answer": "Garage : « Kilométrage non renseigné » avec une action pour ouvrir la fiche du véhicule. Strategy A/B : « Comparaison de deux montes sur le même trajet » ; aucun gain de temps ou itinéraire alternatif n’est annoncé sans donnée correspondante.\n\nIl manque un trajet actif et une position GPS valide associée à ce trajet. Le mouvement avant départ doit porter le libellé simulation ; la durée et les distances affichées restent des estimations."
     },
     "sources": [
       {
@@ -359,13 +366,17 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-ux93",
         "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-live-route-20261021",
+        "location": "Complément sourcé du 21/10/2026 ; instantané distinct des archives"
       }
     ],
     "related": [
       "race-arch",
       "race-privacy"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques."
   },
   {
     "id": "rc-35",
@@ -406,6 +417,15 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Une prévision vieillissante, un GPS peu précis ou un trajet sans observations demandent un état dégradé compréhensible. La recommandation conserve son contexte plutôt que de masquer le problème avec un zéro.",
           "Pour tester, utiliser des jeux fictifs : relevé avant récent et arrière ancien, météo absente, progression sans GPS. Vérifier les mots affichés, pas seulement que la page se charge. Une capture doit aussi montrer la distinction."
         ]
+      },
+      {
+        "title": "Complément du 21/10/2026 · quatre états pour LIVE ROUTE",
+        "body": [
+          "Le même panneau distingue simulation, GPS actif, position périmée et position indisponible. Dans cet instantané, LIVE ROUTE exige notamment une précision annoncée d’au plus 60 m et un relevé âgé d’au plus 15 s. Ce sont les seuils de cette application, pas une garantie de précision fournie par tous les téléphones.",
+          "MDN distingue les coordonnées de la date de leur acquisition. Recevoir une position maintenant ne suffit donc pas à prouver qu’elle vient d’être mesurée. Quand la source n’est plus valide, la voiture reste figée et les métriques courantes sont retirées ; le temps écoulé ne permet pas de reconstruire la position.",
+          "Route Radar conserve les coordonnées et la provenance des prévisions ponctuelles. Leur projection sur la route sert à estimer une distance, jamais à inventer une observation continue. Une prévision ancienne, un point trop éloigné du tracé ou une absence d’événement routier ne deviennent pas une preuve de trajet sans risque."
+        ],
+        "code": "simulation → animation annoncée\nGPS accepté + trajet actif → position utilisable\nGPS périmé → marqueur figé, métriques retirées\nGPS absent → indisponible, aucune position inventée"
       }
     ],
     "pitfalls": [
@@ -418,8 +438,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Parce que le libellé évite qu’un utilisateur traite une estimation comme une observation réelle. Je relie la valeur à sa méthode et à sa fraîcheur ; si la source manque, je garde l’état inconnu. Cela rend la décision explicable sans changer arbitrairement le moteur."
     },
     "exercise": {
-      "prompt": "Réécris trois libellés : « parcouru 12 km » sans GPS, « pneus mesurés aujourd’hui » avec un seul essieu relevé, « trajet sans pluie » avec une prévision absente.",
-      "answer": "« Progression estimée ≈ 12 km, sans mesure GPS » ; « Essieu avant : relevé déclaré aujourd’hui ; arrière : dernier relevé ancien » ; « Météo du trajet indisponible ». Les trois formulations conservent la provenance et ne créent aucune observation."
+      "prompt": "Réécris trois libellés : « parcouru 12 km » sans GPS, « pneus mesurés aujourd’hui » avec un seul essieu relevé, « trajet sans pluie » avec une prévision absente.\n\nVariante du 21/10 : le dernier relevé a 20 secondes, la carte s’anime encore et une station météo prévoit de la pluie. Quels libellés et comportements sont justifiés ?",
+      "answer": "« Progression estimée ≈ 12 km, sans mesure GPS » ; « Essieu avant : relevé déclaré aujourd’hui ; arrière : dernier relevé ancien » ; « Météo du trajet indisponible ». Les trois formulations conservent la provenance et ne créent aucune observation.\n\nPour la politique LIVE ROUTE étudiée, le relevé dépasse 15 s : le marqueur est figé et les métriques GPS courantes sont retirées. La pluie reste une prévision ponctuelle sourcée, sans affirmer une observation sur tout le parcours ni transformer l’animation en mouvement réel."
     },
     "sources": [
       {
@@ -429,13 +449,21 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-ux93",
         "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-live-route-20261021",
+        "location": "Complément sourcé du 21/10/2026 ; instantané distinct des archives"
+      },
+      {
+        "id": "public-geolocation-20261021",
+        "location": "Complément sourcé du 21/10/2026 ; instantané distinct des archives"
       }
     ],
     "related": [
       "formats",
       "race-tests"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques."
   },
   {
     "id": "rc-36",
@@ -476,6 +504,13 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Une erreur météo obtenue pendant une déconnexion pouvait rester en cache négatif et empêcher une reprise immédiate. Le correctif n’interroge plus la météo de parcours hors ligne et invalide les erreurs de trajet à la reconnexion, sans jeter les modèles valides.",
           "Ce cas montre qu’un test de réseau doit couvrir le retour du réseau. La vérification doit aussi attendre l’écriture effective du coffre avant de recharger, sinon elle mesure une course du test plutôt que la persistance réelle."
         ]
+      },
+      {
+        "title": "Complément du 21/10/2026 · refuser une origine GPS brute",
+        "body": [
+          "La PR #196 corrige le choix « Ma position » dans Trajet. Le formulaire interroge appCurrentGps(), la source canonique validée, au lieu de reprendre une coordonnée navigateur brute ou une ancienne origine mémorisée. Si cette source manque, programmer le départ est refusé avec une explication.",
+          "Le contrôle ne supprime pas les trajets déjà programmés. Il empêche une nouvelle programmation avec une origine qui n’a plus de validité. Le contre-test utilise un GPS brut ancien ou imprécis et aucun fix canonique : aucun trajet ne doit être créé. Un cas positif avec un fix accepté vérifie que le garde-fou ne bloque pas tous les utilisateurs."
+        ]
       }
     ],
     "pitfalls": [
@@ -488,8 +523,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Je stocke la préférence dans le document existant et je laisse le calcul central produire le trajet effectif. La carte lit ce résultat. Je teste l’occurrence, le sens, les annulations, le coffre et la reprise réseau ; je ne recalcule pas des règles parallèles dans le rendu."
     },
     "exercise": {
-      "prompt": "Propose un scénario de test pour un départ personnalisé choisi hors ligne, puis suivi d’un retour réseau.",
-      "answer": "Choisir une origine fictive sur une seule occurrence, couper réellement les requêtes, vérifier l’attente et les autres rendez-vous inchangés. Reconnecter, vérifier route et météo cohérentes, attendre l’écriture du coffre puis recharger. L’origine persiste et une ancienne erreur météo ne bloque pas le recalcul."
+      "prompt": "Propose un scénario de test pour un départ personnalisé choisi hors ligne, puis suivi d’un retour réseau.\n\nVariante du 21/10 : une coordonnée brute existe mais appCurrentGps() ne fournit aucun fix valide. Peut-on programmer « Ma position » ? Que conserve-t-on ?",
+      "answer": "Choisir une origine fictive sur une seule occurrence, couper réellement les requêtes, vérifier l’attente et les autres rendez-vous inchangés. Reconnecter, vérifier route et météo cohérentes, attendre l’écriture du coffre puis recharger. L’origine persiste et une ancienne erreur météo ne bloque pas le recalcul.\n\nRefuser cette nouvelle programmation et proposer un autre départ ou l’attente d’un fix fiable. Ne pas utiliser l’ancienne coordonnée en secours silencieux. Les trajets déjà enregistrés sont conservés ; le test négatif vérifie aussi qu’aucun nouveau trajet n’a été ajouté."
     },
     "sources": [
       {
@@ -499,13 +534,17 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-ux93",
         "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-gps-gate-20261021",
+        "location": "Complément sourcé du 21/10/2026 ; instantané distinct des archives"
       }
     ],
     "related": [
       "cicd",
       "race-tests"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques."
   },
   {
     "id": "rc-37",
@@ -692,6 +731,13 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Reconversion Control publie après une validation main réussie et injecte le SHA testé dans l’HTML et le service worker. Le cache dérive de ce build. Contrôler le code de main sans inspecter le déploiement laisserait un écart possible entre dépôt et application.",
           "Un retour arrière prend la forme d’un changement explicite et testé vers une version valide. Il préserve les données et les règles de branches. Le journal doit distinguer fusion confirmée, déploiement confirmé et inspection navigateur indisponible."
         ]
+      },
+      {
+        "title": "Complément du 21/10/2026 · une preuve datée, pas une étiquette",
+        "body": [
+          "L’instantané de publication consulté le 21/10 fournit un cas plus récent : prod-151, SHA source 120b10d04c63f9cb882157150f647befc287f95c, build 41f1fb5747b9, horodatage 2026-10-21T03:39:52.008Z. Le manifeste est cité à une révision Git figée pour pouvoir retrouver ce cas même après une autre livraison.",
+          "Ces identifiants ne prouvent pas seuls qu’un navigateur a chargé ce build. Il faut relier le commit fusionné, ses contrôles achevés, le déploiement, le manifeste et le contenu HTTP réellement servi. Un commit plus récent sur main peut encore attendre sa publication. L’ancien exemple prod93 reste une archive ; aucun de ces instantanés ne prétend désigner indéfiniment la dernière version."
+        ]
       }
     ],
     "pitfalls": [
@@ -704,8 +750,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Il ferme l’écart entre l’artefact testé et ce que l’hébergement sert réellement. Je relie le SHA fusionné, le build publié et le contenu reçu, en tenant compte du cache et du service worker. Si l’inspection visuelle manque, je le dis séparément."
     },
     "exercise": {
-      "prompt": "Le job de publication est vert, mais version.json indique un ancien build. Que peux-tu annoncer et que dois-tu vérifier ?",
-      "answer": "Je peux annoncer que le job a fini, pas que le nouveau build est servi. Je contrôle le commit attendu, l’artefact, la publication et le cache HTTP avec une requête adaptée. Je compare les identités et le contenu ; tant que l’écart subsiste, le déploiement attendu n’est pas confirmé."
+      "prompt": "Le job de publication est vert, mais version.json indique un ancien build. Que peux-tu annoncer et que dois-tu vérifier ?\n\nVariante du 21/10 : main est plus récent que le SHA du manifeste public. Quelle conclusion peux-tu écrire sans inventer une livraison ?",
+      "answer": "Je peux annoncer que le job a fini, pas que le nouveau build est servi. Je contrôle le commit attendu, l’artefact, la publication et le cache HTTP avec une requête adaptée. Je compare les identités et le contenu ; tant que l’écart subsiste, le déploiement attendu n’est pas confirmé.\n\nLe changement est fusionné mais sa publication n’est pas démontrée par ce manifeste. Conserver séparément les SHA de main, du déploiement et du contenu servi, avec l’heure de lecture. Attendre les preuves manquantes avant de dire livré."
     },
     "sources": [
       {
@@ -719,6 +765,10 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-reconversion",
         "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-release-20261021",
+        "location": "Complément sourcé du 21/10/2026 ; instantané distinct des archives"
       }
     ],
     "related": [
@@ -726,7 +776,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "cicd",
       "race-cicd"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques."
   },
   {
     "id": "rc-40",
@@ -767,6 +817,13 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Telemetry Replay et les débriefs comparent une prévision existante à une observation déclarée. Une prévision absente ou ancienne reste non comparable. Un score inventé rendrait le diagnostic plus joli mais moins vrai.",
           "Pour le portfolio, raconter le symptôme, la frontière de données, le correctif et un scénario négatif. Les exemples, fichiers de test et captures restent fictifs ; un log expurgé doit encore permettre de distinguer une panne réseau d’un JSON invalide."
         ]
+      },
+      {
+        "title": "Complément du 21/10/2026 · Journey Replay garde le contexte historique",
+        "body": [
+          "Journey Replay projette le débrief enregistré en deux temps : prévision archivée au départ, puis déclaration du conducteur à l’arrivée. Le noyau ne consulte ni la météo réseau actuelle ni le contexte du trajet du jour pour réécrire un déplacement passé. Le parcours dessiné est illustratif, sans échelle et sans trace GPS.",
+          "Un départ non archivé, un retour absent ou une prévision trop ancienne produisent une limite explicite. Une comparaison non disponible n’obtient aucun score inventé. La silhouette historique dépend de l’identité figée au départ ; renommer aujourd’hui la voiture du Garage ne prouve pas son identité hier. Ce cas apprend à séparer une photographie enregistrée d’un état actuel."
+        ]
       }
     ],
     "pitfalls": [
@@ -779,8 +836,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Je conserve des catégories stables, le fournisseur et le statut utile, puis je teste les chemins d’erreur avec des données fictives. Les coordonnées, noms et calendriers privés ne sont pas nécessaires dans un log public. Je vérifie aussi la reprise normale pour ne pas masquer le problème."
     },
     "exercise": {
-      "prompt": "Deux trajets ressemblent à des doublons et la météo de l’un manque. Que faut-il afficher et conserver ?",
-      "answer": "Signaler « doublon possible » sans suppression ni fusion automatique ; conserver les deux événements. Pour le trajet sans prévision comparable, annoncer « comparaison indisponible » sans score. La pause de sollicitation peut être appliquée sans perdre l’historique ni les actions manuelles."
+      "prompt": "Deux trajets ressemblent à des doublons et la météo de l’un manque. Que faut-il afficher et conserver ?\n\nVariante du 21/10 : le débrief d’hier n’a pas de prévision archivée, mais la météo actuelle est disponible. Peut-on compléter le replay avec elle ?",
+      "answer": "Signaler « doublon possible » sans suppression ni fusion automatique ; conserver les deux événements. Pour le trajet sans prévision comparable, annoncer « comparaison indisponible » sans score. La pause de sollicitation peut être appliquée sans perdre l’historique ni les actions manuelles.\n\nNon : conserver le retour déclaré, signaler la prévision manquante et laisser la comparaison non disponible. La météo actuelle ne reconstitue pas une prévision de départ historique ; une animation ne crée aucune trace GPS."
     },
     "sources": [
       {
@@ -790,6 +847,10 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-debrief",
         "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-replay-20261021",
+        "location": "Complément sourcé du 21/10/2026 ; instantané distinct des archives"
       }
     ],
     "related": [
@@ -797,7 +858,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "vuln",
       "race-tests"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques."
   },
   {
     "id": "rc-41",
@@ -837,6 +898,13 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "La progression reste locale par défaut. L’utilisateur peut configurer son propre projet Supabase et s’authentifier par Email OTP ; la progression est chiffrée localement avec AES-256-GCM avant envoi. Une révision conditionnelle et un choix explicite traitent les conflits PC/iPhone.",
           "Cette fonction n’active pas un backend par défaut. Un export local de progression contient des traces de portfolio saisies par l’utilisateur : il doit être gardé privé. L’enveloppe cloud chiffrée ne rend pas automatiquement localStorage ou l’export JSON chiffrés."
         ]
+      },
+      {
+        "title": "Complément du 21/10/2026 · Projet 2027 et preuves de décision",
+        "body": [
+          "La V3 ajoute Projet 2027 : six étapes du socle IT à la sécurité IA, huit démonstrations sans assistance, six actions de dossier et un comparatif d’écoles sur huit questions. Une réponse d’école n’est contrôlée avec preuve que si une trace et une date sont renseignées ; cela reste une déclaration de l’utilisateur, pas une admission accordée par le site.",
+          "Une fiche RNCP confirme un titre, un niveau et des dates, sans prouver l’habilitation de chaque centre, l’admission ou le financement individuel. Dans le budget, une case vide reste inconnue et un zéro doit être explicite. L’exercice utile consiste à demander les pièces manquantes plutôt qu’à transformer une marge sous plafond en financement obtenu."
+        ]
       }
     ],
     "pitfalls": [
@@ -849,13 +917,17 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Il organise l’apprentissage, la révision et les preuves sans les confondre. Je peux montrer un parcours bilingue, un cas SRS, un lab fictif, un export/import et un rechargement hors ligne. Je présente le cloud comme opt-in et je garde les traces personnelles hors du dépôt public."
     },
     "exercise": {
-      "prompt": "Tu as terminé un lab mais oublié le concept lors de deux révisions. Quels états devraient changer ?",
-      "answer": "Le SRS fait passer la connaissance en En cours et retire sa révision Acquis. Le statut du lab et sa preuve restent indépendants. Une session Daily Five complétée peut conserver ses XP ; aucun de ces résultats ne certifie automatiquement une compétence ou un examen."
+      "prompt": "Tu as terminé un lab mais oublié le concept lors de deux révisions. Quels états devraient changer ?\n\nVariante du 21/10 : le titre figure au RNCP et le coût connu reste sous le budget. Le financement et l’admission sont-ils validés ?",
+      "answer": "Le SRS fait passer la connaissance en En cours et retire sa révision Acquis. Le statut du lab et sa preuve restent indépendants. Une session Daily Five complétée peut conserver ses XP ; aucun de ces résultats ne certifie automatiquement une compétence ou un examen.\n\nNon. Vérifier séparément le centre et le titre complet ou les blocs préparés, les conditions de la cohorte, les frais encore inconnus et l’accord individuel de financement. Dater les preuves reçues ; ne modifier ni la maîtrise d’un cours ni une certification sur cette seule base."
     },
     "sources": [
       {
         "id": "public-reconversion",
         "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-project-v3-20261021",
+        "location": "Complément sourcé du 21/10/2026 ; instantané distinct des archives"
       }
     ],
     "related": [
@@ -863,7 +935,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "cicd",
       "shared"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques."
   },
   {
     "id": "rc-42",
@@ -904,6 +976,13 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Race Control démontre décision explicable, données privées, tests et UX mobile. Reconversion Control démontre PWA, apprentissage bilingue, états de progression et cloud opt-in. Control Vault démontre prototype, moteurs d’intégrité et scénarios d’échec.",
           "Un pitch dit ce que tu peux expliquer personnellement, le rôle de l’assistance, la preuve publique et la limite restante. Cloud-DevSecOps-Lab reste une idée de prochain projet, sans dépôt ou certification inventés. Le cursus pentest et IA doit encore produire ses propres labs et preuves."
         ]
+      },
+      {
+        "title": "Complément du 21/10/2026 · contrat documenté et service connecté",
+        "body": [
+          "Le lot 1 fusionné dans Control Vault le 16/10 ajoute un contrat d’intégration et des tests de contrat indépendants. Ce document décrit un paquet opaque déjà chiffré : Control Vault doit contrôler sa structure et son empreinte sans demander le code Race Control. Le contrat ne livre aucune connexion Google, aucun transport réel ni nouvelle restauration personnelle.",
+          "L’empreinte cohérente ne prouve pas à elle seule l’authenticité ou la possibilité de restaurer les données. Les blocages B01 à B03 du document décrivent l’état étudié au 16/10 ; les corrections ultérieures de Race Control s’évaluent séparément. Une correction dans un autre dépôt ou une PR encore en brouillon ne rend pas le prototype opérationnel. Le pitch conserve donc Phase 1, données fictives et absence de sauvegarde durable connectée."
+        ]
       }
     ],
     "pitfalls": [
@@ -916,8 +995,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Je décris la Phase 1 et ses données fictives, puis les moteurs effectivement exécutés et les scénarios d’échec. Je montre une preuve de relecture et d’intégrité, et je précise que l’authentification, la destination réelle et les clés durables restent à livrer. Je peux expliquer mes décisions sans prétendre exploiter un coffre production."
     },
     "exercise": {
-      "prompt": "Écris un pitch de trois phrases, une par projet, avec une limite explicite pour Control Vault.",
-      "answer": "Race Control : cockpit mobile de décision météo/trajet, avec données chiffrées et livraison vérifiée. Reconversion Control : parcours bilingue et révisions, avec cours, labs et preuves indépendants. Control Vault : prototype de coffre testant intégrité et chiffrement sur données fictives, sans connexion réelle ni sauvegarde durable active."
+      "prompt": "Écris un pitch de trois phrases, une par projet, avec une limite explicite pour Control Vault.\n\nVariante du 21/10 : un schéma et ses tests sont fusionnés. Peut-on annoncer que les sauvegardes sont synchronisées avec Google Drive ?",
+      "answer": "Race Control : cockpit mobile de décision météo/trajet, avec données chiffrées et livraison vérifiée. Reconversion Control : parcours bilingue et révisions, avec cours, labs et preuves indépendants. Control Vault : prototype de coffre testant intégrité et chiffrement sur données fictives, sans connexion réelle ni sauvegarde durable active.\n\nNon : un contrat précise ce qui doit être compatible, pas l’existence d’un transport authentifié et durable. Il manque les preuves de connexion réelle, de permissions, de conservation après fermeture et de restauration. Une empreinte correcte ne remplace pas les contrôles d’authenticité et de conservation."
     },
     "sources": [
       {
@@ -935,6 +1014,10 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-cv-crypto",
         "location": "Statut et tests requis avant sauvegardes réelles"
+      },
+      {
+        "id": "public-vault-contract-20261021",
+        "location": "Complément sourcé du 21/10/2026 ; instantané distinct des archives"
       }
     ],
     "related": [
@@ -942,6 +1025,6 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "crypto",
       "race-tests"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques."
   }
 ]);

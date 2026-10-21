@@ -250,7 +250,7 @@ async function main() {
 
     assert.equal(await page.locator("#public-coverage").evaluate(el=>el.open),false);
     await page.locator("#public-coverage > summary").tap();
-    assert.equal(await page.locator("[data-public-source]").count(),14);
+    assert.equal(await page.locator("[data-public-source]").count(),21);
     assert.equal(await page.locator("#public-coverage a").evaluateAll(links=>links.every(a=>a.protocol==="https:"&&a.rel.includes("noreferrer"))),true);
     await geometry(page,"expanded public-source links");
     passed("recent public sources are folded and separate from the seven private historical references");
