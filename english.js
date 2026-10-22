@@ -363,7 +363,7 @@ Object.assign(RC_ENGLISH, {
   },
   "rc-37": {
     "title": "Encrypted storage and session boundaries",
-    "summary": "Explain key derivation, verified writes and the limits of an unlocked browser session.",
+    "summary": "Explain key derivation, verified writes and the limits of an unlocked browser session. Explain lossless union, idempotence and explicit conflict handling.",
     "phrase": "Encryption at rest does not isolate an unlocked session from trusted page code.",
     "phraseFr": "Le chiffrement au repos n’isole pas une session ouverte du code de la page autorisé.",
     "vocab": [
@@ -384,7 +384,7 @@ Object.assign(RC_ENGLISH, {
         "même origine Web"
       ]
     ],
-    "question": "Why do a long passphrase and a dedicated origin matter even with AES-GCM?"
+    "question": "Why do a long passphrase and a dedicated origin matter even with AES-GCM? Case dated 2026-10-22: what should happen when a merge cannot retain every observation?"
   },
   "rc-38": {
     "title": "CI trust boundaries and complete reports",
@@ -413,7 +413,7 @@ Object.assign(RC_ENGLISH, {
   },
   "rc-39": {
     "title": "Proving the build that is actually served",
-    "summary": "Connect the merged commit, tested artifact, deployment and live HTTP content. Use a dated release snapshot without calling it the latest forever.",
+    "summary": "Connect the merged commit, tested artifact, deployment and live HTTP content. Use a dated release snapshot without calling it the latest forever. Report deployment evidence separately for each target.",
     "phrase": "I verify the served build before announcing that a deployment is complete.",
     "phraseFr": "Je vérifie le build servi avant d’annoncer que le déploiement est terminé.",
     "vocab": [
@@ -434,7 +434,7 @@ Object.assign(RC_ENGLISH, {
         "retour arrière"
       ]
     ],
-    "question": "What do you investigate when CI is green but the live build is still old? Case dated 2026-10-21: what can you claim if main is newer than the public manifest?"
+    "question": "What do you investigate when CI is green but the live build is still old? Case dated 2026-10-21: what can you claim if main is newer than the public manifest? Case dated 2026-10-22: how do you report one successful deployment and another failed verification?"
   },
   "rc-40": {
     "title": "Privacy-preserving diagnostics",
@@ -488,7 +488,7 @@ Object.assign(RC_ENGLISH, {
   },
   "rc-42": {
     "title": "An honest three-project portfolio",
-    "summary": "Present two applications and a vault prototype with concrete evidence and clear limits. Distinguish an integration contract from a connected backup service.",
+    "summary": "Present two applications and a vault prototype with concrete evidence and clear limits. Distinguish an integration contract from a connected backup service. Explain what local-only, verified bytes and a simulated service actually prove.",
     "phrase": "The prototype runs real integrity checks on fictional data, but it is not a production backup service.",
     "phraseFr": "Le prototype exécute de vrais contrôles d’intégrité sur des données fictives, mais ce n’est pas un service de sauvegarde en production.",
     "vocab": [
@@ -509,7 +509,7 @@ Object.assign(RC_ENGLISH, {
         "sauvegarde durable"
       ]
     ],
-    "question": "How would you pitch Control Vault while being clear about what remains to be built? Case dated 2026-10-21: why do schema tests not prove a live Google Drive connection?"
+    "question": "How would you pitch Control Vault while being clear about what remains to be built? Case dated 2026-10-21: why do schema tests not prove a live Google Drive connection? Case dated 2026-10-22: which evidence is missing before claiming a live cross-device sync?"
   }
 });
 
