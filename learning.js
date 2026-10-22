@@ -296,7 +296,7 @@ const RC_PROJECTS = [
   {
     "id": "control-vault",
     "title": "Control Vault",
-    "status": "Phase 1 · prototype public, intégration préparée",
+    "status": "Phase 1 · prototype de démonstration, intégration préparée",
     "summary": "Interface de coffre et moteurs de sérialisation, SHA-256, AES-GCM et relecture sur un Drive fictif en mémoire. Modules de paquets et transport préparés séparément, encore non branchés.",
     "skills": "TypeScript · architecture · intégrité · scénarios d’échec",
     "limit": "Données fictives recréées à l’ouverture, clé éphémère. Aucune connexion Google/Supabase ni sauvegarde personnelle durable active. Le lot 1 du 16/10 documente un contrat ; il n’active aucun transport réel. Les lots B1/B2 et les tests A1 fusionnés ne prouvent aucune connexion Drive réelle ; l’interface reste sur DemoDrive au contrôle du 22/10.",
