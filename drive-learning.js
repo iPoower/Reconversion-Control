@@ -168,7 +168,8 @@ RC_LABS.push.apply(RC_LABS, [
     "enTitle": "Vault · failed import without data loss",
     "sources": [
       "public-vault",
-      "public-origin"
+      "public-origin",
+      "public-sync-merge-20261022"
     ],
     "goal": "Préparer et vérifier une matrice d’échecs de stockage avec uniquement des données de test.",
     "steps": [
@@ -176,7 +177,8 @@ RC_LABS.push.apply(RC_LABS, [
       "Définis les états avant/après pour bonne phrase, mauvaise phrase, enveloppe altérée et écriture refusée.",
       "Pour chaque refus, vérifie que le dernier état persistant valide reste lisible.",
       "Explique les différences entre session ouverte, verrouillage manuel et changement d’origine.",
-      "Conserve un rapport expurgé, sans mot de passe, calendrier ni coordonnées réelles."
+      "Conserve un rapport expurgé, sans mot de passe, calendrier ni coordonnées réelles.",
+      "Cas du 22/10 : sur papier ou dans un environnement de test, réunis deux petits journaux fictifs, refais la fusion et vérifie l’idempotence. Ajoute un conflit sans date fiable et un dépassement de capacité : décrire le refus sans perte, sans brancher de données réelles."
     ],
     "expected": "Un tableau de cas positifs et négatifs avec la preuve que le refus préserve les données.",
     "check": [
@@ -200,7 +202,9 @@ RC_LABS.push.apply(RC_LABS, [
       "public-deploy",
       "public-ux93",
       "public-actions",
-      "public-release-20261021"
+      "public-release-20261021",
+      "public-release-20261022",
+      "public-delivery-targets-20261022"
     ],
     "goal": "Construire une preuve de livraison complète à partir d’une PR publique réellement fusionnée.",
     "steps": [
@@ -209,7 +213,8 @@ RC_LABS.push.apply(RC_LABS, [
       "Identifie le build publié et la preuve de version réellement servie.",
       "Explique le comportement attendu si cinq pushes sont refusés.",
       "Rédige une conclusion qui distingue CI, publication et inspection visuelle.",
-      "Variante du 21/10 : compare le SHA de main au manifeste figé prod-151. Si main est plus récent, distingue fusion, publication et version HTTP ; ne prétends pas que le manifeste historique désigne encore la dernière livraison."
+      "Variante du 21/10 : compare le SHA de main au manifeste figé prod-151. Si main est plus récent, distingue fusion, publication et version HTTP ; ne prétends pas que le manifeste historique désigne encore la dernière livraison.",
+      "Cas du 22/10 : distingue la preuve GitHub Pages prod-157 du job Cloudflare en échec. Note une conclusion par cible et garde le cas daté ; ne suppose pas que l’échec persistera ni que le workflow entier était vert."
     ],
     "expected": "Une chaîne de références publiques datées ; tout contrôle non obtenu reste marqué non vérifié.",
     "check": [
@@ -266,7 +271,10 @@ RC_LABS.push.apply(RC_LABS, [
       "public-reconversion",
       "public-control-vault",
       "public-cv-crypto",
-      "public-vault-contract-20261021"
+      "public-vault-contract-20261021",
+      "public-vault-transport-20261022",
+      "public-vault-profile-20261022",
+      "public-drive-scope-20261022"
     ],
     "goal": "Préparer un pitch honnête et une trace personnelle distincte du code livré.",
     "steps": [
@@ -275,7 +283,8 @@ RC_LABS.push.apply(RC_LABS, [
       "Indique ton rôle personnel et celui de l’assistance ; ne copie pas une expertise que tu ne peux pas défendre.",
       "Présente Control Vault comme prototype à données fictives, sans connexion réelle ni sauvegarde durable.",
       "Ajoute seulement une preuve expurgée dans ton Evidence Locker local ; laisse le statut à construire tant que tu ne peux pas expliquer le cas.",
-      "Variante du 21/10 : retrouve le contrat du lot 1 de Control Vault et formule la différence entre tests de schéma et connexion durable. Les blocages du document sont datés du 16/10, sans déduire l’état actuel d’un autre dépôt."
+      "Variante du 21/10 : retrouve le contrat du lot 1 de Control Vault et formule la différence entre tests de schéma et connexion durable. Les blocages du document sont datés du 16/10, sans déduire l’état actuel d’un autre dépôt.",
+      "Cas du 22/10 : classe les preuves de conservation locale, de transport Drive simulé, de codec propriétaire et de service réel. Présente les modules préparés comme tels et explique la portée limitée de drive.file, sans demander de connexion ni de secret."
     ],
     "expected": "Un pitch de 90 secondes et une liste de preuves, limites et prochains exercices.",
     "check": [

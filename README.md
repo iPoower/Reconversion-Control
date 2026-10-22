@@ -6,7 +6,7 @@ PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, ins
 
 L’onglet **Projet 2027** (`#project`) relie le bilan de reconversion au travail quotidien : six étapes du socle IT à la sécurité IA, huit démonstrations sans assistance, six actions de dossier, un comparatif Jedha/ENI sur huit questions et une simulation du coût total. Les 42 fiches, 42 cours, 20 labs, Daily Five et identifiants existants sont conservés.
 
-Les références publiques ont été revérifiées le **21 octobre 2026** : AIS RNCP37680, niveau 6, échéance 28/02/2027 ; TSSR RNCP42463, niveau 5, échéance 31/08/2031. Ces faits sont séparés des déclarations des écoles, de l’habilitation du centre, des conditions de la cohorte 2027 et du financement individuel restant à confirmer. Aucune inscription, durée de parcours personnel, prise en charge ni compétence n’est validée automatiquement.
+Les références publiques ont été revérifiées le **22 octobre 2026** : AIS RNCP37680, niveau 6, échéance 28/02/2027 ; TSSR RNCP42463, niveau 5, échéance 31/08/2031. Ces faits sont séparés des déclarations des écoles, de l’habilitation du centre, des conditions de la cohorte 2027 et du financement individuel restant à confirmer. Aucune inscription, durée de parcours personnel, prise en charge ni compétence n’est validée automatiquement.
 
 Le diplôme de départ, le dispositif, la zone d’emploi, les durées, le budget et le bilan personnel sont saisis localement ou importés via un fichier privé au format `reconversion-control.project.v1`. **Aucun profil personnel réel n’est embarqué dans le dépôt public.** L’import de profil remplace seulement le cadre personnel ; il conserve les cours, labs, révisions, réponses d’école et preuves existants. La demande de devis peut être copiée ; aucun message n’est envoyé par le site.
 
@@ -41,6 +41,14 @@ Validation du dossier : `node tests/project-checks.cjs`, puis `BROWSER=chromium 
 - build GitHub Pages identifié par le SHA réellement testé ; cache Service Worker dérivé automatiquement de ce SHA
 - notification locale lorsqu’une nouvelle version PWA prend le contrôle
 - aucun analytics ; aucun backend requis (synchronisation privée optionnelle)
+
+## Actualisation pédagogique — 22/10/2026
+
+Trois cours existants (`rc-37`, `rc-39`, `rc-42`) sont enrichis sur la fusion sans perte, les preuves par cible de publication et les paquets opaques. Trois labs manuels et les défis anglais suivent ces cas. Les 27 références publiques comprennent six ajouts datés ; les contenus et vocabulaires antérieurs restent disponibles.
+
+Le portfolio cite l’instantané GitHub Pages prod-157 de Race Control. Pour Control Vault, il distingue l’interface de démonstration des modules B1/B2 et des tests A1 fusionnés, encore sans connexion Drive réelle dans l’interface publique. Les sources formation relues conservent leurs informations ; aucune admission ni prise en charge n’est déduite de cette relecture.
+
+Voir [sources et portée de l’actualisation du 22/10](docs/content-refresh-20261022.md). Les versions historiques ci-dessous gardent leurs dates.
 
 ## Actualisation pédagogique — 21/10/2026
 

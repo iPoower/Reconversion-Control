@@ -41,7 +41,7 @@ assert.equal(content.topics.length,84);assert.equal(new Set(content.topics.map(t
 assert.deepEqual(content.labs.map(l=>l.id),Array.from({length:20},(_,i)=>"lab-"+String(i+1).padStart(2,"0")));
 assert.equal(content.daily.length,14,"existing Daily Five rotations must remain unchanged");
 assert.equal(content.supports.filter(s=>s.status!=="public").length,7);
-assert.equal(content.supports.filter(s=>s.status==="public").length,21);
+assert.equal(content.supports.filter(s=>s.status==="public").length,27);
 const supportIds=new Set(content.supports.map(s=>s.id)),topicIds=new Set(content.topics.map(t=>t.id));
 for(const lesson of content.lessons){
  assert(content.english[lesson.id]&&content.english[lesson.id].vocab.length>=4,lesson.id+" bilingual coaching");
@@ -54,7 +54,7 @@ assert.equal(content.projects.length,3);
 assert.match(content.projects.find(p=>p.id==="control-vault").status,/prototype/);
 for(const source of content.supports.filter(s=>s.url)){
  const u=new URL(source.url);assert.equal(u.protocol,"https:");
- assert(["github.com","developer.mozilla.org","cheatsheetseries.owasp.org","docs.github.com"].includes(u.hostname));
+ assert(["github.com","developer.mozilla.org","cheatsheetseries.owasp.org","docs.github.com","developers.google.com"].includes(u.hostname));
  assert(!u.username&&!u.password);
 }
-console.log("PASS: 42 cours bilingues, 20 labs, 14 séances conservées, 21 sources publiques et trois projets honnêtement identifiés.");
+console.log("PASS: 42 cours bilingues, 20 labs, 14 séances conservées, 27 sources publiques et trois projets honnêtement identifiés.");

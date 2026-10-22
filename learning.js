@@ -201,13 +201,67 @@ RC_SUPPORTS.push.apply(RC_SUPPORTS, [
     "status": "public",
     "url": "https://developer.mozilla.org/en-US/docs/Web/API/GeolocationPosition",
     "coverage": "La date du relevé est distincte de sa réception ; les seuils d’acceptation appartiennent à l’application."
+  },
+  {
+    "id": "public-sync-merge-20261022",
+    "title": "Race Control · fusion pure et conservation",
+    "format": "Code et documentation publics",
+    "version": "6340b45 · relu le 22/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/blob/6340b45efabe2adac885faec9e41f76c37e6b573/docs/sync-pc-iphone.md",
+    "coverage": "Union idempotente, identités, conflits, limites et refus entier ; moteur non branché au réseau."
+  },
+  {
+    "id": "public-vault-transport-20261022",
+    "title": "Control Vault · transport opaque préparé",
+    "format": "Documentation publique",
+    "version": "8a3cf03 · relu le 22/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/Control-Vault/blob/8a3cf03571274f80cfa69e51296fc67754207b10/docs/OPAQUE_DRIVE_LOT_B2.md",
+    "coverage": "Copie locale et octets vérifiés ne valent pas synchronisation ; Drive simulé et fournisseur produit encore fictif."
+  },
+  {
+    "id": "public-vault-profile-20261022",
+    "title": "Control Vault · interopérabilité du profil A1",
+    "format": "Tests publics",
+    "version": "8a3cf03 · relu le 22/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/Control-Vault/blob/8a3cf03571274f80cfa69e51296fc67754207b10/tests/unit/race-sync-profile.test.ts",
+    "coverage": "Instantanés propriétaires et empreintes, lecture de paquets identiques ; aucune clé RC dans les composants de transport."
+  },
+  {
+    "id": "public-release-20261022",
+    "title": "Race Control · publication GitHub Pages observée",
+    "format": "Manifeste public figé",
+    "version": "prod-157 · 6340b45 · 22/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/blob/6120bc7f4c720e86e31c249f6b0dba0fccaf1e26/race-control/version.json",
+    "coverage": "Source et build 50988798eb7c confirmés par HTTP ; ne prouve pas la réussite de toutes les cibles."
+  },
+  {
+    "id": "public-delivery-targets-20261022",
+    "title": "Race Control · contrôle de la cible Cloudflare en échec",
+    "format": "Job public",
+    "version": "Run 39716832859 · job 119628436882 · lu le 22/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/actions/runs/39716832859/job/119628436882",
+    "coverage": "Échec du contrôle des octets, du commit et des en-têtes de la cible dédiée ; distinguer les résultats par cible."
+  },
+  {
+    "id": "public-drive-scope-20261022",
+    "title": "Google Drive · portée des permissions",
+    "format": "Documentation officielle",
+    "version": "Consultée le 22/10/2026",
+    "status": "public",
+    "url": "https://developers.google.com/workspace/drive/api/guides/api-specific-auth",
+    "coverage": "drive.file limite l’accès aux fichiers autorisés pour l’application ; le nom du scope ne prouve aucun consentement obtenu."
   }
 ]);
 const RC_PROJECTS = [
   {
     "id": "race-control",
     "title": "Race Control",
-    "status": "Application publiée · instantané prod-151 du 21/10/2026",
+    "status": "Application publiée · instantané prod-157 du 22/10/2026",
     "summary": "Cockpit météo et pneus, Twin Garage, LIVE ROUTE et Journey Replay. Simulation, GPS accepté et prévisions restent explicitement distingués.",
     "skills": "Front-end · UX mobile · tests · DevSecOps · confidentialité",
     "limit": "Simulation Chromium/WebKit ; aucun essai sur iPhone physique revendiqué. Origine partagée et session ouverte : durcissement à poursuivre.",
@@ -219,7 +273,8 @@ const RC_PROJECTS = [
       "public-vault",
       "public-live-route-20261021",
       "public-replay-20261021",
-      "public-release-20261021"
+      "public-release-20261021",
+      "public-release-20261022"
     ],
     "lesson": "rc-33"
   },
@@ -241,16 +296,18 @@ const RC_PROJECTS = [
   {
     "id": "control-vault",
     "title": "Control Vault",
-    "status": "Phase 1 · prototype de démonstration",
-    "summary": "Interface de coffre et moteurs de sérialisation, SHA-256, AES-GCM et relecture sur un Drive fictif en mémoire.",
+    "status": "Phase 1 · prototype public, intégration préparée",
+    "summary": "Interface de coffre et moteurs de sérialisation, SHA-256, AES-GCM et relecture sur un Drive fictif en mémoire. Modules de paquets et transport préparés séparément, encore non branchés.",
     "skills": "TypeScript · architecture · intégrité · scénarios d’échec",
-    "limit": "Données fictives recréées à l’ouverture, clé éphémère. Aucune connexion Google/Supabase ni sauvegarde personnelle durable active. Le lot 1 du 16/10 documente un contrat ; il n’active aucun transport réel.",
+    "limit": "Données fictives recréées à l’ouverture, clé éphémère. Aucune connexion Google/Supabase ni sauvegarde personnelle durable active. Le lot 1 du 16/10 documente un contrat ; il n’active aucun transport réel. Les lots B1/B2 et les tests A1 fusionnés ne prouvent aucune connexion Drive réelle ; l’interface reste sur DemoDrive au contrôle du 22/10.",
     "url": "https://ipoower.github.io/Control-Vault/",
     "repository": "https://github.com/iPoower/Control-Vault",
     "sources": [
       "public-control-vault",
       "public-cv-crypto",
-      "public-vault-contract-20261021"
+      "public-vault-contract-20261021",
+      "public-vault-transport-20261022",
+      "public-vault-profile-20261022"
     ],
     "lesson": "rc-42"
   }
