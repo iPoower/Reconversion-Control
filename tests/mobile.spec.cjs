@@ -44,6 +44,8 @@ async function main() {
     return {context, page};
   }
   try {
+    await require("./cloud-ui-browser.cjs").run(browser, server);
+    passed("asynchronous cloud sends preserve concurrent edits, including first backup, with a mocked provider");
     const {page} = await open();
     const headings = {cockpit: "⚡ 5 minutes du jour", daily: "⚡ 5 minutes du jour", path: "Parcours recommandé", library: "Bibliothèque essentielle", review: "À revoir aujourd’hui", course: "Parcours de révision", labs: "🧪 Lab Mode", privacy: "Sources pédagogiques"};
     for (const [view, heading] of Object.entries(headings)) {
