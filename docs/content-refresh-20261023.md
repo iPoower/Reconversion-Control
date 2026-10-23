@@ -40,12 +40,14 @@ de départ `74f63701551fc67c8bd4abebae89857569ee7e5b`. Aucune PR concurrente
 ouverte n’est constatée au début de la revue. Les consignes des deux dépôts sources
 sont lues ; ces projets restent en lecture seule.
 
-Seuls les contenus publics et leurs assertions de comptage changent :
+Seuls les contenus publics et leurs contrôles associés changent :
 27 → 33 références pédagogiques, 6 → 7 références du dossier formation, ajout
 du domaine officiel Playwright à la liste des références. Les assertions de
 progression, confidentialité et compatibilité restent conservées. Les comparaisons
 structurelles vérifient la conservation des sections, exercices antérieurs,
 vocabulaires, critères de labs et identifiants.
+
+Le premier [run 39898788470](https://github.com/iPoower/Reconversion-Control/actions/runs/39898788470) réussit sur Chromium et échoue sur WebKit après les vérifications des nouveaux contenus : un dialogue du cours historique rc-06 reste ouvert après un rechargement. Le test rechargeait immédiatement après une fermeture utilisant `history.back()`. Le test attend désormais le retour à `#course` et affirme la fermeture du dialogue avant et après le rechargement. Aucun `force`, délai augmenté, assertion supprimée ni changement du code applicatif ; la matrice complète doit être rejouée sur la nouvelle tête.
 
 L’environnement local est devenu indisponible avant l’exécution des contrôles.
 Les contrôles complets doivent donc réussir en CI sur la tête exacte avant
