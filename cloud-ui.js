@@ -5,6 +5,16 @@ const RC_CLOUD_UI = (() => {
  let env=null,client=null,email="",phrase="",remote=null,remoteData=null,revision=null,baseline="",busy=false,applying=false,mode="setup",status="Non connecté : ta progression reste locale.",timer=null;
  function safe(s){return env.escape(String(s||""));}
  function local(){return JSON.stringify(env.snapshot());}
+ async function upload(expectedRevision){
+  // cloudSnapshot shares nested objects with the live state. Detach before the
+  // first crypto/network await and acknowledge only these exact serialized bytes.
+  const sent=local(),snapshot=JSON.parse(sent);
+  const payload=await RC_CLOUD_TRANSPORT.seal(snapshot,phrase);
+  revision=await client.write(payload,expectedRevision);
+  baseline=sent;
+  if(dirty())schedule();
+ }
+ function uploadStatus(message){return message+(dirty()?" De nouvelles modifications locales restent à synchroniser.":"");}
  function view(){
   const intro='<h3>☁️ Synchronisation chiffrée PC ↔ iPhone (optionnelle)</h3><p class="muted">Aucune donnée envoyée avant configuration. Une fois activée : progression, labs, révisions, Daily Five et dossier Projet 2027 sont synchronisés lors des connexions. GPS et documents privés exclus. La phrase de chiffrement et les jetons de session ne sont jamais stockés durablement.</p>';
   const msg='<p id="rc-sync-status" role="status" aria-live="polite">'+safe(status)+'</p>';
@@ -38,8 +48,8 @@ const RC_CLOUD_UI = (() => {
    await client.verifyCode(email,otp);phrase=p;
    remote=await client.read();
    if(!remote){
-    revision=await client.write(await RC_CLOUD_TRANSPORT.seal(env.snapshot(),phrase),null);
-    baseline=local();mode="active";status="Première sauvegarde chiffrée créée. Synchronisation automatique active.";activate();
+    await upload(null);
+    mode="active";status=uploadStatus("Première sauvegarde chiffrée créée. Synchronisation automatique active.");activate();
    }else{
     remoteData=await RC_CLOUD_TRANSPORT.open(remote.payload,phrase);
     revision=remote.revision;mode="choose";status="Une progression cloud existe déjà. Choisis laquelle conserver.";
@@ -74,8 +84,8 @@ const RC_CLOUD_UI = (() => {
     if(dirty()){mode="conflict";status="Conflit détecté : modifications sur deux appareils.";return;}
     await apply(decrypted);revision=latest.revision;status="Progression distante reçue automatiquement.";
    }else if(dirty()){
-    revision=await client.write(await RC_CLOUD_TRANSPORT.seal(env.snapshot(),phrase),revision);
-    baseline=local();status="Modifications locales sauvegardées et chiffrées dans le cloud.";
+    await upload(revision);
+    status=uploadStatus("Modifications locales sauvegardées et chiffrées dans le cloud.");
    }else status="À jour sur cet appareil et dans le cloud.";
   }catch(e){status="Synchronisation en attente : "+e.message+" · progression locale conservée.";}
   finally{busy=false;repaint();}
@@ -91,8 +101,8 @@ const RC_CLOUD_UI = (() => {
   try{
    const latest=await client.read();
    if(!latest||latest.revision!==remote.revision)throw Error("La version cloud a encore changé. Actualise et réessaie.");
-   revision=await client.write(await RC_CLOUD_TRANSPORT.seal(env.snapshot(),phrase),latest.revision);
-   baseline=local();mode="active";status="Progression de cet appareil envoyée. Synchronisation automatique active.";activate();
+   await upload(latest.revision);
+   mode="active";status=uploadStatus("Progression de cet appareil envoyée. Synchronisation automatique active.");activate();
   }catch(e){status="Envoi refusé : "+e.message;}
   busy=false;repaint();
  }

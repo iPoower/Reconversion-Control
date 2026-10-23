@@ -47,5 +47,6 @@ async function run(){
  assert.equal((await b.read()).revision,2);
  a.logout();await assert.rejects(a.read(),/Non connecté/);
  console.log("PASS: crypto AES-GCM, rejet mauvaises phrases, OTP, conflit de révision, refus de clé secrète.");
+ await require("./cloud-ui-races.cjs").run();
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
