@@ -250,7 +250,7 @@ async function main() {
 
     assert.equal(await page.locator("#public-coverage").evaluate(el=>el.open),false);
     await page.locator("#public-coverage > summary").tap();
-    assert.equal(await page.locator("[data-public-source]").count(),27);
+    assert.equal(await page.locator("[data-public-source]").count(),33);
     assert.equal(await page.locator("#public-coverage a").evaluateAll(links=>links.every(a=>a.protocol==="https:"&&a.rel.includes("noreferrer"))),true);
     await geometry(page,"expanded public-source links");
     passed("recent public sources are folded and separate from the seven private historical references");
@@ -295,7 +295,11 @@ async function main() {
     await learning.locator('[data-dprog="mastered"]').tap();
     assert.equal(await learning.locator("#dlg").evaluate(el=>el.open),true);
     await learning.locator("#close").tap();
+    // Closing returns through browser history; finish that navigation before reloading.
+    await learning.waitForURL(url=>url.hash==="#course");
+    assert.equal(await learning.locator("#dlg").evaluate(el=>el.open),false);
     await learning.reload();
+    assert.equal(await learning.locator("#dlg").evaluate(el=>el.open),false);
     assert(await learning.locator('[data-card="rc-06"] [data-prog="mastered"]').evaluate(el=>el.classList.contains("on")));
     const mixed = await learning.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);
     assert.equal(mixed.progress.dns,"mastered");

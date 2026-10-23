@@ -4,7 +4,7 @@ const env=vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(__dirname,"../project-plan.js"),"utf8")+";globalThis.P=RC_PROJECT_PLAN;",env);
 const P=env.P,clean=v=>JSON.parse(JSON.stringify(v));
 assert.equal(P.questions.length,8);assert.equal(P.drills.length,8);
-assert.equal(P.stages.length,6);assert.equal(P.sources.length,6);
+assert.equal(P.stages.length,6);assert.equal(P.sources.length,7);
 assert.match(P.sources.find(s=>s.id==="ais").fact,/28\/02\/2027/);
 assert.match(P.sources.find(s=>s.id==="tssr").fact,/31\/08\/2031/);
 assert.equal(P.completeness(P.empty().schools.jedha),0);
