@@ -30,7 +30,7 @@ async function run(){
   await page.reload();
   assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).main.progress.dns,CANON),"progress","old state must survive restart");
   assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).daily.days&&typeof JSON.parse(localStorage.getItem(k)).daily.days,CANON),"object");
-  console.log("PASS NOESIS-RCC-001 "+(process.env.BROWSER||"chromium")+" failed cloud-equivalent import does not acknowledge/quota erase V3, including reload");
+  console.log("PASS NOESIS-RCC-001 "+(process.env.BROWSER||"chromium")+" failed manual import does not acknowledge/quota erase V3, including reload");
   await page.locator('#nav [data-view="privacy"]').click();
   await page.locator("#importer").setInputFiles(buffer);
   await page.waitForFunction(()=>document.querySelector("#importer").value==="");
@@ -43,10 +43,11 @@ async function run(){
     const original=Storage.prototype.setItem;
     Storage.prototype.setItem=function(k,v){if(k===key)throw new DOMException("synthetic legacy quota","QuotaExceededError");return original.call(this,k,v);};
   },LEGACY);
+  const beforeLegacyDialogs=dialogs.length;
   const fixture2={...fixture,progress:{dns:"learn"}};
   await page.locator("#importer").setInputFiles({...buffer,buffer:Buffer.from(JSON.stringify(fixture2))});
   await page.waitForFunction(()=>document.querySelector("#importer").value==="");
-  assert(dialogs.some(x=>/instantané complet vérifié/.test(x)),"legacy mirror failure must not undermine canonical write");
+  assert(dialogs.slice(beforeLegacyDialogs).some(x=>/instantané complet vérifié/.test(x)),"legacy mirror failure must not undermine canonical write");
   await page.reload();
   assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).main.progress.dns,CANON),"learn");
   console.log("PASS NOESIS-RCC-001 "+(process.env.BROWSER||"chromium")+" legacy mirror failure cannot split authoritative state");
