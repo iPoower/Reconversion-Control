@@ -1,0 +1,118 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+
+const source = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+const segment = source.match(/\/\* NOESIS_ATOMIC_BEGIN[\s\S]*?\/\* NOESIS_ATOMIC_END \*\//);
+assert(segment, "The tests must exercise the exact atomic implementation from app.js, not a fictional restore adapter");
+const A = "reconversion-control.snapshot.v3", M = "reconversion-control.state.v1", D = "reconversion-control.daily-five.v1";
+const oldMain = {progress:{dns:"progress"},review:{},labs:{},proofs:{},labChecks:{},career:{marker:"old"}};
+const oldDaily = {days:{"2026-10-22":{completed:true}}};
+const nextMain = {...oldMain, progress:{dns:"mastered"},career:{marker:"new"}};
+const nextDaily = {days:{"2026-10-23":{completed:true}}};
+const serialize = v => JSON.stringify(v);
+const document = (main,daily) => serialize({version:3,main,daily});
+
+function harness(initial) {
+ const values = new Map(Object.entries(initial||{}));
+ const errors = {set:null,get:null};
+ const storage = {
+   getItem(key) {
+     if(errors.get===key){errors.get=null;throw Error("synthetic get failure");}
+     return values.has(key)?values.get(key):null;
+   },
+   setItem(key,value) {
+     if(errors.set===key){errors.set=null;throw Object.assign(Error("QuotaExceededError"),{name:"QuotaExceededError"});}
+     values.set(key,String(value));
+   },
+   removeItem(key){values.delete(key);}
+ };
+ const faults = [];
+ const sandbox = {localStorage:storage,ATOMIC_KEY:A,KEY:M,DAILY_KEY:D,
+   atomicUnread:false,atomicSnapshot:null,
+   plainObject:v=>v!==null&&typeof v==="object"&&!Array.isArray(v),
+   storageStatus:(key,failed)=>{if(failed)faults.push(key);},storageNotice:()=>{}};
+ vm.createContext(sandbox);
+ vm.runInContext(segment[0]+"\nglobalThis.API = {atomicRead,atomicCommit,mirrorLegacy};",sandbox);
+ return {values,errors,storage,sandbox,faults,...sandbox.API};
+}
+let checks=0;
+function test(title,fn){fn();checks++;console.log("PASS "+title);}
+test("baseline: independent historical writes can create a split during quota error",()=>{
+ const h=harness({[M]:serialize(oldMain),[D]:serialize(oldDaily)});
+ h.storage.setItem(D,serialize(nextDaily));
+ h.errors.set=M;assert.throws(()=>h.storage.setItem(M,serialize(nextMain)),/QuotaExceededError/);
+ assert.equal(JSON.parse(h.values.get(M)).progress.dns,"progress");
+ assert.equal(JSON.parse(h.values.get(D)).days["2026-10-23"].completed,true);
+});
+test("atomic commit: quota before write preserves the prior complete state",()=>{
+ const h=harness({[A]:document(oldMain,oldDaily)});
+ h.errors.set=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Instantané non confirmé/);
+ const read=JSON.parse(h.values.get(A));
+ assert.equal(read.main.progress.dns,"progress");
+ assert.ok(read.daily.days["2026-10-22"]);
+});
+test("atomic commit: a lost readback rejects the success even if bytes committed",()=>{
+ const h=harness({[A]:document(oldMain,oldDaily)});
+ h.errors.get=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Instantané non confirmé/);
+ const recovered=JSON.parse(h.values.get(A));
+ assert.equal(recovered.main.progress.dns,"mastered");
+ assert.ok(recovered.daily.days["2026-10-23"]);
+});
+test("first migration: quota preserves both original legacy keys",()=>{
+ const h=harness({[M]:serialize(oldMain),[D]:serialize(oldDaily)});
+ h.errors.set=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily));
+ assert.equal(h.values.get(A),undefined);
+ assert.equal(JSON.parse(h.values.get(M)).progress.dns,"progress");
+ assert.ok(JSON.parse(h.values.get(D)).days["2026-10-22"]);
+});
+test("complete commit and read-after-reload yield one coherent revision",()=>{
+ const h=harness({[M]:serialize(oldMain),[D]:serialize(oldDaily)});
+ assert.equal(h.atomicRead(),null);
+ h.atomicCommit(nextMain,nextDaily);
+ const reboot=harness(Object.fromEntries(h.values));
+ const recovered=reboot.atomicRead();
+ assert.equal(recovered.version,3);
+ assert.equal(recovered.main.progress.dns,"mastered");
+ assert.equal(recovered.main.career.marker,"new");
+ assert.ok(recovered.daily.days["2026-10-23"]);
+});
+test("legacy mirrors may partially fail but are never authoritative",()=>{
+ const h=harness({[A]:document(oldMain,oldDaily),[M]:serialize(oldMain),[D]:serialize(oldDaily)});
+ h.atomicCommit(nextMain,nextDaily);
+ h.errors.set=D;h.mirrorLegacy(nextMain,nextDaily);
+ assert.equal(JSON.parse(h.values.get(M)).progress.dns,"mastered");
+ assert.ok(JSON.parse(h.values.get(D)).days["2026-10-22"]);
+ const reboot=harness(Object.fromEntries(h.values));
+ assert.equal(reboot.atomicRead().main.progress.dns,"mastered");
+ assert.ok(reboot.atomicRead().daily.days["2026-10-23"]);
+});
+test("malformed authoritative snapshot blocks overwriting unknown data",()=>{
+ const h=harness({[A]:'{"version":3,"main":{}}',[M]:serialize(oldMain)});
+ assert.equal(h.atomicRead(),null);assert.equal(h.sandbox.atomicUnread,true);
+ assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/inaccessible/);
+ assert.equal(h.values.get(A),'{"version":3,"main":{}}');
+});
+test("both primary payloads are required",()=>{
+ const h=harness({});
+ assert.throws(()=>h.atomicCommit(nextMain,{}),/incomplet/);
+ assert.equal(h.values.size,0);
+});
+test("idempotent retry preserves one complete revision and no extra key",()=>{
+ const h=harness({[A]:document(oldMain,oldDaily)});
+ h.errors.set=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily));
+ h.atomicCommit(nextMain,nextDaily);const a=h.values.get(A);
+ h.atomicCommit(nextMain,nextDaily);
+ assert.equal(h.values.get(A),a);assert.equal(h.values.size,1);
+});
+test("cloud restore and manual import commit before mutating live state",()=>{
+ const cloud=source.match(/function cloudRestore\(o\)\{[\s\S]*?\n\}/);
+ assert(cloud);
+ assert(cloud[0].indexOf("atomicCommit(nextState,daily)")<cloud[0].indexOf("state=nextState"));
+ const importer=source.match(/\$\("#importer"\)\.onchange=[^\n]+/);
+ assert(importer);
+ assert(importer[0].indexOf("atomicCommit(nextState,nextDaily)")<importer[0].indexOf("state=nextState"));
+});
+console.log("NOESIS-RCC-001: "+checks+" synthetic and source-wired checks passed; browser/physical tests remain separate.");
