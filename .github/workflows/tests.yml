@@ -92,6 +92,7 @@ jobs:
           node tests/deep-checks.cjs
           node tests/project-checks.cjs
           node tests/cloud-sync.spec.cjs
+          node tests/atomic-restoration.cjs
       - name: Dossier reconversion, écoles, budget et compatibilité
         env:
           BROWSER: ${{ matrix.browser }}
