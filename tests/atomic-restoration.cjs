@@ -31,7 +31,7 @@ function harness(initial) {
  };
  const faults = [];
  const sandbox = {localStorage:storage,ATOMIC_KEY:A,KEY:M,DAILY_KEY:D,
-   atomicUnread:false,atomicSnapshot:null,
+   atomicUnread:false,atomicSnapshot:null,progressUnread:false,dailyUnread:false,
    plainObject:v=>v!==null&&typeof v==="object"&&!Array.isArray(v),
    storageStatus:(key,failed)=>{if(failed)faults.push(key);},storageNotice:()=>{}};
  vm.createContext(sandbox);
@@ -88,6 +88,19 @@ test("legacy mirrors may partially fail but are never authoritative",()=>{
  const reboot=harness(Object.fromEntries(h.values));
  assert.equal(reboot.atomicRead().main.progress.dns,"mastered");
  assert.ok(reboot.atomicRead().daily.days["2026-10-23"]);
+});
+test("unread legacy Daily Five blocks first migration without erasing history",()=>{
+ const h=harness({[M]:serialize(oldMain),[D]:serialize(oldDaily)});
+ h.sandbox.dailyUnread=true;
+ assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Ancienne progression non lisible/);
+ assert.equal(h.values.get(A),undefined);
+ assert.equal(h.values.get(D),serialize(oldDaily));
+});
+test("unread legacy progression blocks first migration",()=>{
+ const h=harness({[M]:serialize(oldMain),[D]:serialize(oldDaily)});
+ h.sandbox.progressUnread=true;
+ assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Ancienne progression non lisible/);
+ assert.equal(h.values.get(M),serialize(oldMain));
 });
 test("malformed authoritative snapshot blocks overwriting unknown data",()=>{
  const h=harness({[A]:'{"version":3,"main":{}}',[M]:serialize(oldMain)});
