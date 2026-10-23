@@ -2,6 +2,8 @@
 
 PWA personnelle de pilotage de reconversion **Cyber · Cloud · DevSecOps**, inspirée du cockpit de Race Control mais hébergée dans un dépôt totalement indépendant.
 
+Accès aux applications : [Race Control](https://race-control-ipoower.pages.dev/) · [Control Vault](https://control-vault-ipoower.pages.dev/) · [Reconversion Control](https://ipoower.github.io/Reconversion-Control/). Le groupe **Mes applications** reprend ces adresses dans chaque interface ; les liens ouvrent un nouvel onglet sans transmettre de progression ou de profil.
+
 ## V3.0 — Projet 2027 · dossier de décision privé
 
 L’onglet **Projet 2027** (`#project`) relie le bilan de reconversion au travail quotidien : six étapes du socle IT à la sécurité IA, huit démonstrations sans assistance, six actions de dossier, un comparatif Jedha/ENI sur huit questions et une simulation du coût total. Les 42 fiches, 42 cours, 20 labs, Daily Five et identifiants existants sont conservés.

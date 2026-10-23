@@ -269,3 +269,10 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;max-width:10
 .project-draft{margin:10px 0;line-height:1.5}
 @media(max-width:650px){.project-compare-head{display:none}.project-compare-row{grid-template-columns:1fr}.project-school-name{display:block}.project-stages{grid-template-columns:1fr}.project-hero{padding:16px}.project-kpis b{font-size:20px}.project-kpis>div{padding:10px}.project-task{grid-template-columns:1fr}.project-task select{max-width:100%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* Navigation publique entre applications, sans profil ni session dans l'URL. */
+.app-links{padding:12px;border:1px solid var(--l);border-radius:7px;background:var(--p)}
+.app-links>strong{display:block;color:var(--fg2);font-size:12px;margin-bottom:6px}
+.app-links>div{display:flex;flex-wrap:wrap;gap:6px 12px}
+.app-links a,.app-links [aria-current]{display:inline-flex;align-items:center;min-height:44px;padding:6px 10px;border:1px solid var(--l2);border-radius:6px;color:var(--fg);text-decoration:none;overflow-wrap:anywhere}
+.app-links [aria-current]{color:var(--a);border-color:var(--a)}
+.app-links a:focus-visible{outline:2px solid var(--a);outline-offset:3px}
