@@ -134,6 +134,16 @@ La protection native par Ruleset/Branch Protection reste le contrôle préventif
 
 Déploiement automatique depuis `main` via `.github/workflows/pages.yml`.
 
+Le chemin manuel est supprimé. La publication exige le workflow de tests attendu,
+terminé et vert pour un push `main` du même dépôt : provenance, Chromium et WebKit
+sur le SHA exact, associé au commit de fusion d'une PR et toujours en tête de `main`.
+Les métadonnées sont revérifiées immédiatement avant le déploiement. L'artefact
+provient de ce run de publication et contient seulement les fichiers publics
+explicitement autorisés, lus depuis les blobs Git du commit testé. Le manifeste,
+les empreintes, l'archive et l'identité de l'artefact sont vérifiés ; les actions
+sont figées par SHA, y compris la dépendance composite Pages. Aucun réglage ni
+droit GitHub n'est modifié. Voir [preuves et limites N02](docs/N02-pages-provenance-20261023.md).
+
 URL cible : **https://ipoower.github.io/Reconversion-Control/**.
 
 ### Limite de sécurité de l’hébergement statique
