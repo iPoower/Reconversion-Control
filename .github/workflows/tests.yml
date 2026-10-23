@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
       - name: PR validation path
         if: github.event_name == 'pull_request'
         run: echo "Pull request validation — provenance is enforced after merge on main."
@@ -43,21 +46,28 @@ jobs:
   mobile:
     needs: provenance
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:bc6ab0d6d44ff4826e4cb8c1e6d801e185bfc42bb0753f8e2a30efc70db054c7
+      options: --ipc=host
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, webkit]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 20
           cache: npm
       - name: Dépendances de test verrouillées
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Navigateur
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Navigateurs préinstallés et versions verrouillées
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: |
+          node tests/browser-runtime.spec.cjs
+          node tests/browser-runtime.cjs
       - name: Syntaxe
         run: |
           node --check project-plan.js

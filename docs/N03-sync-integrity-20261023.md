@@ -22,6 +22,10 @@ Le format V2, l'enveloppe cryptographique, le transport conditionnel, les identi
 
 - `node tests/cloud-sync.spec.cjs` : crypto/OTP/révisions et **15/15 cas d'intégrité** après correction ; services simulés, sans réseau.
 - `npm test`, pour Chromium et WebKit : trois nouveaux scénarios dans l'application réelle, avec DOM, localStorage et AES-GCM réels. Les requêtes fournisseur sont interceptées ; les écritures sont retardées, une modification passe par les boutons de progression, puis sa persistance et son envoi ultérieur sont vérifiés. Le scénario automatique injecte une nouvelle révision distante et vérifie le choix explicite du conflit.
-- Les contrôles pédagogiques, dossier Projet 2027, import/export, stockage bloqué/quota, cours, navigation et cache continuent dans les commandes CI existantes. Aucun workflow n'est modifié par cette PR.
+- Les contrôles pédagogiques, dossier Projet 2027, import/export, stockage bloqué/quota, cours, navigation et cache continuent dans les commandes CI existantes. La préparation initiale ne modifiait pas de workflow. Le GO de validation ultérieur ajoute l'environnement reproductible décrit ci-dessous.
 
 Les résultats CI et le SHA exact sont consultables sur la PR. Les profils navigateur sont simulés : aucun Supabase personnel, compte Google, PC personnel ou iPhone physique n'a été testé. Un échec de restauration simulé intervient avant mutation ; il ne prouve pas la récupération après un échec partiel d'écriture sur plusieurs clés locales. La résolution des conflits reste un remplacement choisi, sans fusion par champ. Ce correctif ne récupère pas une progression déjà perdue et ne constitue pas une autorisation d'activation ou de production.
+
+## Validation contrôlée ultérieure
+
+Le nouveau GO autorise la résolution du blocage WebKit et la fusion conditionnelle. Voir [environnement navigateur figé](browser-validation-20261023.md). La matrice complète et les quinze scénarios restent obligatoires. Les résultats, SHA finaux et éventuelles publications doivent être vérifiés séparément dans les PR et les runs correspondants.
