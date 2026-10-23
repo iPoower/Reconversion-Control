@@ -175,6 +175,7 @@ function atomicRead(){
 }
 function atomicCommit(nextMain,nextDaily){
  if(atomicUnread)throw Error("Instantané existant inaccessible : écriture refusée");
+ if(!atomicSnapshot&&(progressUnread||dailyUnread))throw Error("Ancienne progression non lisible : migration suspendue");
  if(!plainObject(nextMain)||!plainObject(nextDaily)||!plainObject(nextDaily.days))throw Error("Instantané incomplet");
  var raw=JSON.stringify({version:3,main:nextMain,daily:nextDaily});
  try{
