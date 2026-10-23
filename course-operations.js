@@ -594,6 +594,16 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Une capacité technique ne justifie pas de couper silencieusement l’historique. Si la réunion dépasse la capacité prévue pour les observations météo, le calcul refuse toute la fusion. Un moteur pur correctement testé constitue une préparation ; il ne prouve ni envoi Drive, ni synchronisation branchée, ni restauration métier réussie."
         ],
         "code": "A possède a, b ; B possède b, c → union a, b, c\nrefaire la fusion → toujours a, b, c\nréglage contradictoire sans date fiable → local conservé + conflit\ncapacité dépassée → refus entier, sources intactes"
+      },
+      {
+        "title": "Cas du 23/10/2026 · révisions concurrentes et reprise sans doublon",
+        "body": [
+          "Après une même base, un PC et un téléphone peuvent créer chacun une révision enfant. Ces deux têtes représentent une concurrence réelle : le catalogue ne choisit pas arbitrairement la première. Le moteur préparé calcule une intégration sans perte ; une révision de jonction cite les têtes effectivement intégrées. Un réglage encore en conflit garde la tête distante visible et restaurable, sans la déclarer intégrée.",
+          "Un identifiant ne suffit pas à reconnaître le contenu. Le correctif #228 bloque le plan si deux paquets authentifiés portent le même identifiant de révision et des empreintes différentes, même avec les mêmes parents, appareil et compteur. Deux références aux mêmes octets restent une seule révision. Le refus conserve les copies pour diagnostic, sans en choisir une ni en effacer une.",
+          "La file SyncOutbox est un moteur pur : les données sont déjà enregistrées localement avant de lui signaler une modification. Elle regroupe les saisies après 30 secondes de calme, ou 10 minutes au plus de saisie continue, puis prévoit un seul envoi. Après une réponse perdue, la reprise réutilise les octets scellés et l’identifiant de fichier réservé avant l’envoi. Une nouvelle saisie pendant ce travail reste en attente. Une panne réseau permet un réessai espacé ; une reconnexion, un code, un quota ou un conflit exigent une action explicite.",
+          "Ces modules fusionnés restent absents du build de la PWA au SHA étudié. La file ne persiste rien elle-même : l’appelant devra conserver son état et les octets chiffrés, puis assurer le verrou entre onglets. Ses tests de reprise ne prouvent donc aucune synchronisation automatique en production. Le statut synchronisé exige une relecture distante identique ; opérationnel exige en plus une restauration complète et une recette sur iPhone physique."
+        ],
+        "code": "base → enfant PC + enfant téléphone → deux têtes à intégrer\nmême identifiant + empreintes différentes → blocage, copies conservées\nréponse perdue → reprendre le même travail, sans nouvel envoi en parallèle"
       }
     ],
     "pitfalls": [
@@ -606,8 +616,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Le chiffrement protège les données au repos, mais le code d’une session déverrouillée peut y accéder. Une phrase courte reste devinable hors ligne, et les applications du même hôte partagent l’origine Web. Je distingue ces limites de vulnérabilités effectivement démontrées et je propose un durcissement vérifiable."
     },
     "exercise": {
-      "prompt": "Un import échoue après une écriture refusée. Quelles preuves exiges-tu avant de dire que les données sont intactes ?\n\nCas du 22/10 : deux appareils ont des relevés communs et différents, puis donnent deux valeurs contradictoires au même réglage sans date fiable. Décris le résultat et le cas où l’union dépasse une capacité.",
-      "answer": "Comparer le document et les réglages avant et après, vérifier le dernier coffre relu et déchiffré, tester une nouvelle ouverture avec la phrase de test et vérifier qu’aucun clair n’a été supprimé prématurément. Une alerte visuelle seule ne prouve pas que l’état persistant est resté valide.\n\nRéunir les relevés sans doublonner les éléments identiques, pour le même identifiant de véhicule. Garder le réglage local et signaler le conflit ; ne pas inventer un gagnant. Si la capacité empêche la conservation intégrale des observations, refuser toute la fusion et garder les deux sources. Ce calcul ne prouve aucune synchronisation réseau."
+      "prompt": "Un import échoue après une écriture refusée. Quelles preuves exiges-tu avant de dire que les données sont intactes ?\n\nCas du 22/10 : deux appareils ont des relevés communs et différents, puis donnent deux valeurs contradictoires au même réglage sans date fiable. Décris le résultat et le cas où l’union dépasse une capacité.\n\nCas du 23/10 : deux enfants d’une base arrivent, puis deux paquets authentifiés partagent un identifiant mais pas leur empreinte. Que doit faire le plan ? Après une réponse réseau perdue, comment éviter un doublon et une fausse annonce de synchronisation ?",
+      "answer": "Comparer le document et les réglages avant et après, vérifier le dernier coffre relu et déchiffré, tester une nouvelle ouverture avec la phrase de test et vérifier qu’aucun clair n’a été supprimé prématurément. Une alerte visuelle seule ne prouve pas que l’état persistant est resté valide.\n\nRéunir les relevés sans doublonner les éléments identiques, pour le même identifiant de véhicule. Garder le réglage local et signaler le conflit ; ne pas inventer un gagnant. Si la capacité empêche la conservation intégrale des observations, refuser toute la fusion et garder les deux sources. Ce calcul ne prouve aucune synchronisation réseau.\n\nGarder les deux têtes concurrentes et ne joindre que celles réellement intégrées, sans masquer un conflit. Pour un même identifiant associé à des octets différents, bloquer le plan et conserver les copies. Après perte de réponse, reprendre le travail scellé avec son identifiant réservé ; relire les octets distants avant le statut synchronisé. Le raccord réseau, la persistance par l’appelant et la recette réelle restent à prouver."
     },
     "sources": [
       {
@@ -625,6 +635,14 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-sync-merge-20261022",
         "location": "Cas vérifié le 22/10/2026 ; portée et limites explicites"
+      },
+      {
+        "id": "public-sync-revisions-20261023",
+        "location": "Cas vérifié le 23/10/2026 ; sources et portée datées"
+      },
+      {
+        "id": "public-sync-outbox-20261023",
+        "location": "Cas vérifié le 23/10/2026 ; sources et portée datées"
       }
     ],
     "related": [
@@ -632,7 +650,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "hardening",
       "race-privacy"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Cas de conservation, livraison ou transport revu le 22/10/2026 ; les instantanés antérieurs restent datés."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Cas de conservation, livraison ou transport revu le 22/10/2026 ; les instantanés antérieurs restent datés. Complément vérifié le 23/10/2026 ; code préparé et version servie distingués."
   },
   {
     "id": "rc-38",
@@ -673,6 +691,14 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Une protection GitHub native peut empêcher une fusion sans contrôles ou une réécriture de branche. Un gate dans un workflow peut bloquer le déploiement après un push direct, mais ne prouve pas que ce push est impossible.",
           "Race Control expose une branche main protégée et un ruleset gh-pages actif au contrôle natif. Reconversion Control possède un gate de provenance après fusion ; son audit de base n’a pas constaté de protection native active. Ne pas copier une affirmation d’un dépôt vers l’autre. Les actions figées par SHA et les permissions minimales réduisent aussi la surface de risque."
         ]
+      },
+      {
+        "title": "Cas du 23/10/2026 · environnement de test et panne d’installation",
+        "body": [
+          "La PR Race Control #226 remplace, dans sa matrice principale, l’installation des dépendances système à chaque exécution par l’image officielle Playwright v1.63.0-noble, cohérente avec le paquet 1.63.0 verrouillé dans le projet. Au SHA 61da14f, le run 39883415398 termine avec trois lots Chromium, trois WebKit et la validation agrégée réussis. Ce constat porte sur ces jobs identifiés, pas sur tous les workflows du dépôt.",
+          "La documentation Playwright précise que l’image contient les navigateurs et leurs bibliothèques système, mais que le paquet du projet doit être installé séparément. L’image doit correspondre à sa version : recopier le tag le plus récent de la documentation dans un ancien projet peut rendre les exécutables introuvables.",
+          "Si un miroir de paquets empêche l’installation, les tests n’ont pas encore prouvé le comportement de l’application. Une correction d’environnement conserve les assertions et relance toute la matrice sur la nouvelle tête. Une relance réussie ne transforme pas l’ancien run échoué en preuve verte. Cette étude de cas ne change aucun workflow de Reconversion Control."
+        ]
       }
     ],
     "pitfalls": [
@@ -685,8 +711,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Je vérifie le commit exact, les rapports complets, la frontière des secrets, la provenance et les protections réelles. Les tests couvrent des scénarios définis, pas toutes les attaques. Après fusion, je contrôle à nouveau la chaîne et la version effectivement servie."
     },
     "exercise": {
-      "prompt": "Une PR modifie un script de test et demande une clé privée pour reproduire un bug. Propose un protocole de validation.",
-      "answer": "Construire une fixture fictive qui reproduit le comportement sans la clé. Garder le scanner et les secrets dans les contextes de confiance, vérifier tous les shards sur le SHA final puis contrôler la provenance après fusion. Si une vérification réelle reste nécessaire, la réserver à un contexte main autorisé sans exécuter du code de PR non revu."
+      "prompt": "Une PR modifie un script de test et demande une clé privée pour reproduire un bug. Propose un protocole de validation.\n\nCas du 23/10 : un navigateur ne peut pas être installé. Peut-on supprimer ses tests pour livrer ? Quelle cohérence faut-il vérifier si une image Playwright est proposée ?",
+      "answer": "Construire une fixture fictive qui reproduit le comportement sans la clé. Garder le scanner et les secrets dans les contextes de confiance, vérifier tous les shards sur le SHA final puis contrôler la provenance après fusion. Si une vérification réelle reste nécessaire, la réserver à un contexte main autorisé sans exécuter du code de PR non revu.\n\nL’échec d’installation ne prouve ni réussite ni régression fonctionnelle. Conserver les tests, vérifier la correspondance entre l’image et le paquet verrouillé, puis attendre tous les jobs requis achevés et réussis sur la nouvelle tête. Documenter séparément l’ancienne panne et la validation obtenue ; ne pas copier un tag récent sans vérifier sa compatibilité."
     },
     "sources": [
       {
@@ -696,6 +722,14 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-ux93",
         "location": "Code, décisions et limites du cas"
+      },
+      {
+        "id": "public-ci-run-20261023",
+        "location": "Cas vérifié le 23/10/2026 ; sources et portée datées"
+      },
+      {
+        "id": "public-playwright-image-20261023",
+        "location": "Cas vérifié le 23/10/2026 ; sources et portée datées"
       }
     ],
     "related": [
@@ -703,7 +737,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "supply",
       "race-cicd"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 23/10/2026 ; code préparé et version servie distingués."
   },
   {
     "id": "rc-39",
@@ -758,6 +792,13 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Le contrôle du 22/10 fournit un contre-exemple concret : le manifeste public Race Control annonce prod-157, source 6340b45efabe2adac885faec9e41f76c37e6b573 et build 50988798eb7c, également retrouvé dans le HTML servi. Le job GitHub Pages du même run réussit. Le job de publication Cloudflare échoue à son étape de vérification des octets servis, du commit et des en-têtes HTTP.",
           "La conclusion correcte est donc bornée à chaque cible : publication GitHub Pages identifiée ; validation de la cible Cloudflare non obtenue dans ce job. Le workflow entier ne doit pas être présenté comme vert. Sans lecture des causes, on n’attribue pas cet échec à une permission ou à une régression du code. Le détail du job et le manifeste sont des références distinctes, datées, qui peuvent être relues."
         ]
+      },
+      {
+        "title": "Relecture du 23/10/2026 · main, build et cible sont trois preuves",
+        "body": [
+          "La CI principale de Race Control est verte sur main 61da14f, mais la lecture HTTP du 23/10 retrouve toujours prod-157 : source 6340b45efabe2adac885faec9e41f76c37e6b573, build 50988798eb7c, daté du 22/10. Le manifeste et le HTML concordent. Il faut donc présenter les nouveaux moteurs non assemblés comme du code préparé sur main, sans leur attribuer la version servie.",
+          "Le workflow Cloudflare séparé au même SHA termine aussi avec succès (run 39885455852). Son code republie seulement un build correspondant à celui de gh-pages ; il autorise un arrêt explicite sans publication si les identités diffèrent. Un résultat global vert ne suffit donc pas : lire les étapes, puis vérifier la cible HTTP. L’échec Cloudflare du cas du 22/10 reste une archive datée, pas une affirmation sur l’état de tous les runs suivants."
+        ]
       }
     ],
     "pitfalls": [
@@ -770,8 +811,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Il ferme l’écart entre l’artefact testé et ce que l’hébergement sert réellement. Je relie le SHA fusionné, le build publié et le contenu reçu, en tenant compte du cache et du service worker. Si l’inspection visuelle manque, je le dis séparément."
     },
     "exercise": {
-      "prompt": "Le job de publication est vert, mais version.json indique un ancien build. Que peux-tu annoncer et que dois-tu vérifier ?\n\nVariante du 21/10 : main est plus récent que le SHA du manifeste public. Quelle conclusion peux-tu écrire sans inventer une livraison ?\n\nCas du 22/10 : la version HTTP GitHub Pages correspond au manifeste, mais un autre job de publication échoue. Peux-tu annoncer « tout est livré et vert » ?",
-      "answer": "Je peux annoncer que le job a fini, pas que le nouveau build est servi. Je contrôle le commit attendu, l’artefact, la publication et le cache HTTP avec une requête adaptée. Je compare les identités et le contenu ; tant que l’écart subsiste, le déploiement attendu n’est pas confirmé.\n\nLe changement est fusionné mais sa publication n’est pas démontrée par ce manifeste. Conserver séparément les SHA de main, du déploiement et du contenu servi, avec l’heure de lecture. Attendre les preuves manquantes avant de dire livré.\n\nNon. Nommer la cible dont la publication est prouvée, son SHA et son build. Nommer séparément la cible ou le contrôle en échec, sans supposer sa cause. Un manifeste public, un job réussi et le résultat global du workflow prouvent des choses différentes."
+      "prompt": "Le job de publication est vert, mais version.json indique un ancien build. Que peux-tu annoncer et que dois-tu vérifier ?\n\nVariante du 21/10 : main est plus récent que le SHA du manifeste public. Quelle conclusion peux-tu écrire sans inventer une livraison ?\n\nCas du 22/10 : la version HTTP GitHub Pages correspond au manifeste, mais un autre job de publication échoue. Peux-tu annoncer « tout est livré et vert » ?\n\nRelecture du 23/10 : main est vert sur 61da14f, mais le manifeste et le HTML indiquent toujours le build prod-157 issu de 6340b45. Quelle version peux-tu annoncer et où places-tu les moteurs non assemblés ?",
+      "answer": "Je peux annoncer que le job a fini, pas que le nouveau build est servi. Je contrôle le commit attendu, l’artefact, la publication et le cache HTTP avec une requête adaptée. Je compare les identités et le contenu ; tant que l’écart subsiste, le déploiement attendu n’est pas confirmé.\n\nLe changement est fusionné mais sa publication n’est pas démontrée par ce manifeste. Conserver séparément les SHA de main, du déploiement et du contenu servi, avec l’heure de lecture. Attendre les preuves manquantes avant de dire livré.\n\nNon. Nommer la cible dont la publication est prouvée, son SHA et son build. Nommer séparément la cible ou le contrôle en échec, sans supposer sa cause. Un manifeste public, un job réussi et le résultat global du workflow prouvent des choses différentes.\n\nAnnoncer le build effectivement servi, prod-157 / 50988798eb7c, avec son SHA source et la date de lecture. Décrire les moteurs au SHA main étudié comme préparés et testés dans leur périmètre. Ne pas remplacer l’identité du manifeste par celle du dernier commit ; vérifier séparément les étapes et les octets de chaque cible avant une annonce de publication."
     },
     "sources": [
       {
@@ -797,6 +838,10 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-delivery-targets-20261022",
         "location": "Cas vérifié le 22/10/2026 ; portée et limites explicites"
+      },
+      {
+        "id": "public-ci-run-20261023",
+        "location": "Cas vérifié le 23/10/2026 ; sources et portée datées"
       }
     ],
     "related": [
@@ -804,7 +849,7 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "cicd",
       "race-cicd"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques. Cas de conservation, livraison ou transport revu le 22/10/2026 ; les instantanés antérieurs restent datés."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques. Cas de conservation, livraison ou transport revu le 22/10/2026 ; les instantanés antérieurs restent datés. Complément vérifié le 23/10/2026 ; code préparé et version servie distingués."
   },
   {
     "id": "rc-40",
@@ -1019,6 +1064,14 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
           "Le statut local-only décrit une copie locale, soumise aux limites du navigateur. verified-bytes décrit les octets relus pour une copie précise ; ce statut ne garantit ni leur authenticité, ni la dernière révision du compte, ni l’état global « protégé ». Race Control reste responsable du chiffrement, de l’authentification et des règles métier. Vault transporte les octets sans détenir ni dériver la clé propriétaire, ni déchiffrer le contenu.",
           "Les tests du profil A1 utilisent des instantanés du vrai codec propriétaire, des données fictives et des empreintes de provenance. Cette interopérabilité est une preuve plus précise qu’un faux fichier fabriqué pour réussir le lecteur. Elle ne remplace pas le consentement OAuth, les permissions réellement accordées et les essais PC/iPhone sur le service réel. La documentation Google définit drive.file comme un accès limité aux fichiers créés ou ouverts avec l’application, ou partagés avec elle par une sélection autorisée ; il ne donne pas accès à tout le Drive."
         ]
+      },
+      {
+        "title": "Cas du 23/10/2026 · catalogue A2 et métadonnées non authentifiées",
+        "body": [
+          "La PR Control Vault #12 ajoute le transport préparé des révisions A2 : un nouveau fichier par version, identifiant, appareil, compteur et parents. Deux enfants concurrents restent deux fichiers ; le catalogue ne choisit aucune tête. Le transport compare la référence figée avant les attentes, les propriétés relues et les octets. Une propriété remplacée ou supprimée, une révision partielle ou une mutation de l’entrée pendant une attente doit être détectée par les tests.",
+          "Ces propriétés facilitent le classement, mais restent non authentifiées même au statut verified-bytes. Race Control doit ouvrir le paquet avec GCM/AAD, puis comparer exactement le champ chiffré rev avec les propriétés avant de calculer les têtes ou d’intégrer les données. Vault ne reçoit ni code ni clé et ne déchiffre rien. Un export manuel V1 sans révision reste manuel ; il n’est pas converti automatiquement.",
+          "Google distingue les propriétés publiques des appProperties réservées à l’application. Chaque couple clé et valeur est limité à 124 octets UTF-8 : compter les caractères ne suffit pas pour un texte accentué. L’accès entre les deux origines, avec le client OAuth et drive.file prévus, reste à démontrer. Au SHA 74ba9d8, l’interface instancie encore DemoDrive et le fournisseur A2 reste absent du build produit : code préparé et tests sur réseau fictif, sans preuve de service Drive réel ni de restauration métier complète."
+        ]
       }
     ],
     "pitfalls": [
@@ -1031,8 +1084,8 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "answer": "Je décris la Phase 1 et ses données fictives, puis les moteurs effectivement exécutés et les scénarios d’échec. Je montre une preuve de relecture et d’intégrité, et je précise que l’authentification, la destination réelle et les clés durables restent à livrer. Je peux expliquer mes décisions sans prétendre exploiter un coffre production."
     },
     "exercise": {
-      "prompt": "Écris un pitch de trois phrases, une par projet, avec une limite explicite pour Control Vault.\n\nVariante du 21/10 : un schéma et ses tests sont fusionnés. Peut-on annoncer que les sauvegardes sont synchronisées avec Google Drive ?\n\nCas du 22/10 : un test relit les mêmes octets après réouverture et réussit un échange entre deux profils sur un faux serveur Drive. Quelles preuves peux-tu présenter, et lesquelles manquent encore ?",
-      "answer": "Race Control : cockpit mobile de décision météo/trajet, avec données chiffrées et livraison vérifiée. Reconversion Control : parcours bilingue et révisions, avec cours, labs et preuves indépendants. Control Vault : prototype de coffre testant intégrité et chiffrement sur données fictives, sans connexion réelle ni sauvegarde durable active.\n\nNon : un contrat précise ce qui doit être compatible, pas l’existence d’un transport authentifié et durable. Il manque les preuves de connexion réelle, de permissions, de conservation après fermeture et de restauration. Une empreinte correcte ne remplace pas les contrôles d’authenticité et de conservation.\n\nPrésenter la conservation locale, l’intégrité des octets et le scénario de transport simulé avec son périmètre. Il reste à prouver le consentement et les droits réels, le service Drive, les deux appareils et la restauration métier. Ni local-only ni verified-bytes ne signifient synchronisation complète ou authenticité des données."
+      "prompt": "Écris un pitch de trois phrases, une par projet, avec une limite explicite pour Control Vault.\n\nVariante du 21/10 : un schéma et ses tests sont fusionnés. Peut-on annoncer que les sauvegardes sont synchronisées avec Google Drive ?\n\nCas du 22/10 : un test relit les mêmes octets après réouverture et réussit un échange entre deux profils sur un faux serveur Drive. Quelles preuves peux-tu présenter, et lesquelles manquent encore ?\n\nCas du 23/10 : les octets relus sont identiques, mais une propriété de révision a été remplacée. Peut-on annoncer une tête authentifiée ? Qui doit effectuer le contrôle final ?",
+      "answer": "Race Control : cockpit mobile de décision météo/trajet, avec données chiffrées et livraison vérifiée. Reconversion Control : parcours bilingue et révisions, avec cours, labs et preuves indépendants. Control Vault : prototype de coffre testant intégrité et chiffrement sur données fictives, sans connexion réelle ni sauvegarde durable active.\n\nNon : un contrat précise ce qui doit être compatible, pas l’existence d’un transport authentifié et durable. Il manque les preuves de connexion réelle, de permissions, de conservation après fermeture et de restauration. Une empreinte correcte ne remplace pas les contrôles d’authenticité et de conservation.\n\nPrésenter la conservation locale, l’intégrité des octets et le scénario de transport simulé avec son périmètre. Il reste à prouver le consentement et les droits réels, le service Drive, les deux appareils et la restauration métier. Ni local-only ni verified-bytes ne signifient synchronisation complète ou authenticité des données.\n\nNon. Refuser la preuve de relecture si la révision relue diffère de la référence figée, et conserver le fichier sans intégration. Même après une relecture cohérente, seul Race Control peut authentifier le contenu chiffré et comparer rev aux propriétés. Vault garde un rôle opaque ; ses tests sur réseau fictif ne prouvent ni consentement OAuth, ni synchronisation réelle, ni restauration métier."
     },
     "sources": [
       {
@@ -1066,6 +1119,14 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       {
         "id": "public-drive-scope-20261022",
         "location": "Cas vérifié le 22/10/2026 ; portée et limites explicites"
+      },
+      {
+        "id": "public-vault-a2-20261023",
+        "location": "Cas vérifié le 23/10/2026 ; sources et portée datées"
+      },
+      {
+        "id": "public-drive-properties-20261023",
+        "location": "Cas vérifié le 23/10/2026 ; sources et portée datées"
       }
     ],
     "related": [
@@ -1073,6 +1134,6 @@ RC_COURSE_OPERATIONS.push.apply(RC_COURSE_OPERATIONS, [
       "crypto",
       "race-tests"
     ],
-    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques. Cas de conservation, livraison ou transport revu le 22/10/2026 ; les instantanés antérieurs restent datés."
+    "provenance": "Cas récent · sources publiques vérifiées le 12/10/2026. Le socle historique prod15 reste disponible ; cette extension décrit les réalisations et leurs limites actuelles. Complément vérifié le 21/10/2026, avec références figées distinctes ; les exemples précédents restent des instantanés historiques. Cas de conservation, livraison ou transport revu le 22/10/2026 ; les instantanés antérieurs restent datés. Complément vérifié le 23/10/2026 ; code préparé et version servie distingués."
   }
 ]);
