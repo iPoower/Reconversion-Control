@@ -21,7 +21,7 @@ function fixture() {
     if (gate) { gates.delete(stage); gate.started.resolve(); await gate.release.promise; }
   }
   const client = {
-    sendCode: async () => {}, verifyCode: async () => {}, logout: () => {},
+    sendCode: async () => {}, verifyCode: async () => "00000000-0000-4000-8000-000000000001", logout: () => {},
     async read() { const result = copy(row); await wait("read"); return result; },
     async write(payload, revision) {
       await wait("write");
@@ -31,12 +31,16 @@ function fixture() {
       writes.push(copy(row)); return row.revision;
     }
   };
+  const store = new Map();
   const sandbox = {
+    localStorage: {getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},
+    Date,
     navigator: {onLine: true}, document: {querySelector: node}, confirm: () => true,
     setInterval: callback => { interval = callback; return 1; }, clearInterval: () => { interval = null; },
     setTimeout: callback => { timeout = callback; return 2; }, clearTimeout: () => { timeout = null; },
     RC_CLOUD_TRANSPORT: {
-      create: () => client,
+      config: (url,key)=>({url,key}), create: () => client,
+      serialize: JSON.stringify, fingerprint: async s => require("node:crypto").createHash("sha256").update(s).digest("hex"),
       // Serialize AFTER the wait, just as real seal() does after its asynchronous KDF.
       async seal(snapshot) { await wait("seal"); return {snapshot: copy(snapshot)}; },
       async open(payload) { await wait("open"); return copy(payload.snapshot); }
@@ -56,9 +60,10 @@ function fixture() {
     async prepare(kind) {
       if (kind === "choice") row = {revision: 4, payload: {snapshot: {version: 2, progress: {dns: "remote-fixture"}}}};
       await click("request");
-      if (kind !== "first") await click("verify");
+      await click("verify");
+      if(kind === "automatic") await click("create");
     },
-    send: kind => kind === "first" ? click("verify") : kind === "choice" ? click("push") : interval(),
+    send: kind => kind === "first" ? click("create") : kind === "choice" ? click("push") : interval(),
     edit(value) { state.progress.dns = value; api.changed(); },
     pause(stage) { const gate = {started: deferred(), release: deferred()}; gates.set(stage, gate); return {started: gate.started.promise, release: gate.release.resolve}; },
     remote(value) { row = {revision: (row ? row.revision : 0) + 1, payload: {snapshot: {version: 2, progress: {dns: value}}}}; },
@@ -120,4 +125,4 @@ async function run() {
   if (failures.length) throw new AggregateError(failures, failures.length + " N03 regression cases failed");
 }
 module.exports = {run};
-if (require.main === module) run().catch(error => { console.error(error); process.exitCode = 1; });
+if (require.main === module) { const watchdog=setTimeout(()=>{throw Error("N03 suite stalled");},30000); run().catch(error => { console.error(error); process.exitCode = 1; }).finally(()=>clearTimeout(watchdog)); }

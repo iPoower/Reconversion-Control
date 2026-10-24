@@ -188,7 +188,9 @@ function atomicCommit(nextMain,nextDaily){
   if(localStorage.getItem(ATOMIC_KEY)!==raw)throw Error("Relecture différente");
   atomicBaseline=raw;
   atomicSnapshot=JSON.parse(raw);
-  storageStatus(ATOMIC_KEY,false);return true;
+  storageStatus(ATOMIC_KEY,false);
+  if(typeof syncBridge!=="undefined"&&syncBridge&&typeof queueMicrotask==="function")queueMicrotask(function(){syncBridge.changed();});
+  return true;
  }catch(e){
   if(wrote){
    try{
@@ -301,7 +303,7 @@ function dailySanitize(value,strict){
  });
  return out;
 }
-function dailyLoad(){try{var data=atomicSnapshot?atomicSnapshot.daily:JSON.parse(storageGet(DAILY_KEY)||"null");return data===null?{days:{}}:dailySanitize(data,true);}catch(e){dailyUnread=true;storageStatus(DAILY_KEY,true);return{days:{}};}}
+function dailyLoad(){try{var data=atomicSnapshot?atomicSnapshot.daily:JSON.parse(storageGet(DAILY_KEY)||"null");if(data===null)return{days:{}};var clean=dailySanitize(data,true);assertSnapshotFields(data,clean);return clean;}catch(e){dailyUnread=true;storageStatus(DAILY_KEY,true);return{days:{}};}}
 function dailySave(replace){if(storageSet(DAILY_KEY,JSON.stringify(dailyState),replace)&&syncBridge)syncBridge.changed();}
 function dailyRecord(date){return dailyState.days[date]||{};}
 function ensureDailyRecord(date,selection){
@@ -359,6 +361,7 @@ function load(){
  if(j.status==="all"||statuses.indexOf(j.status)>=0)initial.status=j.status;
  var saved=progression({progress:plainObject(j.progress)?j.progress:{},review:plainObject(j.review)?j.review:{}},true);initial.progress=saved.progress;initial.review=saved.review;
  initial.labs=labStateSanitize(j.labs,true);initial.proofs=proofStateSanitize(j.proofs,true);initial.labChecks=labChecksSanitize(j.labChecks,true);initial.career=RC_PROJECT_PLAN.sanitize(j.career,true);
+ var original={...j};if(!atomicSnapshot)delete original.version;assertSnapshotFields(original,initial);
  }catch(e){progressUnread=true;storageStatus(KEY,true);}return initial;
 }
 function save(replace){if(storageSet(KEY,JSON.stringify(state),replace)&&syncBridge)syncBridge.changed();}
@@ -663,21 +666,55 @@ function reviewRow(x){
 
 function cloudSnapshot(){
  if(!storageWriter||storageConflict||atomicUnread||storageUnavailable)throw Error("Progression locale non confirmée : synchronisation suspendue");
- return {version:2,progress:state.progress,review:state.review,labs:state.labs,proofs:state.proofs,labChecks:state.labChecks,dailyFive:dailyState,career:state.career||RC_PROJECT_PLAN.empty()};
+ var raw=localStorage.getItem(ATOMIC_KEY);
+ if(raw!==atomicBaseline||raw===null)throw Error("Instantané local modifié ou absent");
+ var confirmed=JSON.parse(raw);
+ if(JSON.stringify(confirmed.main)!==JSON.stringify(state)||JSON.stringify(confirmed.daily)!==JSON.stringify(dailyState))throw Error("Modifications en mémoire non enregistrées : export indépendant nécessaire");
+ // The existing cloud V2 DTO is a complete business projection of atomic V3.
+ // Device navigation, authentication and cloud journals never enter the DTO.
+ return cloudValidate({version:2,progress:confirmed.main.progress,review:confirmed.main.review,labs:confirmed.main.labs,proofs:confirmed.main.proofs,labChecks:confirmed.main.labChecks,dailyFive:confirmed.daily,career:confirmed.main.career});
+}
+function assertSnapshotFields(original,target){
+ if(original&&typeof original==="object"){
+  if(!target||typeof target!=="object"||Array.isArray(original)!==Array.isArray(target))throw Error("Sauvegarde incompatible");
+  Object.keys(original).forEach(function(k){if(["__proto__","constructor","prototype"].indexOf(k)>=0||!Object.prototype.hasOwnProperty.call(target,k))throw Error("Champ ou historique inconnu : sauvegarde conservée, restauration refusée");assertSnapshotFields(original[k],target[k]);});
+ }else if(original!==target)throw Error("Sauvegarde modifiée par validation : restauration refusée");
+}
+function cloudValidate(o){
+ if(!plainObject(o)||o.version!==2)throw Error("Sauvegarde cloud incompatible");
+ var v=progression(o,true),clean={version:2,progress:v.progress,review:v.review,labs:labStateSanitize(o.labs,true),proofs:proofStateSanitize(o.proofs,true),labChecks:labChecksSanitize(o.labChecks,true),dailyFive:dailySanitize(o.dailyFive,true),career:RC_PROJECT_PLAN.sanitize(o.career,true)};
+ assertSnapshotFields(o,clean);return clean;
+}
+function cloudEmpty(o){return ![o.progress,o.review,o.labs,o.proofs,o.labChecks,o.dailyFive.days].some(function(v){return Object.keys(v).length;})&&RC_CLOUD_TRANSPORT.serialize(o.career)===RC_CLOUD_TRANSPORT.serialize(RC_PROJECT_PLAN.empty());}
+
+function cloudPreserve(data){
+ var key="reconversion-control.cloud.recovery.v1",raw=localStorage.getItem(key),ring=raw===null?{v:1,copies:[]}:JSON.parse(raw),copy=cloudValidate(data);
+ if(!plainObject(ring)||ring.v!==1||!Array.isArray(ring.copies))throw Error("Copies de récupération illisibles");
+ var encoded=RC_CLOUD_TRANSPORT.serialize(copy);
+ if(ring.copies.some(function(item){return RC_CLOUD_TRANSPORT.serialize(item.data)===encoded;}))return;
+ var next=JSON.stringify({v:1,copies:[{at:new Date().toISOString(),data:copy}].concat(ring.copies).slice(0,3)});
+ localStorage.setItem(key,next);if(localStorage.getItem(key)!==next)throw Error("Copie de récupération non confirmée");
 }
 function cloudRestore(o){
- if(!plainObject(o)||o.version!==2)throw Error("Sauvegarde cloud incompatible");
- var v=progression(o,true),labs=labStateSanitize(o.labs,true),proofs=proofStateSanitize(o.proofs,true),checks=labChecksSanitize(o.labChecks,true),daily=dailySanitize(o.dailyFive,true),career=o.career===undefined?state.career:RC_PROJECT_PLAN.sanitize(o.career,true);
- atomicCommit(state,dailyState); // Establish a confirmed source before any replacing restore.
- var nextState={...state,progress:v.progress,review:v.review,labs:labs,proofs:proofs,labChecks:checks,career:career};
- atomicCommit(nextState,daily); // No live change or cloud acknowledgement until one verified commit.
- state=nextState;dailyState=daily;mirrorLegacy(state,dailyState);render();
+ var clean=cloudValidate(o);
+ atomicCommit(state,dailyState); // Confirm source before replacement, preserving #31.
+ var nextState={...state,progress:clean.progress,review:clean.review,labs:clean.labs,proofs:clean.proofs,labChecks:clean.labChecks,career:clean.career};
+ atomicCommit(nextState,clean.dailyFive);
+ state=nextState;dailyState=clean.dailyFive;mirrorLegacy(state,dailyState);render();
+}
+function exportRecovery(){
+ try{
+  var ring=JSON.parse(localStorage.getItem("reconversion-control.cloud.recovery.v1")||"null");
+  if(!ring||ring.v!==1||!ring.copies.length)throw Error("Aucune copie de récupération disponible");
+  var data=cloudValidate(ring.copies[0].data),blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="reconversion-control-recuperation.json";a.click();setTimeout(function(){URL.revokeObjectURL(url);},60000);
+ }catch(e){alert("Export de récupération refusé : "+e.message);}
 }
 
 function privacy(){
  var historical=RC_SUPPORTS.filter(function(source){return source.status!=="public";});
  var syncBlock='<section class="mod" id="rc-sync">'+(syncBridge?syncBridge.render():'Synchronisation non initialisée')+'</section>';
- return'<div class="grid2"><section class="mod"><div class="mh"><h2>Sources pédagogiques</h2><span class="src">'+historical.length+' SUPPORTS HISTORIQUES</span></div><p>32 chapitres historiques adaptés du cours Race Control, recoupés avec le dossier prod15, puis '+RC_LESSONS.filter(function(lesson){return !!lesson.provenance;}).length+' cas récents issus de sources publiques. Les PDF/DOCX originaux et la sauvegarde privée restent hors de l’application.</p><div id="support-coverage">'+historical.map(function(s){return'<article class="support" data-support-id="'+esc(s.id)+'" data-support-status="'+esc(s.status)+'"><h3>'+esc(s.title)+'</h3><p class="muted">'+esc(s.format)+' · '+esc(s.version)+'</p><p>'+esc(s.coverage)+'</p></article>';}).join("")+'</div><h3>Bibliothèque générale à compléter</h3><p class="muted">Les 42 fiches initiales sont des repères synthétiques. Les supports Race Control ne remplacent pas les cours complets de Linux, réseau, pentest, Kubernetes ou sécurité IA. Les références ci-dessous figuraient dans la bibliothèque ; leurs textes complets ne sont pas fournis dans ce lot.</p><ul>'+RC_SOURCES.filter(function(s){return s!=="Race Control expliqué de zéro à DevSecOps";}).map(function(s){return'<li>'+esc(s)+'</li>';}).join("")+'</ul></section><section class="mod"><div class="mh"><h2>Confidentialité</h2><span class="src">BY DESIGN</span></div><div class="privacy"><b>✅ Sources privées conservées hors du site</b><br>Aucun PDF/DOCX brut, aucune URL privée ni donnée de la sauvegarde dans le contenu publié.</div><div class="privacy"><b>✅ Progression locale par défaut</b><br>Statuts et révisions restent dans localStorage. Une copie chiffrée n’est transmise qu’après connexion cloud volontaire.</div><div class="privacy"><b>✅ Aucun analytics · cloud facultatif</b><br>Aucune progression envoyée tant que la synchronisation personnelle n’est pas activée.</div><div class="privacy"><b>✅ Cours hors ligne</b><br>Après un premier chargement complet avec réseau, les cours sont conservés sur l’appareil. Le navigateur peut effacer son cache ; ce n’est pas une sauvegarde de ta progression.</div><div class="privacy"><b>✅ Bibliothèque Drive cloisonnée</b><br>Les labs peuvent citer des références sélectionnées, mais aucun ID, URL Drive privée ni contenu intégral des livres n’est publié.</div><div class="actions"><button id="export" class="btn">Exporter</button><button id="import" class="btn">Importer</button><button id="reset" class="btn">Réinitialiser</button></div></section>'+syncBlock+'</div>'+publicSourcesHtml();
+ return'<div class="grid2"><section class="mod"><div class="mh"><h2>Sources pédagogiques</h2><span class="src">'+historical.length+' SUPPORTS HISTORIQUES</span></div><p>32 chapitres historiques adaptés du cours Race Control, recoupés avec le dossier prod15, puis '+RC_LESSONS.filter(function(lesson){return !!lesson.provenance;}).length+' cas récents issus de sources publiques. Les PDF/DOCX originaux et la sauvegarde privée restent hors de l’application.</p><div id="support-coverage">'+historical.map(function(s){return'<article class="support" data-support-id="'+esc(s.id)+'" data-support-status="'+esc(s.status)+'"><h3>'+esc(s.title)+'</h3><p class="muted">'+esc(s.format)+' · '+esc(s.version)+'</p><p>'+esc(s.coverage)+'</p></article>';}).join("")+'</div><h3>Bibliothèque générale à compléter</h3><p class="muted">Les 42 fiches initiales sont des repères synthétiques. Les supports Race Control ne remplacent pas les cours complets de Linux, réseau, pentest, Kubernetes ou sécurité IA. Les références ci-dessous figuraient dans la bibliothèque ; leurs textes complets ne sont pas fournis dans ce lot.</p><ul>'+RC_SOURCES.filter(function(s){return s!=="Race Control expliqué de zéro à DevSecOps";}).map(function(s){return'<li>'+esc(s)+'</li>';}).join("")+'</ul></section><section class="mod"><div class="mh"><h2>Confidentialité</h2><span class="src">BY DESIGN</span></div><div class="privacy"><b>✅ Sources privées conservées hors du site</b><br>Aucun PDF/DOCX brut, aucune URL privée ni donnée de la sauvegarde dans le contenu publié.</div><div class="privacy"><b>✅ Progression locale par défaut</b><br>Statuts et révisions restent dans localStorage. Une copie chiffrée n’est transmise qu’après connexion cloud volontaire.</div><div class="privacy"><b>✅ Aucun analytics · cloud facultatif</b><br>Aucune progression envoyée tant que la synchronisation personnelle n’est pas activée.</div><div class="privacy"><b>✅ Cours hors ligne</b><br>Après un premier chargement complet avec réseau, les cours sont conservés sur l’appareil. Le navigateur peut effacer son cache ; ce n’est pas une sauvegarde de ta progression.</div><div class="privacy"><b>✅ Bibliothèque Drive cloisonnée</b><br>Les labs peuvent citer des références sélectionnées, mais aucun ID, URL Drive privée ni contenu intégral des livres n’est publié.</div><div class="actions"><button id="export" class="btn">Exporter</button><button id="import" class="btn">Importer</button><button id="reset" class="btn">Réinitialiser</button><button id="export-recovery" class="btn">Exporter la dernière copie de récupération</button></div></section>'+syncBlock+'</div>'+publicSourcesHtml();
 }
 function detailProgress(ps){
  return'<div class="seg"><button class="learn '+(ps==="learn"?"on":"")+'" data-dprog="learn">À apprendre<small>Learn</small></button><button class="progress '+(ps==="progress"?"on":"")+'" data-dprog="progress">En cours<small>Learning</small></button><button class="mastered '+(ps==="mastered"?"on":"")+'" data-dprog="mastered">Acquis<small>Mastered</small></button></div>';
@@ -762,6 +799,7 @@ function bind(){
  var q=$("#search"); if(q)q.oninput=function(){state.search=q.value;save();updateLibrary();};
  var st=$("#status"); if(st)st.onchange=function(){state.status=st.value;save();updateLibrary();};
  if($("#export"))$("#export").onclick=exportState;
+ if($("#export-recovery"))$("#export-recovery").onclick=exportRecovery;
  if($("#import"))$("#import").onclick=function(){$("#importer").click();};
  if($("#reset"))$("#reset").onclick=function(){if(confirm("Réinitialiser toute la progression locale ?")){var blank=JSON.parse(JSON.stringify(defaults)),empty={days:{}};try{atomicCommit(blank,empty);state=blank;dailyState=empty;storageRemove(KEY);storageRemove(DAILY_KEY);render();}catch(e){alert("Réinitialisation non confirmée : les données existantes sont conservées.");}}};
 }
@@ -795,6 +833,6 @@ if("serviceWorker" in navigator){
  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(function(reg){if(reg.waiting&&hadController)showUpdateNotice();}).catch(function(){});
 }
 acquireStorageWriter();
-syncBridge=RC_CLOUD_UI.attach({snapshot:cloudSnapshot,restore:cloudRestore,escape:esc});
+syncBridge=RC_CLOUD_UI.attach({snapshot:cloudSnapshot,validate:cloudValidate,empty:cloudEmpty,preserve:cloudPreserve,restore:cloudRestore,escape:esc});
 applyRoute();
 })();

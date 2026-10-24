@@ -60,3 +60,19 @@ Le téléchargement local des navigateurs Playwright a échoué (archive reçue 
 `node tests/project-checks.cjs` vérifie le schéma optionnel du dossier, les preuves datées, les montants inconnus, le zéro explicite, les dépassements, le rejet des entrées invalides et l’échappement HTML. `node tests/project.spec.cjs` ajoute une validation Chromium/WebKit de l’import de profil privé sans perte de cours/labs/preuves, de l’export/import complet, de l’ancien format et du rejet atomique, puis des contrôles de mise en page à 320, 414 et 1280 px. Le Service Worker conserve le nouvel onglet hors ligne. Ces suites rejoignent la CI existante.
 
 Le dossier est conservé lors d’un import ancien qui ne possède pas de champ `career`. Le fichier de profil est un import de cadre personnel uniquement ; il ne remplace aucune progression ni réponse d’école. Les données de test sont fictives. Aucun essai sur iPhone physique ni activation cloud réelle n’est déduit des simulations.
+
+## Cloud final mile — 24/10/2026 (données fictives uniquement)
+
+```sh
+node tests/cloud-sync.spec.cjs
+node tests/cloud-final-mile.cjs
+node tests/cloud-history.cjs
+BROWSER=chromium node tests/cloud-final-mile-browser.cjs
+BROWSER=webkit node tests/cloud-final-mile-browser.cjs
+```
+
+Le troisième test exécute le SQL proposé dans PostgreSQL WASM (PGlite 0.5.11 verrouillé), avec rôles distincts, RLS réelle et fonctions Auth simulées. Il vérifie propriétaire, utilisateur B, anon, anonymous-auth, immutabilité de l'historique, révisions, bornes et rollback transactionnel. Ce n'est pas un test du projet Supabase hébergé.
+
+Le test navigateur utilise deux profils indépendants, la vraie app, AES-GCM et localStorage. Toutes les requêtes fournisseur sont interceptées : choix initial, aller-retour, fermeture/réouverture, session chiffrée, réponse perdue après commit, reprise idempotente, conflit, stockage défaillant, format futur et récupération historique. Les quinze cas N03 restent exécutés ; leur amorçage est adapté à la nouvelle confirmation explicite de premier envoi et leur watchdog évite une fin Node trompeuse lorsqu'une promesse reste suspendue.
+
+La matrice existante conserve provenance, pédagogie, dossier, navigation, stockage/concurrence, Chromium/WebKit, service worker Chromium et tests de publication Pages. Les nouveaux tests ne désactivent aucun contrôle. WebKit n'est pas une recette sur iPhone physique. Recette réelle préparée dans `docs/GO_FINAL_CLOUD_20261024.md`.
