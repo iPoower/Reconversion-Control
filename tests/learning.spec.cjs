@@ -161,7 +161,7 @@ async function main() {
     await page.locator("#close").tap();
     // A native close can focus the old opener before history.back() runs
     // applyRoute() and replaces the course DOM. Require that transition first.
-    await page.waitForURL("**/#course");
+    await page.waitForURL(url => url.origin === server.url && url.pathname === "/" && url.search === "?v=2" && url.hash === "#course");
     await page.waitForFunction(opener => !opener.isConnected, openerBeforeBack);
     await page.waitForFunction(() => !document.querySelector("#dlg").open);
     await page.waitForFunction(() => document.activeElement === document.querySelector('#course-chapters [data-open="rc-01"]'));

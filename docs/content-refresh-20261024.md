@@ -165,3 +165,9 @@ sur sa nouvelle tête, puis sur son commit fusionné avant Pages et vérificatio
 HTTP. Un résultat vert sur le SHA précédent ne suffit pas. Cette synchronisation
 du test ne doit pas servir à masquer une régression de focus après navigation
 achevée, ni à conclure à une validation de Safari sur iPhone physique.
+
+La première CI de ce complément (40062708698, tête `460158a`) a échoué sur
+l'attente d'URL : le motif `**/#course` ne correspondait pas à l'URL du banc
+`/?v=2#course`. Le prédicat contrôle désormais séparément l'origine du serveur,
+le chemin, la requête et le fragment attendus. Aucun timeout ou contrôle de focus
+n'est modifié. Cette erreur du test n'est pas attribuée au code applicatif.
