@@ -9,10 +9,24 @@ async function run(){
  async function owner(id,anonymous=false){await db.exec("reset role");await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({sub:id,is_anonymous:anonymous})]);await db.exec("set role authenticated");}
  try{
   await db.exec("create role anon nologin; create role authenticated nologin; create schema auth; create table auth.users(id uuid primary key); grant usage on schema public,auth to anon,authenticated; create function auth.uid() returns uuid language sql stable as $$ select (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$; create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb) $$;");
+  // Reproduce the hosted auto-RLS helper, including PostgreSQL's PUBLIC EXECUTE default.
+  await db.exec("create function public.rls_auto_enable() returns event_trigger language plpgsql security definer set search_path=pg_catalog as $$ declare cmd record; begin for cmd in select * from pg_event_trigger_ddl_commands() where command_tag='CREATE TABLE' and object_type='table' and schema_name='public' loop execute format('alter table %s enable row level security',cmd.object_identity); end loop; end $$; create event trigger ensure_rls on ddl_command_end when tag in ('CREATE TABLE') execute function public.rls_auto_enable();");
+  assert.equal((await db.query("select has_function_privilege('anon','public.rls_auto_enable()','EXECUTE') allowed")).rows[0].allowed,true);
   await db.query("insert into auth.users values ($1),($2)",[a,b]);
   await db.exec(fs.readFileSync(path.join(root,"sql/reconversion_progress.sql"),"utf8"));
   const migrations=fs.readdirSync(path.join(root,"supabase/migrations")).filter(n=>n.endsWith("_encrypted_cloud_history.sql"));assert.equal(migrations.length,1);
   await db.exec(fs.readFileSync(path.join(root,"supabase/migrations",migrations[0]),"utf8"));
+  const hardening=fs.readFileSync(path.join(root,"supabase/migrations/20261024173600_restrict_rls_event_trigger_execute.sql"),"utf8");
+  await db.exec(hardening);await db.exec(hardening); // Restriction is safely repeatable.
+  await check("auto-RLS remains active while its privileged helper is inaccessible to clients",async()=>{
+   for(const role of ["anon","authenticated"]){
+    assert.equal((await db.query("select has_function_privilege($1,'public.rls_auto_enable()','EXECUTE') allowed",[role])).rows[0].allowed,false);
+    await db.exec("set role "+role);await assert.rejects(db.query("select public.rls_auto_enable()"),e=>e.code==="42501");await db.exec("reset role");
+   }
+   await db.exec("begin; create table public.rc_rls_auto_probe(id int);");
+   assert.equal((await db.query("select relrowsecurity from pg_class where oid='public.rc_rls_auto_probe'::regclass")).rows[0].relrowsecurity,true);
+   await db.exec("rollback");assert.equal((await db.query("select to_regclass('public.rc_rls_auto_probe') n")).rows[0].n,null);
+  });
   await check("authenticated owner can create and read encrypted progress",async()=>{await owner(a);await db.query("insert into public.reconversion_progress(user_id,payload) values($1,$2)",[a,payload]);assert.equal((await db.query("select * from public.reconversion_progress")).rows.length,1);});
   await check("malformed encrypted envelopes (including kdf:null) fail closed",async()=>{
    await owner(a);

@@ -16,7 +16,7 @@ Ce modèle reprend les mécanismes existants ; il ne certifie pas un service per
 | API / IDOR, BOLA | Identité Supabase vérifiée ; SELECT/INSERT/UPDATE limités au propriétaire ; anon et anonymous-auth refusés ; aucune clé serveur dans le client | tests SQL sous rôles distincts, catalogue et contrôles Data API du projet confirmé |
 | PostgreSQL / concurrence, rejeu | Révision initiale 1 puis incrément exact ; PATCH conditionnel sur révision précédente ; un acquittement exige la même enveloppe relue | cloud-history, cloud-final-mile, cloud-ui-races |
 | Enveloppe incomplète | CHECK explicitement IS TRUE ; kdf:null et autres formes malformées refusés ; refus sans modification de tête ou d'historique | groupe de régression SQL de la PR #33 |
-| Fonction privilégiée | Uniquement trigger privé capture_progress, search_path vide, noms qualifiés, droits EXECUTE/USAGE retirés aux clients | catalogue pg_proc / pg_namespace, refus de l'appel direct |
+| Fonction privilégiée | Archivage par trigger privé capture_progress, search_path vide, noms qualifiés, droits EXECUTE/USAGE retirés aux clients ; aucun appel client au helper Supabase d'auto-RLS préexistant, dont le trigger reste actif | catalogue pg_proc / pg_namespace, refus des appels directs, test de création de table annulé après contrôle de RLS |
 | Historique / corruption, effacement | 20 révisions par propriétaire, archivage et élagage dans la transaction ; clients en lecture seule ; export indépendant avant remplacement | cloud-history, récupération navigateur et contrôles réversibles hébergés autorisés |
 | CI/CD / chaîne logicielle | Dépendances verrouillées, actions et image SHA épinglées, permissions minimales, PR SHA exact ; Pages séparé et protégé | npm audit, CI et tests test_pages*.py |
 

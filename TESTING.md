@@ -74,7 +74,7 @@ BROWSER=chromium node tests/cloud-security-browser.cjs
 BROWSER=webkit node tests/cloud-security-browser.cjs
 ```
 
-Le troisième test exécute le SQL proposé dans PostgreSQL WASM (PGlite 0.5.11 verrouillé), avec rôles distincts, RLS réelle et fonctions Auth simulées. Il vérifie propriétaire, utilisateur B, anon, anonymous-auth, immutabilité de l'historique, révisions, bornes et rollback transactionnel. Ce n'est pas un test du projet Supabase hébergé.
+Le troisième test exécute le SQL proposé dans PostgreSQL WASM (PGlite 0.5.11 verrouillé), avec rôles distincts, RLS réelle et fonctions Auth simulées. Il vérifie propriétaire, utilisateur B, anon, anonymous-auth, immutabilité de l'historique, révisions, bornes et rollback transactionnel. Il reproduit aussi le helper privilégié d'auto-RLS, retire son droit d'appel client et prouve que son event trigger active toujours RLS sur une table de test annulée. Ce n'est pas un test du projet Supabase hébergé.
 
 Le banc de stockage utilise les validateurs métier et le chiffrement de production avec des progressions entièrement fictives (0, 365 et 1825 jours). Il mesure JSON, Gzip/Brotli, enveloppes AES-GCM et relations PostgreSQL/index/TOAST avant et après compactage isolé. Les objets compressés d'étude ne sont pas des sauvegardes applicatives compatibles ; ils ne sont jamais envoyés à un service. La limite de décompression et le round-trip intégral sont vérifiés. Les octets de corps HTTP et projections de lecture excluent headers, TLS, Auth et changements réels. Le rapport JSON est conservé dans l'artefact CI Chromium.
 
