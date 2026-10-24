@@ -17,7 +17,7 @@ const document = (main,daily) => serialize({version:3,main,daily});
 
 function harness(initial) {
  const values = new Map(Object.entries(initial||{}));
- const errors = {set:null,get:null};
+ const errors = {set:null,get:null,getAfterSet:null};
  const storage = {
    getItem(key) {
      if(errors.get===key){errors.get=null;throw Error("synthetic get failure");}
@@ -26,16 +26,18 @@ function harness(initial) {
    setItem(key,value) {
      if(errors.set===key){errors.set=null;throw Object.assign(Error("QuotaExceededError"),{name:"QuotaExceededError"});}
      values.set(key,String(value));
+     if(errors.getAfterSet===key){errors.getAfterSet=null;errors.get=key;}
    },
    removeItem(key){values.delete(key);}
  };
  const faults = [];
  const sandbox = {localStorage:storage,ATOMIC_KEY:A,KEY:M,DAILY_KEY:D,
-   atomicUnread:false,atomicSnapshot:null,progressUnread:false,dailyUnread:false,
+   atomicUnread:false,atomicSnapshot:null,progressUnread:false,dailyUnread:false,storageWriter:true,storageConflict:false,
    plainObject:v=>v!==null&&typeof v==="object"&&!Array.isArray(v),
    storageStatus:(key,failed)=>{if(failed)faults.push(key);},storageNotice:()=>{}};
  vm.createContext(sandbox);
  vm.runInContext(segment[0]+"\nglobalThis.API = {atomicRead,atomicCommit,mirrorLegacy};",sandbox);
+ sandbox.atomicSnapshot=sandbox.API.atomicRead();
  return {values,errors,storage,sandbox,faults,...sandbox.API};
 }
 let checks=0;
@@ -54,12 +56,12 @@ test("atomic commit: quota before write preserves the prior complete state",()=>
  assert.equal(read.main.progress.dns,"progress");
  assert.ok(read.daily.days["2026-10-22"]);
 });
-test("atomic commit: a lost readback rejects the success even if bytes committed",()=>{
+test("atomic commit: failed readback restores the entire prior confirmed snapshot",()=>{
  const h=harness({[A]:document(oldMain,oldDaily)});
- h.errors.get=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Instantané non confirmé/);
+ h.errors.getAfterSet=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Instantané non confirmé/);
  const recovered=JSON.parse(h.values.get(A));
- assert.equal(recovered.main.progress.dns,"mastered");
- assert.ok(recovered.daily.days["2026-10-23"]);
+ assert.equal(recovered.main.progress.dns,"progress");
+ assert.deepEqual(recovered.daily,oldDaily);
 });
 test("first migration: quota preserves both original legacy keys",()=>{
  const h=harness({[M]:serialize(oldMain),[D]:serialize(oldDaily)});
@@ -112,6 +114,37 @@ test("both primary payloads are required",()=>{
  const h=harness({});
  assert.throws(()=>h.atomicCommit(nextMain,{}),/incomplet/);
  assert.equal(h.values.size,0);
+});
+test("stale tab refuses a sequential lost update without overwriting either value",()=>{
+ const h=harness({[A]:document(oldMain,oldDaily)});
+ h.values.set(A,document(nextMain,nextDaily));
+ assert.throws(()=>h.atomicCommit({...oldMain,progress:{linux:"progress"}},oldDaily),/Instantané non confirmé/);
+ assert.equal(h.values.get(A),document(nextMain,nextDaily));
+ assert.equal(h.sandbox.storageConflict,true);
+});
+test("read-only tab cannot commit, including first migration and restoration",()=>{
+ for(const initial of [{},{[A]:document(oldMain,oldDaily)}]){
+  const h=harness(initial);h.sandbox.storageWriter=false;
+  assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Autre onglet/);
+  assert.deepEqual(Object.fromEntries(h.values),initial);
+ }
+});
+test("preflight read failure preserves the previous authoritative bytes",()=>{
+ const h=harness({[A]:document(oldMain,oldDaily)});
+ h.errors.get=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Instantané non confirmé/);
+ assert.equal(h.values.get(A),document(oldMain,oldDaily));
+});
+test("historical unknown progression blocks migration instead of dropping its bytes",()=>{
+ const loadFunction=source.match(/function load\(\)\{[\s\S]*?\n\}/)[0];
+ const progressFunction=source.match(/function progression\(data,strict\)\{[\s\S]*?\n\}/)[0];
+ const context=vm.createContext({defaults:{progress:{},review:{}},atomicSnapshot:null,
+  KEY:M,progressUnread:false,storageGet:()=>serialize({view:"review",progress:{retiredTopic:"mastered"},review:{}}),
+  storageStatus(){},plainObject:v=>v&&typeof v==="object"&&!Array.isArray(v),
+  topic:()=>null,statuses:["learn","progress","mastered"],views:["review"],section:()=>null,
+  labStateSanitize:()=>({}),proofStateSanitize:()=>({}),labChecksSanitize:()=>({}),RC_PROJECT_PLAN:{sanitize:()=>({})}});
+ vm.runInContext(progressFunction+loadFunction+';globalThis.loaded=load();',context);
+ assert.equal(context.loaded.view,'review','safe navigation metadata must remain usable while business migration is blocked');
+ assert.equal(context.progressUnread,true,"unsupported historical progression must stay unread and non-migratable");
 });
 test("idempotent retry preserves one complete revision and no extra key",()=>{
  const h=harness({[A]:document(oldMain,oldDaily)});
