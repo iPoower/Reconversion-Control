@@ -8,7 +8,7 @@ Accès aux applications : [Race Control](https://race-control-ipoower.pages.dev/
 
 L’onglet **Projet 2027** (`#project`) relie le bilan de reconversion au travail quotidien : six étapes du socle IT à la sécurité IA, huit démonstrations sans assistance, six actions de dossier, un comparatif Jedha/ENI sur huit questions et une simulation du coût total. Les 42 fiches, 42 cours, 20 labs, Daily Five et identifiants existants sont conservés.
 
-Les références publiques ont été revérifiées le **23 octobre 2026** : AIS RNCP37680, niveau 6, échéance 28/02/2027 ; TSSR RNCP42463, niveau 5, échéance 31/08/2031. Ces faits sont séparés des déclarations des écoles, de l’habilitation du centre, des conditions de la cohorte 2027 et du financement individuel restant à confirmer. Aucune inscription, durée de parcours personnel, prise en charge ni compétence n’est validée automatiquement.
+Les références publiques ont été revérifiées le **24 octobre 2026** : AIS RNCP37680, niveau 6, échéance 28/02/2027 ; TSSR RNCP42463, niveau 5, échéance 31/08/2031. Ces faits sont séparés des déclarations des écoles, de l’habilitation du centre, des conditions de la cohorte 2027 et du financement individuel restant à confirmer. Aucune inscription, durée de parcours personnel, prise en charge ni compétence n’est validée automatiquement.
 
 Le diplôme de départ, le dispositif, la zone d’emploi, les durées, le budget et le bilan personnel sont saisis localement ou importés via un fichier privé au format `reconversion-control.project.v1`. **Aucun profil personnel réel n’est embarqué dans le dépôt public.** L’import de profil remplace seulement le cadre personnel ; il conserve les cours, labs, révisions, réponses d’école et preuves existants. La demande de devis peut être copiée ; aucun message n’est envoyé par le site.
 
@@ -43,6 +43,14 @@ Validation du dossier : `node tests/project-checks.cjs`, puis `BROWSER=chromium 
 - build GitHub Pages identifié par le SHA réellement testé ; cache Service Worker dérivé automatiquement de ce SHA
 - notification locale lorsqu’une nouvelle version PWA prend le contrôle
 - aucun analytics ; aucun backend requis (synchronisation privée optionnelle)
+
+## Actualisation pédagogique — 24/10/2026
+
+Quatre cours existants (`rc-37`, `rc-39`, `rc-41`, `rc-42`) distinguent copie indépendante, instantané transmis avant une attente asynchrone, provenance Pages et raccord Drive fusionné sans activation attestée. Les exercices corrigés, l’anglais progressif et trois labs manuels sont enrichis ; les 39 références publiques conservent les 33 précédentes. Les identifiants, prérequis, contenus historiques et mécanismes de progression restent inchangés.
+
+Le portfolio cite le manifeste GitHub Pages Race Control prod-159 relu le 24/10 et les raccords #229/#14 fusionnés. Il distingue les démonstrations des PR de durcissement encore ouvertes et des essais Google/iPhone restant à réaliser. Les liens de portfolio utilisent les origines Cloudflare déjà retenues par la navigation commune. Les références formation gardent les niveaux et échéances vérifiés ; une contradiction entre pages Jedha sur le bloc Essentials (n°1 ou n°3) est explicitement à confirmer par écrit.
+
+Voir [sources, preuves et limites du 24/10](docs/content-refresh-20261024.md). Aucune activation cloud, compétence, certification ou progression personnelle n’est déduite de cette actualisation.
 
 ## Actualisation pédagogique — 23/10/2026
 
