@@ -67,11 +67,18 @@ Le dossier est conservé lors d’un import ancien qui ne possède pas de champ 
 node tests/cloud-sync.spec.cjs
 node tests/cloud-final-mile.cjs
 node tests/cloud-history.cjs
+node tests/cloud-storage.cjs
 BROWSER=chromium node tests/cloud-final-mile-browser.cjs
 BROWSER=webkit node tests/cloud-final-mile-browser.cjs
+BROWSER=chromium node tests/cloud-security-browser.cjs
+BROWSER=webkit node tests/cloud-security-browser.cjs
 ```
 
 Le troisième test exécute le SQL proposé dans PostgreSQL WASM (PGlite 0.5.11 verrouillé), avec rôles distincts, RLS réelle et fonctions Auth simulées. Il vérifie propriétaire, utilisateur B, anon, anonymous-auth, immutabilité de l'historique, révisions, bornes et rollback transactionnel. Ce n'est pas un test du projet Supabase hébergé.
+
+Le banc de stockage utilise les validateurs métier et le chiffrement de production avec des progressions entièrement fictives (0, 365 et 1825 jours). Il mesure JSON, Gzip/Brotli, enveloppes AES-GCM et relations PostgreSQL/index/TOAST avant et après compactage isolé. Les objets compressés d'étude ne sont pas des sauvegardes applicatives compatibles ; ils ne sont jamais envoyés à un service. La limite de décompression et le round-trip intégral sont vérifiés. Les octets de corps HTTP et projections de lecture excluent headers, TLS, Auth et changements réels. Le rapport JSON est conservé dans l'artefact CI Chromium.
+
+Les tests de contrôleur ajoutent les lectures de révision sans acquittement, contrôles complets obligatoires, retour d'horloge, visibilité, erreurs de métadonnées et modifications pendant une lecture légère. La suite CSP injecte des scripts de test et une base étrangère dans un profil isolé ; les deux navigateurs doivent les bloquer et conserver le snapshot. Les logs du parcours cloud sont contrôlés avec des secrets canaris fictifs.
 
 Le test navigateur utilise deux profils indépendants, la vraie app, AES-GCM et localStorage. Toutes les requêtes fournisseur sont interceptées : choix initial, aller-retour, fermeture/réouverture, session chiffrée, réponse perdue après commit, reprise idempotente, conflit, stockage défaillant, format futur et récupération historique. Les quinze cas N03 restent exécutés ; leur amorçage est adapté à la nouvelle confirmation explicite de premier envoi et leur watchdog évite une fin Node trompeuse lorsqu'une promesse reste suspendue.
 

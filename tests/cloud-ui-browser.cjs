@@ -22,7 +22,7 @@ async function run(browser, server) {
         if (url.pathname === "/auth/v1/otp") return reply(200, {});
         if (url.pathname === "/auth/v1/verify") return reply(200, {access_token: "fixture-token", refresh_token: "fixture-refresh", expires_in: 3600, user: {id: "00000000-0000-4000-8000-000000000001"}});
         if (url.pathname !== "/rest/v1/reconversion_progress") { unexpected.push(req.url()); return route.abort(); }
-        if (req.method() === "GET") return reply(200, row ? [row] : []);
+        if (req.method() === "GET") return reply(200, row ? [url.searchParams.get("select")==="revision"?{revision:row.revision}:row] : []);
         if (req.method() === "POST" || req.method() === "PATCH") {
           const body = req.postDataJSON(), initial = req.method() === "POST";
           if ((initial && row) || (!initial && (!row || url.searchParams.get("revision") !== "eq." + row.revision))) return reply(409, {});

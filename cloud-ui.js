@@ -4,7 +4,8 @@
 const RC_CLOUD_UI = (() => {
  const CONFIG="reconversion-control.cloud.config.v1",SESSION="reconversion-control.cloud.session.v1";
  let env,client,cfg,email="",phrase="",remember=false,user="",scope="",meta={v:1},remote=null,remoteData=null;
- let revision=null,baseline="",busy=false,applying=false,mode="setup",status="Local uniquement · cloud non configuré.",timer=null,pending=null,epoch=0,retries=0,historyRows=[],restoredHere=false;
+ let revision=null,baseline="",busy=false,applying=false,mode="setup",status="Local uniquement · cloud non configuré.",timer=null,pending=null,epoch=0,retries=0,historyRows=[],restoredHere=false,lastFullRead=0;
+ const FULL_READ_MS=600000;
  const T=()=>RC_CLOUD_TRANSPORT,now=()=>new Date().toISOString();
  function safe(s){return env.escape(String(s||""));}
  function load(key){const raw=localStorage.getItem(key);if(raw===null)return null;if(raw.length>4200000)throw Error("Métadonnées trop volumineuses");return JSON.parse(raw);}
@@ -60,7 +61,7 @@ const RC_CLOUD_UI = (() => {
  }
  async function acknowledge(sent,next,ticket,payload){
   const hash=await T().fingerprint(sent),payloadHash=payload?await T().fingerprint(T().serialize(payload)):null;guard(ticket);
-  persist({...meta,ack:{revision:next,hash,payloadHash,at:now()},pending:null});revision=next;baseline=sent;retries=0;
+  persist({...meta,ack:{revision:next,hash,payloadHash,at:now()},pending:null});revision=next;baseline=sent;retries=0;lastFullRead=Date.now();
  }
  async function flush(ticket){
   const job=meta.pending;if(!job)return;
@@ -95,7 +96,7 @@ const RC_CLOUD_UI = (() => {
   if(latest.revision<meta.ack.revision)throw Error("Révision distante obsolète : restauration automatique refusée");
   if(latest.revision===meta.ack.revision){
    if(await T().fingerprint(there)!==meta.ack.hash)throw Error("Même révision avec contenu différent : restauration refusée");guard(ticket);
-   baseline=there;revision=latest.revision;mode="active";
+   baseline=there;revision=latest.revision;mode="active";lastFullRead=Date.now();
    status=uploadStatus(meta.restore&&hash===meta.restore.hash&&!restoredHere?"Restauration vérifiée après réouverture · connecté et déverrouillé.":"Connecté et déverrouillé. Reprise de la synchronisation.");activate();delayed();return;
   }
   // Read/decrypt/hash may yield; take another snapshot before deciding to replace.
@@ -124,7 +125,7 @@ const RC_CLOUD_UI = (() => {
   }catch(e){if(ticket===epoch){status="Déverrouillage refusé : "+e.message;if(user)mode="error";}}
   finally{if(ticket===epoch){busy=false;repaint();}}
  }
- function activate(){if(timer)clearInterval(timer);timer=setInterval(tick,30000);}
+ function activate(){if(timer)clearInterval(timer);timer=setInterval(()=>tick(true),30000);}
  function schedule(delay){if(pending)clearTimeout(pending);pending=setTimeout(()=>{pending=null;return tick();},delay||2000);}
  function changed(){
   if(!env||applying||mode!=="active")return;
@@ -141,14 +142,26 @@ const RC_CLOUD_UI = (() => {
    await acknowledge(restored,next,ticket,remote&&remote.payload);guard(ticket);persist({...meta,restore:{hash:meta.ack.hash,revision:next}});
   }finally{applying=false;}
  }
- async function tick(){
+ async function tick(periodic){
+  if(periodic!==true)lastFullRead=0;
   if(!client||busy||!["active","conflict","error"].includes(mode))return;
+  if(periodic===true&&document.hidden)return;
   if(!navigator.onLine){warn("Hors connexion · progression locale conservée, reprise à la reconnexion.");return;}
   busy=true;const ticket=epoch;
   try{
    loadMeta();
    if(mode!=="active"){await inspect(ticket);return;}
    if(meta.pending)await flush(ticket);
+   // An unchanged metadata probe never replaces a payload check or creates a receipt.
+   // Local edits, pending writes, manual actions and resumes always read the payload.
+   const stamp=Date.now();
+   if(periodic===true&&!dirty()&&meta.ack&&meta.ack.payloadHash&&lastFullRead>0&&stamp>=lastFullRead&&stamp-lastFullRead<FULL_READ_MS&&typeof client.readRevision==="function"){
+    const head=await client.readRevision();guard(ticket);
+    const checked=Date.now();
+    if(head===revision&&lastFullRead>0&&checked>=lastFullRead&&checked-lastFullRead<FULL_READ_MS&&!dirty()){
+     status="À jour sur cet appareil et dans le cloud · révision inchangée, dernière confirmation conservée.";return;
+    }
+   }
    const latest=await client.read();guard(ticket);
    if(!latest){mode="conflict";remote=remoteData=null;status="La sauvegarde cloud a disparu. Aucun changement local effacé.";return;}
    if(latest.revision!==revision){
@@ -162,8 +175,8 @@ const RC_CLOUD_UI = (() => {
     if(dirty()){await upload(revision,ticket);status=uploadStatus("Modifications locales sauvegardées et chiffrées dans le cloud.");}
     else status="À jour sur cet appareil et dans le cloud · sauvegarde cloud confirmée.";
    }
-   delayed();
-  }catch(e){if(ticket===epoch){status="Synchronisation en attente : "+e.message+" · progression locale conservée.";schedule(Math.min(60000,2000*2**Math.min(retries++,5)));}}
+   lastFullRead=Date.now();delayed();
+  }catch(e){if(ticket===epoch){lastFullRead=0;status="Synchronisation en attente : "+e.message+" · progression locale conservée.";schedule(Math.min(60000,2000*2**Math.min(retries++,5)));}}
   finally{if(ticket===epoch){busy=false;repaint();}}
  }
  async function createFirst(){

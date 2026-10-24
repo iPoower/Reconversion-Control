@@ -6,7 +6,7 @@ Base vérifiée : `2ab4c0f74c74b5ad430e10032ae810708113b3f0` (PR #31).
 ## Fonctionnement quotidien prévu
 
 1. Les saisies sont d’abord enregistrées dans `reconversion-control.snapshot.v3` et relues. Un seul onglet a le Web Lock d’écriture. Un onglet obsolète, un quota ou un stockage illisible suspendent le cloud.
-2. Après activation volontaire et déverrouillage, les modifications persistantes déclenchent un envoi différé d’environ 2 secondes. Vérification périodique toutes les 30 secondes au premier plan ; reprise aux événements réseau, visibilité et réouverture. Échecs : reprise progressive jusqu’à 60 secondes.
+2. Après activation volontaire et déverrouillage, les modifications persistantes déclenchent un envoi différé d’environ 2 secondes. Vérification de révision toutes les 30 secondes au premier plan lorsque la copie locale est inchangée ; lecture complète au moins toutes les 10 minutes, ainsi qu'aux modifications locales, reprises réseau, retours au premier plan et actions manuelles. Une lecture de révision ne crée aucun reçu et ne change pas l'heure de la dernière confirmation. Révision différente, disparition, erreur ou horloge reculant imposent une lecture complète. Échecs : reprise progressive jusqu’à 60 secondes.
 3. Le paquet cloud existant V2 contient la projection métier complète de l’instantané local V3 : progression, révisions SRS, labs, preuves, validations, Daily Five et dossier. La navigation propre à l’appareil, les secrets et journaux cloud sont exclus. Pas de second format concurrent ni de migration des enveloppes existantes.
 4. Le JSON est figé avant toute attente cryptographique. L’enveloppe chiffrée et l’empreinte sont écrites/reluées dans une outbox locale avant la requête. Une modification survenue ensuite reste en attente.
 5. Une révision est acquittée seulement après relecture du **même** paquet sur le serveur à la révision attendue. Une réponse perdue peut signifier que l’écriture a réussi. La reprise réutilise exactement le même ciphertext ; elle ne génère pas une nouvelle sauvegarde au hasard.
@@ -56,6 +56,8 @@ Commandes reproductibles dans `TESTING.md`. Tests HTTP simulés + vraie cryptogr
 Une PWA suspendue ou fermée sur iOS n’exécute pas continuellement le réseau : reprise après réouverture et déverrouillage. La relecture après fermeture de page prouve la persistance du profil navigateur de test ; elle ne prouve pas un iPhone physique ni un redémarrage matériel. Si un navigateur ne propose pas Web Locks ou perd le verrou après suspension, exporter toute saisie en mémoire puis fermer les autres onglets et recharger.
 
 Références officielles consultées le 24/10/2026 :
+- Modèle de menaces et limites : `cloud-security-model.md`.
+- Mesures reproductibles sans compte ni réseau Supabase : `node tests/cloud-storage.cjs`, résultats et projections dans `cloud-storage-measures.md`. Gzip/Brotli y restent des objets d'étude, refusés comme DTO par l'application actuelle ; aucun protocole compressé n'est activé.
 - https://supabase.com/docs/guides/auth/sessions
 - https://supabase.com/docs/guides/auth/signout
 - https://supabase.com/docs/guides/database/postgres/row-level-security

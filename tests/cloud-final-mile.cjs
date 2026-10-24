@@ -6,10 +6,10 @@ const clone=v=>JSON.parse(JSON.stringify(v)),response=(status,j)=>({ok:status>=2
 let passed=0;
 async function check(name,fn){await fn();passed++;console.log("PASS cloud final mile: "+name);}
 function fixture(){
- const rows=new Map(),calls=[];let lost=false,failRead=false,empty=false,expired=false,refreshes=0,revoke=false,anon=false,clock=0;
+ const rows=new Map(),calls=[];let lost=false,failRead=false,empty=false,expired=false,refreshes=0,revoke=false,anon=false,clock=0,headOverride;
  async function fetch(input,init){
   const url=new URL(input),body=init.body?JSON.parse(init.body):{},token=init.headers.Authorization;
-  assert.equal(url.origin,"https://fixture.supabase.co");calls.push({path:url.pathname,method:init.method});
+  assert.equal(url.origin,"https://fixture.supabase.co");calls.push({path:url.pathname,method:init.method,select:url.searchParams.get("select")});
   if(url.pathname==="/auth/v1/verify")return response(200,{access_token:body.email.startsWith("b")?b:a,refresh_token:"refresh-fixture",expires_in:expired?1:3600,user:{id:body.email.startsWith("b")?b:a,is_anonymous:anon}});
   if(url.pathname==="/auth/v1/token"){
    refreshes++;await Promise.resolve();
@@ -21,7 +21,7 @@ function fixture(){
   if(url.pathname!=="/rest/v1/reconversion_progress")return response(404,{});
   const uid=token&&token.slice(7),target=url.searchParams.get("user_id");
   if(![a,b].includes(uid)||target&&target!=="eq."+uid)return response(403,{});
-  if(init.method==="GET"){if(failRead)throw Error("synthetic offline read");return response(200,rows.has(uid)?[rows.get(uid)]:[]);}
+  if(init.method==="GET"){if(failRead)throw Error("synthetic offline read");return response(200,url.searchParams.get("select")==="revision"?(headOverride!==undefined?headOverride:rows.has(uid)?[{revision:rows.get(uid).revision}]:[]):rows.has(uid)?[rows.get(uid)]:[]);}
   let current=rows.get(uid);
   if(init.method==="POST"){
    if(body.user_id!==uid)return response(403,{});if(current)return response(409,{});current={revision:1,payload:body.payload};
@@ -36,7 +36,7 @@ function fixture(){
  const sandbox={URL,crypto:webcrypto,TextEncoder,TextDecoder,fetch,Date:class extends Date{static now(){return Date.now()+clock;}},btoa:s=>Buffer.from(s,"binary").toString("base64"),atob:s=>Buffer.from(s,"base64").toString("binary")};
  vm.createContext(sandbox);vm.runInContext(fs.readFileSync(require("node:path").join(__dirname,"../cloud-transport.js"),"utf8")+"\nglobalThis.T=RC_CLOUD_TRANSPORT",sandbox);
  const T=sandbox.T,cfg={url:"https://fixture.supabase.co",key:"sb_publishable_fixture"};
- return {T,cfg,rows,calls,client:options=>T.create(cfg,options),lose:()=>{lost=true;},offline:v=>{failRead=v;},empty:()=>{empty=true;},expire:()=>{expired=true;},advance:()=>{clock+=3600001;},revoke:()=>{revoke=true;},anonymous:()=>{anon=true;},get refreshes(){return refreshes;}};
+ return {T,cfg,rows,calls,client:options=>T.create(cfg,options),headShape:v=>{headOverride=v;},lose:()=>{lost=true;},offline:v=>{failRead=v;},empty:()=>{empty=true;},expire:()=>{expired=true;},advance:()=>{clock+=3600001;},revoke:()=>{revoke=true;},anonymous:()=>{anon=true;},get refreshes(){return refreshes;}};
 }
 async function run(){
  await check("legacy AES-256-GCM envelope, independent IV/salt and tamper refusal",async()=>{
@@ -51,6 +51,14 @@ async function run(){
   const pending=T.seal(data,phrase);data.progress.dns="mastered";const sealed=await pending;
   assert.equal((await T.open(sealed,phrase)).progress.dns,"progress");await assert.rejects(T.seal({large:"x".repeat(2100000)},phrase));
   await assert.rejects(T.seal(JSON.parse('{"__proto__":{"polluted":true}}'),phrase));
+ });
+ await check("revision-only reads are scoped, small and reject malformed metadata",async()=>{
+  const f=fixture(),c=f.client();await c.verifyCode("a@example.invalid","123456");
+  assert.equal(await c.readRevision(),null);const p=await f.T.seal({marker:"metadata-fixture"},phrase);await c.write(p,null);
+  assert.equal(await c.readRevision(),1);assert.equal(f.calls.at(-1).select,"revision");
+  for(const malformed of [{},null,[{revision:null}],[{revision:1,payload:p}],[{revision:1},{revision:2}],[{revision:Number.MAX_SAFE_INTEGER}]]){
+   f.headShape(malformed);await assert.rejects(c.readRevision(),/Révision cloud invalide/);
+  }
  });
  await check("lost upload response is reconciled by exact ciphertext and revision",async()=>{
   const f=fixture(),c=f.client();await c.verifyCode("a@example.invalid","123456");const payload=await f.T.seal({marker:"A"},phrase);
