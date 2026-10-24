@@ -71,7 +71,8 @@ function fixture() {
     async pending() { assert(timeout, "concurrent edits must schedule another attempt, including first backup"); const run = timeout; timeout = null; await run(); },
     failWrite: () => { failWrite = true; }, failRestore: () => { failRestore = true; },
     get local() { return state.progress.dns; }, get remoteValue() { return row && row.payload.snapshot.progress.dns; },
-    get html() { return node("#rc-sync").innerHTML; }, get writes() { return writes; }
+    corruptJournal() { for(const key of store.keys())if(key.startsWith("reconversion-control.cloud.sync.v1:"))store.set(key,JSON.stringify({v:99,retained:"future-journal"})); },
+    get html() { return node("#rc-sync").innerHTML; }, get writes() { return writes; }, get journal() { return Array.from(store.values()).join("\n"); }
   };
 }
 
@@ -120,6 +121,10 @@ async function run() {
     assert.doesNotMatch(f.html, /À jour sur cet appareil et dans le cloud/, "a refused restoration must never acknowledge synchronization success");
     f.edit("local-after-failed-restore"); await f.tick();
     assert.equal(f.local, "local-after-failed-restore"); assert.match(f.html, /Conflit détecté/);
+  });
+  await check("future durable journal is never overwritten or treated as synchronized", async () => {
+    const f=fixture();await f.prepare("automatic");f.corruptJournal();const before=f.journal,writes=f.writes.length;f.edit("pending-after-future-journal");await f.tick();
+    assert.equal(f.journal,before);assert.equal(f.writes.length,writes);assert.match(f.html,/incompatible/);assert.doesNotMatch(f.html,/À jour sur cet appareil et dans le cloud/);
   });
   console.log("N03 offline regression cases: " + count + "/" + (count + failures.length) + " passed; no network or real data.");
   if (failures.length) throw new AggregateError(failures, failures.length + " N03 regression cases failed");

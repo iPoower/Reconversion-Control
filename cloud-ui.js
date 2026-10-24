@@ -13,7 +13,7 @@ const RC_CLOUD_UI = (() => {
  function local(){return T().serialize(env.snapshot());}
  function validate(data){return env.validate?env.validate(data):data;}
  function guard(ticket){if(ticket!==epoch)throw Error("Opération annulée");}
- function persist(next){save(scope,next);meta=next;}
+ function persist(next){if(next.v!==1)throw Error("Journal cloud incompatible : écriture refusée");save(scope,next);meta=next;}
  function dirty(){return local()!==baseline;}
  function delayed(){if(dirty())schedule();}
  function uploadStatus(message){return message+(dirty()?" De nouvelles modifications locales restent à synchroniser.":"");}
@@ -46,6 +46,7 @@ const RC_CLOUD_UI = (() => {
  async function start(){
   if(busy)return;busy=true;const ticket=++epoch;
   try{
+   local(); // Read-only/stale tabs must not rotate a shared authentication session.
    const mail=document.querySelector("#rc-sync-email").value.trim();
    cfg=T().config(document.querySelector("#rc-sync-url").value,document.querySelector("#rc-sync-key").value);
    remember=!!document.querySelector("#rc-sync-remember").checked;save(CONFIG,cfg);
@@ -76,6 +77,7 @@ const RC_CLOUD_UI = (() => {
   await flush(ticket);delayed();
  }
  async function inspect(ticket){
+  loadMeta();
   let latest=await client.read();guard(ticket);
   if(meta.pending){
    const next=meta.pending.expected===null?1:meta.pending.expected+1;
@@ -104,6 +106,7 @@ const RC_CLOUD_UI = (() => {
  async function confirmOtp(){
   if(busy)return;busy=true;const ticket=epoch;
   try{
+   local();
    phrase=document.querySelector("#rc-sync-phrase").value;
    if(phrase.length<12||phrase.length>1024)throw Error("Phrase secrète : 12 à 1024 caractères.");
    user=await client.verifyCode(email,document.querySelector("#rc-sync-otp").value.trim());guard(ticket);loadMeta();await inspect(ticket);
@@ -113,6 +116,7 @@ const RC_CLOUD_UI = (() => {
  async function unlock(){
   if(busy)return;busy=true;const ticket=++epoch;
   try{
+   local();
    phrase=document.querySelector("#rc-sync-phrase").value;remember=true;
    const saved=load(SESSION);if(!saved||saved.project!==cfg.url)throw Error("Session mémorisée absente ou incompatible");
    const session=await T().openSession(saved.payload,phrase);guard(ticket);client=makeClient(ticket);
@@ -142,6 +146,7 @@ const RC_CLOUD_UI = (() => {
   if(!navigator.onLine){warn("Hors connexion · progression locale conservée, reprise à la reconnexion.");return;}
   busy=true;const ticket=epoch;
   try{
+   loadMeta();
    if(mode!=="active"){await inspect(ticket);return;}
    if(meta.pending)await flush(ticket);
    const latest=await client.read();guard(ticket);
