@@ -14,6 +14,27 @@ async function run(){
   const migrations=fs.readdirSync(path.join(root,"supabase/migrations")).filter(n=>n.endsWith("_encrypted_cloud_history.sql"));assert.equal(migrations.length,1);
   await db.exec(fs.readFileSync(path.join(root,"supabase/migrations",migrations[0]),"utf8"));
   await check("authenticated owner can create and read encrypted progress",async()=>{await owner(a);await db.query("insert into public.reconversion_progress(user_id,payload) values($1,$2)",[a,payload]);assert.equal((await db.query("select * from public.reconversion_progress")).rows.length,1);});
+  await check("malformed encrypted envelopes (including kdf:null) fail closed",async()=>{
+   await owner(a);
+   const failures=[
+    ...["kdf","v","iterations","salt","iv","ciphertext"].map(k=>({...payload,[k]:null})),
+    {...payload,kdf:"PBKDF2-SHA1"},
+    {...payload,ciphertext:""},
+    {...payload,unexpected:true},
+   ];
+   for(const malformed of failures){
+    await assert.rejects(
+     db.query("update public.reconversion_progress set revision=2,payload=$1 where user_id=$2",[malformed,a]),
+     e=>e.code==="23514",
+     "An invalid envelope must never pass the SQL constraint"
+    );
+   }
+   const head=await db.query("select revision,payload from public.reconversion_progress where user_id=$1",[a]);
+   assert.equal(head.rows[0].revision,1);
+   assert.deepEqual(head.rows[0].payload,payload);
+   const history=await db.query("select revision from public.reconversion_progress_history where user_id=$1",[a]);
+   assert.deepEqual(history.rows.map(x=>x.revision),[1]);
+  });
   await check("second user cannot see or change first user's progress/history",async()=>{
    await owner(b);assert.equal((await db.query("select * from public.reconversion_progress")).rows.length,0);assert.equal((await db.query("select * from public.reconversion_progress_history")).rows.length,0);
    assert.equal((await db.query("update public.reconversion_progress set revision=2 returning *")).rows.length,0);
