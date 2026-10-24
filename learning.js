@@ -309,17 +309,71 @@ RC_SUPPORTS.push.apply(RC_SUPPORTS, [
     "status": "public",
     "url": "https://developers.google.com/workspace/drive/api/guides/properties",
     "coverage": "properties et appProperties ; limite UTF-8 clé et valeur, accès authentifié aux propriétés privées."
+  },
+  {
+    "id": "public-rc-drive-runtime-20261024",
+    "title": "Race Control · raccord coffre, file durable et Drive",
+    "format": "Code et documentation publics",
+    "version": "c9c8339 · relu le 24/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/blob/c9c833944f7da45d3a74394c5bcd6040582e302b/docs/drive-runtime.md",
+    "coverage": "Raccord #229 fusionné, copie avant fusion, transport direct et activation réelle distincte des tests simulés."
+  },
+  {
+    "id": "public-cv-drive-connection-20261024",
+    "title": "Control Vault · espace Drive opaque distinct de la démo",
+    "format": "Code et documentation publics",
+    "version": "25c2992 · relu le 24/10/2026",
+    "status": "public",
+    "url": "https://github.com/iPoower/Control-Vault/blob/25c299272d7ac4aa8a0c8f9f3b6d2e93b305f809/docs/DRIVE_CONNECTION.md",
+    "coverage": "Raccord #14 fusionné ; rôle opaque, configuration absente par défaut et limites des tests Google fictifs."
+  },
+  {
+    "id": "public-progress-snapshot-20261024",
+    "title": "Reconversion Control · N03, instantané avant envoi",
+    "format": "PR fusionnée",
+    "version": "#24 · 23/10/2026 · relue le 24/10",
+    "status": "public",
+    "url": "https://github.com/iPoower/Reconversion-Control/pull/24",
+    "coverage": "Capture indépendante avant await, acquittement des seuls octets transmis, quinze cas fictifs dont la première sauvegarde."
+  },
+  {
+    "id": "public-pages-provenance-20261024",
+    "title": "Reconversion Control · N02, provenance Pages",
+    "format": "PR fusionnée",
+    "version": "#25 · 23/10/2026 · relue le 24/10",
+    "status": "public",
+    "url": "https://github.com/iPoower/Reconversion-Control/pull/25",
+    "coverage": "Chemin manuel supprimé ; validation du SHA, de la fusion et de l’artefact du run, puis vérification des fichiers servis."
+  },
+  {
+    "id": "public-gis-token-20261024",
+    "title": "Google Identity Services · jeton et action utilisateur",
+    "format": "Documentation officielle",
+    "version": "Consultée le 24/10/2026",
+    "status": "public",
+    "url": "https://developers.google.com/identity/oauth2/web/guides/use-token-model",
+    "coverage": "Modèle de jeton navigateur, consentement volontaire, expiration et nouvelle demande par geste utilisateur."
+  },
+  {
+    "id": "public-release-20261024",
+    "title": "Race Control · manifeste public prod-159",
+    "format": "Artefact public figé",
+    "version": "prod-159 · c9c8339 · HTTP relu le 24/10",
+    "status": "public",
+    "url": "https://github.com/iPoower/iPoower/blob/7cf2ef91f4ee3acfb9e0c6577edb4d24ae565ec2/race-control/version.json",
+    "coverage": "Manifeste GitHub Pages prod-159 et build 31f687d0433d observés ; cette preuve ne valide pas une autre origine ou Google."
   }
 ]);
 const RC_PROJECTS = [
   {
     "id": "race-control",
     "title": "Race Control",
-    "status": "Application publiée · instantané prod-157 du 22/10/2026",
+    "status": "Application publiée · manifeste prod-159 du 23/10/2026",
     "summary": "Cockpit météo et pneus, Twin Garage, LIVE ROUTE et Journey Replay. Simulation, GPS accepté et prévisions restent explicitement distingués.",
     "skills": "Front-end · UX mobile · tests · DevSecOps · confidentialité",
-    "limit": "Simulation Chromium/WebKit ; aucun essai sur iPhone physique revendiqué. Origine partagée et session ouverte : durcissement à poursuivre. Relecture HTTP du 23/10 : prod-157 reste servi ; les moteurs D1/D2/D3 fusionnés sur main sont préparés hors du build, sans synchronisation automatique publiée.",
-    "url": "https://ipoower.github.io/iPoower/race-control/",
+    "limit": "Manifestes et cas historiques conservés dans les sources. La lecture HTTP GitHub Pages du 24/10 retrouve prod-159, source c9c8339 et build 31f687d0433d. Le raccord Drive #229 est fusionné ; configuration, Google réel, restauration isolée et iPhone physique ne sont pas validés par les tests simulés. L’identité HTTP Cloudflare n’est pas déduite de cette seule preuve GitHub Pages.",
+    "url": "https://race-control-ipoower.pages.dev/",
     "repository": "https://github.com/iPoower/iPoower",
     "sources": [
       "public-ux93",
@@ -331,7 +385,9 @@ const RC_PROJECTS = [
       "public-release-20261022",
       "public-sync-revisions-20261023",
       "public-sync-outbox-20261023",
-      "public-ci-run-20261023"
+      "public-ci-run-20261023",
+      "public-release-20261024",
+      "public-rc-drive-runtime-20261024"
     ],
     "lesson": "rc-33"
   },
@@ -339,25 +395,27 @@ const RC_PROJECTS = [
     "id": "reconversion-control",
     "title": "Reconversion Control",
     "status": "Application publiée · parcours enrichi",
-    "summary": "PWA bilingue, Daily Five, SRS adaptatif, cours, labs et preuves indépendants. Synchronisation chiffrée facultative. Projet 2027 : décision de formation et preuves datées.",
+    "summary": "PWA bilingue, Daily Five, SRS adaptatif, cours, labs et preuves indépendants. Synchronisation chiffrée facultative. Projet 2027 : décision de formation et preuves datées. N02 et N03 sont fusionnés : provenance Pages et conservation des saisies pendant les envois.",
     "skills": "PWA · JavaScript · pédagogie · validation · cloud opt-in",
     "limit": "Les statuts sont déclarés par l’utilisateur ; XP et lecture ne certifient pas une compétence. Aucun Supabase configuré par défaut.",
     "url": "https://ipoower.github.io/Reconversion-Control/",
     "repository": "https://github.com/iPoower/Reconversion-Control",
     "sources": [
       "public-reconversion",
-      "public-project-v3-20261021"
+      "public-project-v3-20261021",
+      "public-pages-provenance-20261024",
+      "public-progress-snapshot-20261024"
     ],
     "lesson": "rc-41"
   },
   {
     "id": "control-vault",
     "title": "Control Vault",
-    "status": "Phase 1 · prototype de démonstration, intégration préparée",
-    "summary": "Interface de coffre et moteurs de sérialisation, SHA-256, AES-GCM et relecture sur un Drive fictif en mémoire. Modules de paquets et transport préparés séparément, encore non branchés. Le transport des révisions A2 est préparé avec contrôles de métadonnées et tests sur réseau fictif.",
+    "status": "Phase 1 · prototype de démonstration, espace Drive raccordé",
+    "summary": "Les écrans historiques restent des démonstrations. Un espace Drive séparé est raccordé par la PR #14 fusionnée : archives chiffrées opaques, file durable, relecture et téléchargement vers Race Control.",
     "skills": "TypeScript · architecture · intégrité · scénarios d’échec",
-    "limit": "Données fictives recréées à l’ouverture, clé éphémère. Aucune connexion Google/Supabase ni sauvegarde personnelle durable active. Le lot 1 du 16/10 documente un contrat ; il n’active aucun transport réel. Les lots B1/B2 et les tests A1 fusionnés ne prouvent aucune connexion Drive réelle ; l’interface reste sur DemoDrive au contrôle du 22/10. Au 23/10, A2 est fusionné, sans raccord au produit : DemoDrive reste le fournisseur de l’interface. Les métadonnées de catalogue ne sont pas authentifiées par Vault.",
-    "url": "https://ipoower.github.io/Control-Vault/",
+    "limit": "Aucune connexion Google/Supabase ni sauvegarde personnelle durable active n’est attestée par cette revue. La configuration est absente par défaut. Les PR #16 à #19 restent ouvertes au contrôle du 24/10 ; leur code ne fait pas partie de main. Les tests du raccord emploient Google fictif ; la visibilité réelle, la restauration et l’iPhone physique restent à vérifier. Vault ne déchiffre pas et n’authentifie pas GCM.",
+    "url": "https://control-vault-ipoower.pages.dev/",
     "repository": "https://github.com/iPoower/Control-Vault",
     "sources": [
       "public-control-vault",
@@ -365,7 +423,9 @@ const RC_PROJECTS = [
       "public-vault-contract-20261021",
       "public-vault-transport-20261022",
       "public-vault-profile-20261022",
-      "public-vault-a2-20261023"
+      "public-vault-a2-20261023",
+      "public-cv-drive-connection-20261024",
+      "public-gis-token-20261024"
     ],
     "lesson": "rc-42"
   }

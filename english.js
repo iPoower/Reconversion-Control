@@ -382,9 +382,13 @@ Object.assign(RC_ENGLISH, {
       [
         "same origin",
         "même origine Web"
+      ],
+      [
+        "independent copy",
+        "copie indépendante"
       ]
     ],
-    "question": "Why do a long passphrase and a dedicated origin matter even with AES-GCM? Case dated 2026-10-22: what should happen when a merge cannot retain every observation? Case dated 2026-10-23: why must two different contents with the same revision ID block the plan?"
+    "question": "Why do a long passphrase and a dedicated origin matter even with AES-GCM? Case dated 2026-10-22: what should happen when a merge cannot retain every observation? Case dated 2026-10-23: why must two different contents with the same revision ID block the plan? Case dated 2026-10-24: why is a browser-local pre-merge copy not an independent recovery copy?"
   },
   "rc-38": {
     "title": "CI trust boundaries and complete reports",
@@ -432,9 +436,13 @@ Object.assign(RC_ENGLISH, {
       [
         "rollback",
         "retour arrière"
+      ],
+      [
+        "provenance",
+        "origine vérifiable de l’artefact"
       ]
     ],
-    "question": "What do you investigate when CI is green but the live build is still old? Case dated 2026-10-21: what can you claim if main is newer than the public manifest? Case dated 2026-10-22: how do you report one successful deployment and another failed verification? Case dated 2026-10-23: which version can you report when the tested main is newer than the matching manifest and live HTML?"
+    "question": "What do you investigate when CI is green but the live build is still old? Case dated 2026-10-21: what can you claim if main is newer than the public manifest? Case dated 2026-10-22: how do you report one successful deployment and another failed verification? Case dated 2026-10-23: which version can you report when the tested main is newer than the matching manifest and live HTML? Case dated 2026-10-24: why does exact artifact provenance not prove that Google backup is activated?"
   },
   "rc-40": {
     "title": "Privacy-preserving diagnostics",
@@ -482,9 +490,17 @@ Object.assign(RC_ENGLISH, {
       [
         "opt-in sync",
         "synchronisation volontaire"
+      ],
+      [
+        "snapshot",
+        "instantané indépendant"
+      ],
+      [
+        "acknowledgement",
+        "confirmation de l’état effectivement transmis"
       ]
     ],
-    "question": "Why should XP and a completed lesson not automatically validate a portfolio proof? Case dated 2026-10-21: which evidence is still needed after checking a qualification register?"
+    "question": "Why should XP and a completed lesson not automatically validate a portfolio proof? Case dated 2026-10-21: which evidence is still needed after checking a qualification register? Case dated 2026-10-24: A is uploading while the user creates B. Which snapshot may be acknowledged, including on the first backup?"
   },
   "rc-42": {
     "title": "An honest three-project portfolio",
@@ -507,9 +523,13 @@ Object.assign(RC_ENGLISH, {
       [
         "durable backup",
         "sauvegarde durable"
+      ],
+      [
+        "access token",
+        "jeton d’accès temporaire"
       ]
     ],
-    "question": "How would you pitch Control Vault while being clear about what remains to be built? Case dated 2026-10-21: why do schema tests not prove a live Google Drive connection? Case dated 2026-10-22: which evidence is missing before claiming a live cross-device sync? Case dated 2026-10-23: who authenticates the encrypted revision before any merge, and why are matching bytes insufficient?"
+    "question": "How would you pitch Control Vault while being clear about what remains to be built? Case dated 2026-10-21: why do schema tests not prove a live Google Drive connection? Case dated 2026-10-22: which evidence is missing before claiming a live cross-device sync? Case dated 2026-10-23: who authenticates the encrypted revision before any merge, and why are matching bytes insufficient? Case dated 2026-10-24: can Race Control use Drive without an open Vault window, and what must the user do when a GIS token expires?"
   }
 });
 
