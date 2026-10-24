@@ -157,33 +157,50 @@ var RC_CAREER_STAGES=[
 var defaults={view:"cockpit",section:"all",search:"",status:"all",progress:{},review:{},labs:{},proofs:{},labChecks:{},career:RC_PROJECT_PLAN.empty()};
 var labCheckMessage=Object.create(null);
 var storageUnavailable=false, storageFailures=Object.create(null), progressUnread=false, dailyUnread=false, detailOpener=null, detailId=null, libraryTabsScroll=0, detailRoutePushed=false, pendingRouteFocus=null;
-var atomicUnread=false, atomicSnapshot=atomicRead();
+var atomicUnread=false, storageWriter=false, storageWriterPending=true, storageConflict=false, atomicSnapshot=atomicRead();
 var state=load();
 var dailyState=dailyLoad();
 var syncBridge=null;
 function storageStatus(key,failed){if(failed)storageFailures[key]=true;else delete storageFailures[key];storageUnavailable=Object.keys(storageFailures).length>0;}
 function storageGet(key){try{var value=localStorage.getItem(key);storageStatus(key,false);return value;}catch(e){storageStatus(key,true);if(key===KEY)progressUnread=true;if(key===DAILY_KEY)dailyUnread=true;return null;}}
 /* NOESIS_ATOMIC_BEGIN: complete authoritative state under a single localStorage key. */
+var atomicBaseline;
 function atomicRead(){
  try{
   var raw=localStorage.getItem(ATOMIC_KEY);
+  atomicBaseline=raw;
   if(raw===null){storageStatus(ATOMIC_KEY,false);return null;}
   var parsed=JSON.parse(raw);
-  if(!plainObject(parsed)||parsed.version!==3||!plainObject(parsed.main)||!plainObject(parsed.daily)||!plainObject(parsed.daily.days))throw Error("Invalid atomic snapshot");
+  if(!plainObject(parsed)||parsed.version!==3||!plainObject(parsed.main)||!plainObject(parsed.main.progress)||!plainObject(parsed.main.review)||!plainObject(parsed.daily)||!plainObject(parsed.daily.days))throw Error("Invalid atomic snapshot");
   storageStatus(ATOMIC_KEY,false);return parsed;
  }catch(e){atomicUnread=true;storageStatus(ATOMIC_KEY,true);return null;}
 }
 function atomicCommit(nextMain,nextDaily){
+ if(!storageWriter||storageConflict){storageStatus("writer",true);storageNotice();throw Error("Autre onglet ou écriture concurrente : enregistrement refusé");}
  if(atomicUnread)throw Error("Instantané existant inaccessible : écriture refusée");
- if(!atomicSnapshot&&(progressUnread||dailyUnread))throw Error("Ancienne progression non lisible : migration suspendue");
+ if(progressUnread||dailyUnread)throw Error("Ancienne progression non lisible : migration suspendue");
  if(!plainObject(nextMain)||!plainObject(nextDaily)||!plainObject(nextDaily.days))throw Error("Instantané incomplet");
- var raw=JSON.stringify({version:3,main:nextMain,daily:nextDaily});
+ var raw=JSON.stringify({version:3,main:nextMain,daily:nextDaily}),previous=atomicBaseline,wrote=false;
  try{
+  if(localStorage.getItem(ATOMIC_KEY)!==atomicBaseline){storageConflict=true;throw Error("Instantané modifié dans un autre contexte");}
   localStorage.setItem(ATOMIC_KEY,raw);
+  wrote=true;
   if(localStorage.getItem(ATOMIC_KEY)!==raw)throw Error("Relecture différente");
+  atomicBaseline=raw;
   atomicSnapshot=JSON.parse(raw);
   storageStatus(ATOMIC_KEY,false);return true;
- }catch(e){storageStatus(ATOMIC_KEY,true);storageNotice();throw Error("Instantané non confirmé : "+String(e&&e.message||"stockage"));}
+ }catch(e){
+  if(wrote){
+   try{
+    var current=localStorage.getItem(ATOMIC_KEY);
+    if(current===raw&&previous!==null){
+     localStorage.setItem(ATOMIC_KEY,previous);
+     if(localStorage.getItem(ATOMIC_KEY)!==previous)throw Error("Retour non confirmé");
+    }else if(current!==previous)storageConflict=true;
+   }catch(rollbackError){storageConflict=true;}
+  }
+  storageStatus(ATOMIC_KEY,true);storageNotice();throw Error("Instantané non confirmé : "+String(e&&e.message||"stockage"));
+ }
 }
 function mirrorLegacy(nextMain,nextDaily){
  // Backwards-compatibility only; never authoritative if the atomic key exists.
@@ -192,6 +209,22 @@ function mirrorLegacy(nextMain,nextDaily){
  storageNotice();
 }
 /* NOESIS_ATOMIC_END */
+// One writer for this document lifetime; stale tabs never acquire a write lease silently.
+function acquireStorageWriter(){
+ if(!navigator.locks||typeof navigator.locks.request!=="function"){
+  storageWriterPending=false;storageStatus("writer",true);storageNotice();return;
+ }
+ navigator.locks.request("reconversion-control-writer-v3",{ifAvailable:true},function(lock){
+  storageWriterPending=false;storageWriter=!!lock;storageStatus("writer",!lock);storageNotice();
+  if(lock)return new Promise(function(release){
+   try{atomicCommit(state,dailyState);mirrorLegacy(state,dailyState);}catch(e){storageNotice();}
+   window.addEventListener("pagehide",function(){storageWriter=false;storageStatus("writer",true);release();},{once:true});
+  });
+ }).catch(function(){storageWriterPending=false;storageWriter=false;storageStatus("writer",true);storageNotice();});
+}
+window.addEventListener("storage",function(e){
+ if(e.key===ATOMIC_KEY&&e.newValue!==atomicBaseline){storageConflict=true;storageStatus("writer",true);storageNotice();}
+});
 function storageSet(key,value,replace){
  if(key===KEY||key===DAILY_KEY){
   if(!replace&&((key===KEY&&progressUnread)||(key===DAILY_KEY&&dailyUnread))){storageNotice();return false;}
@@ -206,7 +239,7 @@ function storageNotice(){
  var app=$("#app"), notice=$("#storage-notice");if(!app)return;
  if(!notice){notice=document.createElement("p");notice.id="storage-notice";notice.className="privacy";notice.setAttribute("role","status");app.parentNode.insertBefore(notice,app);}
  notice.hidden=!storageUnavailable;
- notice.textContent=storageUnavailable?"Le stockage local est indisponible. Tes changements restent en mémoire jusqu’à la fermeture de cette page. Exporte ta progression dans Sources & privacy pour la conserver.":"";
+ notice.textContent=storageUnavailable?(storageConflict||(!storageWriter&&!storageWriterPending)?"Enregistrement suspendu : un autre onglet utilise la progression, le stockage a changé ou le verrou navigateur est indisponible. Tes changements restent en mémoire. Exporte-les avant fermeture, puis ferme les autres onglets et recharge.":"Le stockage local est indisponible. Tes changements restent en mémoire jusqu’à la fermeture de cette page. Exporte ta progression dans Sources & privacy pour la conserver."):"";
 }
 function plainObject(value){return !!value&&Object.prototype.toString.call(value)==="[object Object]";}
 function validDate(value){return typeof value==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&!isNaN(Date.parse(value+"T12:00:00Z"))&&new Date(value+"T12:00:00Z").toISOString().slice(0,10)===value;}
@@ -268,7 +301,7 @@ function dailySanitize(value,strict){
  });
  return out;
 }
-function dailyLoad(){try{return dailySanitize(atomicSnapshot?atomicSnapshot.daily:JSON.parse(storageGet(DAILY_KEY)||"null"),false);}catch(e){return{days:{}};}}
+function dailyLoad(){try{var data=atomicSnapshot?atomicSnapshot.daily:JSON.parse(storageGet(DAILY_KEY)||"null");return data===null?{days:{}}:dailySanitize(data,true);}catch(e){dailyUnread=true;storageStatus(DAILY_KEY,true);return{days:{}};}}
 function dailySave(replace){if(storageSet(DAILY_KEY,JSON.stringify(dailyState),replace)&&syncBridge)syncBridge.changed();}
 function dailyRecord(date){return dailyState.days[date]||{};}
 function ensureDailyRecord(date,selection){
@@ -319,14 +352,14 @@ async function checkLabEvidence(id,file){
 
 function load(){
  var initial=JSON.parse(JSON.stringify(defaults));
- try{var j=atomicSnapshot?atomicSnapshot.main:JSON.parse(storageGet(KEY)||"null");if(!plainObject(j))return initial;
- var saved=progression({progress:plainObject(j.progress)?j.progress:{},review:plainObject(j.review)?j.review:{}},false);initial.progress=saved.progress;initial.review=saved.review;
+ try{var j=atomicSnapshot?atomicSnapshot.main:JSON.parse(storageGet(KEY)||"null");if(j===null)return initial;if(!plainObject(j)||(j.progress!==undefined&&!plainObject(j.progress))||(j.review!==undefined&&!plainObject(j.review)))throw Error("Invalid stored progression");
+ var saved=progression({progress:plainObject(j.progress)?j.progress:{},review:plainObject(j.review)?j.review:{}},!!atomicSnapshot);initial.progress=saved.progress;initial.review=saved.review;
  if(views.indexOf(j.view)>=0)initial.view=j.view;
  if(j.section==="all"||section(j.section))initial.section=j.section;
  if(typeof j.search==="string")initial.search=j.search;
  if(j.status==="all"||statuses.indexOf(j.status)>=0)initial.status=j.status;
- initial.labs=labStateSanitize(j.labs,false);initial.proofs=proofStateSanitize(j.proofs,false);initial.labChecks=labChecksSanitize(j.labChecks,false);initial.career=RC_PROJECT_PLAN.sanitize(j.career,false);
- }catch(e){}return initial;
+ initial.labs=labStateSanitize(j.labs,!!atomicSnapshot);initial.proofs=proofStateSanitize(j.proofs,!!atomicSnapshot);initial.labChecks=labChecksSanitize(j.labChecks,!!atomicSnapshot);initial.career=RC_PROJECT_PLAN.sanitize(j.career,!!atomicSnapshot);
+ }catch(e){progressUnread=true;storageStatus(KEY,true);}return initial;
 }
 function save(replace){if(storageSet(KEY,JSON.stringify(state),replace)&&syncBridge)syncBridge.changed();}
 function today(){var now=new Date();return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");}
@@ -629,11 +662,13 @@ function reviewRow(x){
 }
 
 function cloudSnapshot(){
+ if(!storageWriter||storageConflict||atomicUnread||storageUnavailable)throw Error("Progression locale non confirmée : synchronisation suspendue");
  return {version:2,progress:state.progress,review:state.review,labs:state.labs,proofs:state.proofs,labChecks:state.labChecks,dailyFive:dailyState,career:state.career||RC_PROJECT_PLAN.empty()};
 }
 function cloudRestore(o){
  if(!plainObject(o)||o.version!==2)throw Error("Sauvegarde cloud incompatible");
  var v=progression(o,true),labs=labStateSanitize(o.labs,true),proofs=proofStateSanitize(o.proofs,true),checks=labChecksSanitize(o.labChecks,true),daily=dailySanitize(o.dailyFive,true),career=o.career===undefined?state.career:RC_PROJECT_PLAN.sanitize(o.career,true);
+ atomicCommit(state,dailyState); // Establish a confirmed source before any replacing restore.
  var nextState={...state,progress:v.progress,review:v.review,labs:labs,proofs:proofs,labChecks:checks,career:career};
  atomicCommit(nextState,daily); // No live change or cloud acknowledgement until one verified commit.
  state=nextState;dailyState=daily;mirrorLegacy(state,dailyState);render();
@@ -735,7 +770,7 @@ function exportState(){
  var a=document.createElement("a"), url=URL.createObjectURL(blob);a.href=url;a.download="reconversion-control-progression.json";a.hidden=true;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},60000);
 }
 function readFile(file){return typeof file.text==="function"?file.text():new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(){resolve(reader.result);};reader.onerror=function(){reject(reader.error);};reader.readAsText(file);});}
-$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1&&j.version!==2))throw new Error("Invalid version");var imported=progression(j,true),importedLabs=labStateSanitize(j.labs,true),importedProofs=proofStateSanitize(j.proofs,true),importedChecks=labChecksSanitize(j.labChecks,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);var importedCareer=j.career===undefined?state.career:RC_PROJECT_PLAN.sanitize(j.career,true);var nextState={...state,career:importedCareer,progress:imported.progress,review:imported.review,labs:importedLabs,proofs:importedProofs,labChecks:importedChecks},nextDaily=importedDaily||dailyState;atomicCommit(nextState,nextDaily);state=nextState;dailyState=nextDaily;mirrorLegacy(state,dailyState);render();alert("Progression importée et instantané complet vérifié.");}catch(err){alert("Import refusé : fichier invalide ou stockage non confirmé. Vérifie la progression et la bannière de stockage.");}e.target.value="";};
+$("#importer").onchange=async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>1024*1024)throw new Error("Too large");var j=JSON.parse(await readFile(f));if(!plainObject(j)||(j.version!==undefined&&j.version!==1&&j.version!==2))throw new Error("Invalid version");var imported=progression(j,true),importedLabs=labStateSanitize(j.labs,true),importedProofs=proofStateSanitize(j.proofs,true),importedChecks=labChecksSanitize(j.labChecks,true),importedDaily=j.dailyFive===undefined?null:dailySanitize(j.dailyFive,true);var importedCareer=j.career===undefined?state.career:RC_PROJECT_PLAN.sanitize(j.career,true);atomicCommit(state,dailyState);var nextState={...state,career:importedCareer,progress:imported.progress,review:imported.review,labs:importedLabs,proofs:importedProofs,labChecks:importedChecks},nextDaily=importedDaily||dailyState;atomicCommit(nextState,nextDaily);state=nextState;dailyState=nextDaily;mirrorLegacy(state,dailyState);render();alert("Progression importée et instantané complet vérifié.");}catch(err){alert("Import refusé : fichier invalide ou stockage non confirmé. Vérifie la progression et la bannière de stockage.");}e.target.value="";};
 function afterDetailClose(){document.body.classList.remove("dialog-open");$("#dlg").classList.remove("dialog-fallback");var focus=detailOpener&&detailOpener.isConnected?detailOpener:$("#course-chapters [data-open=\""+detailId+"\"]")||$("[data-open=\""+detailId+"\"]")||$("#nav [aria-current]");if(focus)focus.focus({preventScroll:true});detailOpener=null;detailRoutePushed=false;}
 function physicalCloseDetail(){var dlg=$("#dlg");if(typeof dlg.close==="function")dlg.close();else{dlg.removeAttribute("open");afterDetailClose();}}
 function closeDetail(fromRoute){
@@ -759,6 +794,7 @@ if("serviceWorker" in navigator){
  navigator.serviceWorker.addEventListener("controllerchange",function(){if(hadController)showUpdateNotice();hadController=true;});
  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(function(reg){if(reg.waiting&&hadController)showUpdateNotice();}).catch(function(){});
 }
+acquireStorageWriter();
 syncBridge=RC_CLOUD_UI.attach({snapshot:cloudSnapshot,restore:cloudRestore,escape:esc});
 applyRoute();
 })();

@@ -39,6 +39,21 @@ async function run(){
   assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).main.progress.dns,CANON),"mastered");
   console.log("PASS NOESIS-RCC-001 "+(process.env.BROWSER||"chromium")+" successful import survives restart");
   await page.locator('#nav [data-view="privacy"]').click();
+  const rollbackBefore=await page.evaluate(k=>localStorage.getItem(k),CANON);
+  await page.evaluate(key=>{
+    const set=Storage.prototype.setItem,get=Storage.prototype.getItem;let writes=0,fail=false;
+    Storage.prototype.setItem=function(k,v){const r=set.call(this,k,v);if(k===key&&++writes===2)fail=true;return r;};
+    Storage.prototype.getItem=function(k){if(k===key&&fail){fail=false;throw Error("synthetic lost readback");}return get.call(this,k);};
+  },CANON);
+  const rollbackDialogs=dialogs.length;
+  await page.locator("#importer").setInputFiles({...buffer,buffer:Buffer.from(JSON.stringify({...fixture,progress:{dns:"learn"}}))});
+  await page.waitForFunction(()=>document.querySelector("#importer").value==="");
+  assert(dialogs.slice(rollbackDialogs).some(x=>/Import refusé/.test(x)),"lost readback must refuse success");
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),CANON),rollbackBefore,"rollback restores every previous byte");
+  await page.reload();
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),CANON),rollbackBefore,"confirmed rollback survives reload");
+  console.log("PASS NOESIS-RCC-001 "+(process.env.BROWSER||"chromium")+" lost readback restores complete prior state and rejects success");
+  await page.locator('#nav [data-view="privacy"]').click();
   await page.evaluate(key=>{
     const original=Storage.prototype.setItem;
     Storage.prototype.setItem=function(k,v){if(k===key)throw new DOMException("synthetic legacy quota","QuotaExceededError");return original.call(this,k,v);};
