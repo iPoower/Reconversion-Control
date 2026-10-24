@@ -20,10 +20,10 @@ const RC_CLOUD_TRANSPORT = (() => {
  function validRevision(n){return Number.isSafeInteger(n)&&n>0&&n<Number.MAX_SAFE_INTEGER;}
  function row(value){if(!value||!validRevision(value.revision)||!value.payload||typeof value.payload!=="object")throw Error("Réponse cloud invalide");bounded(value.payload);return value;}
  function create(cfg,options={}){
-  const base=config(cfg.url,cfg.key);let session=null,refreshing=null,generation=0;
+  const base=config(cfg.url,cfg.key);let session=null,refreshing=null,generation=0,sessionNeedsSave=false,saving=null;
   async function request(path,init={}){
    const headers={apikey:base.key,"Content-Type":"application/json",...(init.headers||{})};
-   if(init.secure)headers.Authorization="Bearer "+await access();
+   if(init.secure){const ticket=generation,token=await access();if(ticket!==generation)throw Error("Session annulée");headers.Authorization="Bearer "+token;}
    const ctrl=typeof AbortController!=="undefined"?new AbortController():null;
    const timeout=ctrl?setTimeout(()=>ctrl.abort(),20000):null;
    try{
@@ -37,19 +37,25 @@ const RC_CLOUD_TRANSPORT = (() => {
    }finally{if(timeout)clearTimeout(timeout);}
   }
   function validSession(s){return s&&s.project===base.url&&typeof s.access_token==="string"&&s.access_token.length>0&&s.access_token.length<16384&&typeof s.refresh_token==="string"&&s.refresh_token.length>0&&s.refresh_token.length<16384&&Number.isFinite(s.expires_at)&&typeof s.user==="string"&&/^[0-9a-f-]{36}$/i.test(s.user);}
+  async function persistSession(ticket){
+   if(!options.sessionChanged){sessionNeedsSave=false;return;}
+   if(!saving)saving=(async()=>{try{await options.sessionChanged({...session});if(ticket!==generation)throw Error("Session annulée");sessionNeedsSave=false;}finally{saving=null;}})();
+   return saving;
+  }
   async function accept(j,ticket){
    if(ticket!==generation)throw Error("Session annulée");
    if(!j||!j.user||j.user.is_anonymous===true)throw Error("Authentification non confirmée");
    const next={project:base.url,access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+Number(j.expires_in||3600)*1000,user:j.user.id};
    if(!validSession(next)||session&&session.user!==next.user)throw Error("Authentification non confirmée");
-   session=next;
-   if(options.sessionChanged)await options.sessionChanged({...next});
+   session=next;sessionNeedsSave=true;await persistSession(ticket);
    if(ticket!==generation)throw Error("Session annulée");
    return session.user;
   }
   async function sendCode(email){if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))throw Error("Adresse email incorrecte");await request("/auth/v1/otp",{method:"POST",body:{email,create_user:true}});}
   async function verifyCode(email,token){if(!/^\d{6,8}$/.test(token))throw Error("Code OTP attendu (6 à 8 chiffres)");const ticket=generation;return accept(await request("/auth/v1/verify",{method:"POST",body:{email,token,type:"email"}}),ticket);}
   async function access(){
+   if(!session)throw Error("Non connecté");
+   if(sessionNeedsSave)await persistSession(generation);
    if(!session)throw Error("Non connecté");
    if(Date.now()<session.expires_at-60000)return session.access_token;
    if(!refreshing){const ticket=generation,previous=session;refreshing=(async()=>{

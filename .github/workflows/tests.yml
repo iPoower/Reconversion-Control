@@ -20,6 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Tests de sécurité de publication
         run: python3 -m unittest discover -s tests -p 'test_pages*.py'
@@ -58,6 +59,9 @@ jobs:
         browser: [chromium, webkit]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 20
@@ -68,6 +72,7 @@ jobs:
         env:
           BROWSER: ${{ matrix.browser }}
         run: |
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           node tests/browser-runtime.spec.cjs
           node tests/browser-runtime.cjs
       - name: Syntaxe

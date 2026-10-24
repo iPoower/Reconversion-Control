@@ -82,6 +82,18 @@ async function run(){
   const f=fixture(),x=f.client();f.expire();await x.verifyCode("a@example.invalid","123456");f.revoke();await assert.rejects(x.read(),/expirée|révoquée/);assert.equal(f.rows.size,0);
   const g=fixture();g.anonymous();await assert.rejects(g.client().verifyCode("a@example.invalid","123456"),/Authentification/);
  });
+ await check("failed rotated-session persistence blocks requests until durable retry succeeds",async()=>{
+  const f=fixture();let fail=false,saves=0;
+  const c=f.client({sessionChanged:async()=>{saves++;if(fail)throw Error("synthetic session storage quota");}});
+  await c.verifyCode("a@example.invalid","123456");f.advance();fail=true;
+  await assert.rejects(c.read(),/storage quota/);await assert.rejects(c.read(),/storage quota/);
+  assert.equal(f.calls.filter(x=>x.path==="/rest/v1/reconversion_progress").length,0);
+  fail=false;assert.equal(await c.read(),null);assert.equal(f.refreshes,1);assert(saves>=4);
+ });
+ await check("logout while authentication yields cancels a not-yet-sent data request",async()=>{
+  const f=fixture(),c=f.client();await c.verifyCode("a@example.invalid","123456");const reading=c.read();await c.logout();await assert.rejects(reading,/annulée|Non connecté/);
+  assert.equal(f.calls.filter(x=>x.path==="/rest/v1/reconversion_progress").length,0);
+ });
  await check("explicit logout clears client; unsafe revisions and secret keys rejected",async()=>{
   const f=fixture(),c=f.client();await c.verifyCode("a@example.invalid","123456");await c.logout();await assert.rejects(c.read(),/Non connecté/);
   await c.verifyCode("a@example.invalid","123456");for(const revision of [-1,0,1.2,"1",Number.MAX_SAFE_INTEGER])await assert.rejects(c.write({},revision),/Révision/);

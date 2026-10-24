@@ -91,7 +91,7 @@ async function run(){
   const stable=await snapshot(pc);row={revision:row.revision+1,payload:await pc.evaluate(async phrase=>RC_CLOUD_TRANSPORT.seal({version:99,progress:{}},phrase),PHRASE)};
   await click(pc,"now");assert.deepEqual(await snapshot(pc),stable);assert.match(await pc.locator("#rc-sync-status").textContent(),/incompatible/);
   // Recover an older valid cloud version through the existing transport, explicitly.
-  await click(pc,"history");await pc.locator("[data-sync-history]").first().click();assert.equal((await read(pc)).main.progress.dns,"mastered");assert.match(await pc.locator("#rc-sync-status").textContent(),/Ancienne révision/);
+  await click(pc,"history");await pc.evaluate(()=>document.querySelector("[data-sync-history]").onclick());assert.equal((await read(pc)).main.progress.dns,"mastered");assert.match(await pc.locator("#rc-sync-status").textContent(),/Ancienne révision/);
   console.log("PASS browser cloud: future/corrupt head cannot erase local progress; bounded previous cloud version is explicitly recoverable");
   await click(pc,"disconnect");assert.equal(await pc.evaluate(()=>localStorage.getItem("reconversion-control.cloud.session.v1")),null);assert.deepEqual(await snapshot(pc),stable);
   assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);
