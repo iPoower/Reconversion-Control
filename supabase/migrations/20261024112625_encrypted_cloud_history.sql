@@ -24,7 +24,8 @@ create policy "progress_update_self" on public.reconversion_progress for update 
 -- New writes must be bounded opaque envelopes; existing rows need explicit validation.
 alter table public.reconversion_progress add constraint progress_safe_revision
  check (revision between 1 and 9007199254740990) not valid;
-alter table public.reconversion_progress add constraint progress_encrypted_envelope check (
+-- SQL CHECK accepts UNKNOWN; require a definite TRUE so JSON null cannot pass.
+alter table public.reconversion_progress add constraint progress_encrypted_envelope check ((
  jsonb_typeof(payload)='object'
  and payload ?& array['v','kdf','iterations','salt','iv','ciphertext']
  and (payload - array['v','kdf','iterations','salt','iv','ciphertext'])='{}'::jsonb
@@ -34,7 +35,7 @@ alter table public.reconversion_progress add constraint progress_encrypted_envel
  and jsonb_typeof(payload->'ciphertext')='string' and length(payload->>'ciphertext') between 24 and 2796204
  and (payload->>'ciphertext') ~ '^[A-Za-z0-9+/]+={0,2}$'
  and octet_length(payload::text)<=2800000
-) not valid;
+) is true) not valid;
 
 create schema if not exists rc_backup_private;
 revoke all on schema rc_backup_private from public, anon, authenticated;
