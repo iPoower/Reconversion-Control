@@ -46,11 +46,12 @@ async function run(browser, server) {
         await page.locator('#nav [data-view="privacy"]').click();
       };
       const open = payload => page.evaluate(({payload, phrase}) => RC_CLOUD_TRANSPORT.open(payload, phrase), {payload, phrase: PHRASE});
-      if (kind === "choice") row = {revision: 4, payload: await page.evaluate(phrase => RC_CLOUD_TRANSPORT.seal({version: 2, progress: {dns: "learn"}, review: {}, labs: {}, proofs: {}, labChecks: {}, dailyFive: {}, career: RC_PROJECT_PLAN.empty()}, phrase), PHRASE)};
-      if (kind !== "first") await page.evaluate(() => document.querySelector("#rc-sync-verify").onclick());
+      if (kind === "choice") row = {revision: 4, payload: await page.evaluate(phrase => RC_CLOUD_TRANSPORT.seal({version: 2, progress: {dns: "learn"}, review: {}, labs: {}, proofs: {}, labChecks: {}, dailyFive: {days:{}}, career: RC_PROJECT_PLAN.empty()}, phrase), PHRASE)};
+      await page.evaluate(() => document.querySelector("#rc-sync-verify").onclick());
+      if(kind === "automatic") { page.once("dialog", dialog => dialog.accept()); await page.evaluate(() => document.querySelector("#rc-sync-create").onclick()); }
       if (kind !== "first") await edit("progress");
       const held = {started: deferred(), release: deferred()}; gate = held;
-      const selector = "#rc-sync-" + (kind === "first" ? "verify" : kind === "choice" ? "push" : "now");
+      const selector = "#rc-sync-" + (kind === "first" ? "create" : kind === "choice" ? "push" : "now");
       page.on("dialog", dialog => dialog.accept());
       const sending = page.evaluate(selector => document.querySelector(selector).onclick(), selector);
       let deadline;

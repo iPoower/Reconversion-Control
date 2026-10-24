@@ -9,6 +9,7 @@
     "test:sw": "node tests/sw.spec.cjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
     "playwright": "1.63.0"
   }
 }

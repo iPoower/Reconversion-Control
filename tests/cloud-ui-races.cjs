@@ -21,7 +21,7 @@ function fixture() {
     if (gate) { gates.delete(stage); gate.started.resolve(); await gate.release.promise; }
   }
   const client = {
-    sendCode: async () => {}, verifyCode: async () => {}, logout: () => {},
+    sendCode: async () => {}, verifyCode: async () => "00000000-0000-4000-8000-000000000001", logout: () => {},
     async read() { const result = copy(row); await wait("read"); return result; },
     async write(payload, revision) {
       await wait("write");
@@ -31,12 +31,16 @@ function fixture() {
       writes.push(copy(row)); return row.revision;
     }
   };
+  const store = new Map();
   const sandbox = {
+    localStorage: {getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},
+    Date,
     navigator: {onLine: true}, document: {querySelector: node}, confirm: () => true,
     setInterval: callback => { interval = callback; return 1; }, clearInterval: () => { interval = null; },
     setTimeout: callback => { timeout = callback; return 2; }, clearTimeout: () => { timeout = null; },
     RC_CLOUD_TRANSPORT: {
-      create: () => client,
+      config: (url,key)=>({url,key}), create: () => client,
+      serialize: JSON.stringify, fingerprint: async s => require("node:crypto").createHash("sha256").update(s).digest("hex"),
       // Serialize AFTER the wait, just as real seal() does after its asynchronous KDF.
       async seal(snapshot) { await wait("seal"); return {snapshot: copy(snapshot)}; },
       async open(payload) { await wait("open"); return copy(payload.snapshot); }
@@ -56,9 +60,10 @@ function fixture() {
     async prepare(kind) {
       if (kind === "choice") row = {revision: 4, payload: {snapshot: {version: 2, progress: {dns: "remote-fixture"}}}};
       await click("request");
-      if (kind !== "first") await click("verify");
+      await click("verify");
+      if(kind === "automatic") await click("create");
     },
-    send: kind => kind === "first" ? click("verify") : kind === "choice" ? click("push") : interval(),
+    send: kind => kind === "first" ? click("create") : kind === "choice" ? click("push") : interval(),
     edit(value) { state.progress.dns = value; api.changed(); },
     pause(stage) { const gate = {started: deferred(), release: deferred()}; gates.set(stage, gate); return {started: gate.started.promise, release: gate.release.resolve}; },
     remote(value) { row = {revision: (row ? row.revision : 0) + 1, payload: {snapshot: {version: 2, progress: {dns: value}}}}; },
@@ -66,7 +71,8 @@ function fixture() {
     async pending() { assert(timeout, "concurrent edits must schedule another attempt, including first backup"); const run = timeout; timeout = null; await run(); },
     failWrite: () => { failWrite = true; }, failRestore: () => { failRestore = true; },
     get local() { return state.progress.dns; }, get remoteValue() { return row && row.payload.snapshot.progress.dns; },
-    get html() { return node("#rc-sync").innerHTML; }, get writes() { return writes; }
+    corruptJournal() { for(const key of store.keys())if(key.startsWith("reconversion-control.cloud.sync.v1:"))store.set(key,JSON.stringify({v:99,retained:"future-journal"})); },
+    get html() { return node("#rc-sync").innerHTML; }, get writes() { return writes; }, get journal() { return Array.from(store.values()).join("\n"); }
   };
 }
 
@@ -116,8 +122,12 @@ async function run() {
     f.edit("local-after-failed-restore"); await f.tick();
     assert.equal(f.local, "local-after-failed-restore"); assert.match(f.html, /Conflit détecté/);
   });
+  await check("future durable journal is never overwritten or treated as synchronized", async () => {
+    const f=fixture();await f.prepare("automatic");f.corruptJournal();const before=f.journal,writes=f.writes.length;f.edit("pending-after-future-journal");await f.tick();
+    assert.equal(f.journal,before);assert.equal(f.writes.length,writes);assert.match(f.html,/incompatible/);assert.doesNotMatch(f.html,/À jour sur cet appareil et dans le cloud/);
+  });
   console.log("N03 offline regression cases: " + count + "/" + (count + failures.length) + " passed; no network or real data.");
   if (failures.length) throw new AggregateError(failures, failures.length + " N03 regression cases failed");
 }
 module.exports = {run};
-if (require.main === module) run().catch(error => { console.error(error); process.exitCode = 1; });
+if (require.main === module) { const watchdog=setTimeout(()=>{throw Error("N03 suite stalled");},30000); run().catch(error => { console.error(error); process.exitCode = 1; }).finally(()=>clearTimeout(watchdog)); }

@@ -121,6 +121,7 @@ async function main() {
     passed("five-minute daily quest completes three playful rounds, persists XP and updates the cockpit");
 
     const tamperedDaily = await open();
+    await tamperedDaily.page.waitForFunction(key=>localStorage.getItem(key)!==null,ATOMIC_KEY);
     await tamperedDaily.page.evaluate(({key,value})=>{const snapshot=JSON.parse(localStorage.getItem(key));snapshot.daily=value;localStorage.setItem(key,JSON.stringify(snapshot));},{key:ATOMIC_KEY,value:{days:{"2026-10-04":{completed:true,xp:200}}}});
     await tamperedDaily.page.reload();
     await nav(tamperedDaily.page,"daily");
@@ -137,6 +138,7 @@ async function main() {
     assert.equal(dueRecord.sessionId,"d01");assert.equal(dueRecord.reason,"Révision due");
 
     const adaptiveError = await open({view:"daily",section:"all",search:"",status:"all",progress:{},review:{}});
+    await adaptiveError.page.waitForFunction(key=>localStorage.getItem(key)!==null,ATOMIC_KEY);
     await adaptiveError.page.evaluate(key=>{const d=new Date();d.setDate(d.getDate()-1);const date=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");const snapshot=JSON.parse(localStorage.getItem(key));snapshot.daily={days:{[date]:{sessionId:"d03",reason:"Rotation",quizChoice:0,quizCorrect:false}}};localStorage.setItem(key,JSON.stringify(snapshot));},ATOMIC_KEY);
     await adaptiveError.page.reload();
     assert.equal(await adaptiveError.page.locator(".daily-title-card h2").textContent(),"AuthN ou AuthZ ?");

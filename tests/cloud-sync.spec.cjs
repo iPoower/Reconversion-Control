@@ -33,7 +33,7 @@ async function run(){
  const original={version:2,career:{profile:{diploma:"Diplôme fictif"},schools:{jedha:{answers:{title:{status:"received",evidence:"Preuve fictive",date:"2026-10-15"}}}}},progress:{dns:"mastered"},dailyFive:{days:{"2026-10-08":{xp:20}}}};
  const enc=await T.seal(original,"phrase secrète assez longue");
  assert.equal(enc.v,1);assert(enc.ciphertext.length>20);
- const plain=await T.open(enc,"phrase secrète assez longue");assert.equal(JSON.stringify(plain),JSON.stringify(original));
+ const plain=await T.open(enc,"phrase secrète assez longue");assert.deepEqual(JSON.parse(JSON.stringify(plain)),original);
  await assert.rejects(T.open(enc,"mauvaise phrase secrète"),/Déchiffrement impossible/);
  const a=T.create(cfg),b=T.create(cfg);
  await a.sendCode("test@example.com");
@@ -43,10 +43,12 @@ async function run(){
  assert.equal(await a.write(enc,null),1);
  assert.equal((await b.read()).revision,1);
  assert.equal(await a.write(enc,1),2);
- await assert.rejects(b.write(enc,1),/Conflit/);
+ const other=await T.seal({...original,progress:{dns:"progress"}},"phrase secrète assez longue");
+ await assert.rejects(b.write(other,1),/Conflit/);
  assert.equal((await b.read()).revision,2);
  a.logout();await assert.rejects(a.read(),/Non connecté/);
  console.log("PASS: crypto AES-GCM, rejet mauvaises phrases, OTP, conflit de révision, refus de clé secrète.");
  await require("./cloud-ui-races.cjs").run();
 }
-run().catch(e=>{console.error(e);process.exitCode=1;});
+const watchdog=setTimeout(()=>{throw Error("Cloud suite stalled");},30000);
+run().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>clearTimeout(watchdog));
