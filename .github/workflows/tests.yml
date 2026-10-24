@@ -72,7 +72,7 @@ jobs:
         env:
           BROWSER: ${{ matrix.browser }}
         run: |
-          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git -c safe.directory="$GITHUB_WORKSPACE" rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           node tests/browser-runtime.spec.cjs
           node tests/browser-runtime.cjs
       - name: Syntaxe

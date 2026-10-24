@@ -57,13 +57,21 @@ async function run(){
   await click(phone,"take");assert.deepEqual(await snapshot(phone),initial);
   // Actual page close/reopen discards memory/keys and retains browser Storage.
   const phoneContext=phone.context();await phone.close();const reopened=await page(phoneContext),beforeOTP=methods.filter(x=>x.includes("/verify")).length;
-  assert(await reopened.locator("#rc-sync-unlock").isVisible());await unlock(reopened);assert.equal(methods.filter(x=>x.includes("/verify")).length,beforeOTP);
+  assert(await reopened.locator("#rc-sync-unlock").isVisible());
+  const noNetworkBefore=methods.length;await reopened.locator("#rc-sync-phrase").fill("wrong-fictional-passphrase");await click(reopened,"unlock");assert.match(await reopened.locator("#rc-sync-status").textContent(),/refusé/);assert.equal(methods.length,noNetworkBefore);assert.deepEqual(await snapshot(reopened),initial);
+  await unlock(reopened);assert.equal(methods.filter(x=>x.includes("/verify")).length,beforeOTP);
   assert.match(await reopened.locator("#rc-sync-status").textContent(),/Restauration vérifiée après réouverture/);assert.deepEqual(await snapshot(reopened),initial);
   const persistent=await reopened.evaluate(()=>Object.keys(localStorage).filter(k=>k.includes("cloud")).map(k=>localStorage.getItem(k)).join("\n"));
   assert(!persistent.includes(PHRASE));assert(!persistent.includes("test-access"));assert(!persistent.includes("test-refresh"));
   console.log("PASS browser cloud: second device complete restore; page close/reopen; encrypted session resumes without OTP, phrase still required");
   await edit(reopened,"progress");await click(reopened,"now");await click(pc,"now");assert.deepEqual(await snapshot(pc),await snapshot(reopened));
   console.log("PASS browser cloud: reverse phone-to-PC synchronization through independent profiles");
+  const offlineWrites=writes;await reopened.context().setOffline(true);await edit(reopened,"mastered");await click(reopened,"now");
+  assert.match(await reopened.locator("#rc-sync-status").textContent(),/Hors connexion/);assert.equal(writes,offlineWrites);assert.equal((await read(reopened)).main.progress.dns,"mastered");
+  await reopened.context().setOffline(false);await click(reopened,"now");
+  await reopened.waitForFunction(()=>/Modifications locales sauvegardées|À jour sur cet appareil/.test(document.querySelector("#rc-sync-status").textContent));
+  await click(pc,"now");assert.deepEqual(await snapshot(pc),await snapshot(reopened));
+  console.log("PASS browser cloud: offline edits remain local and synchronize on reconnect");
   // Lost mutation response AND failed reconciliation. Outbox must survive a restart.
   await clearDebounce(pc);await edit(pc,"learn");lose=true;failReads=false;
   // Intercept only read-after-mutation by setting failReads when write reaches its gate.
@@ -87,11 +95,22 @@ async function run(){
   assert.match(await pc.locator("#rc-sync-status").textContent(),/non confirmée|non enregistrées/);
   await pc.reload();await unlock(pc);assert.equal((await read(pc)).main.progress.dns,"mastered");
   console.log("PASS browser cloud: failed local write blocks transmission and preserves last confirmed progress across reload");
+  const beforeJournal=writes;await pc.evaluate(()=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,v){if(key.startsWith("reconversion-control.cloud.sync.v1:"))throw new DOMException("synthetic journal quota","QuotaExceededError");return original.call(this,key,v);};});
+  await edit(pc,"progress");await click(pc,"now");assert.equal(writes,beforeJournal);assert.match(await pc.locator("#rc-sync-status").textContent(),/en attente/);
+  await pc.reload();await unlock(pc);await click(pc,"now");await pc.waitForFunction(()=>/sauvegardées|À jour sur cet appareil/.test(document.querySelector("#rc-sync-status").textContent));
+  assert.equal((await read(pc)).main.progress.dns,"progress");
+  console.log("PASS browser cloud: durable journal failure blocks upload; saved local edit resumes after reload");
+  // Valid but empty higher revision still requires an explicit source decision.
+  const beforeEmpty=await snapshot(pc);
+  row={revision:row.revision+1,payload:await pc.evaluate(async phrase=>RC_CLOUD_TRANSPORT.seal({version:2,progress:{},review:{},labs:{},proofs:{},labChecks:{},dailyFive:{days:{}},career:RC_PROJECT_PLAN.empty()},phrase),PHRASE)};
+  await click(pc,"now");assert.deepEqual(await snapshot(pc),beforeEmpty);assert.match(await pc.locator("#rc-sync-status").textContent(),/vide nécessite une sélection explicite/);
+  await click(pc,"push");
+  console.log("PASS browser cloud: an empty higher revision cannot silently replace a complete local snapshot");
   // Future remote format is rejected without writes, including a new client.
   const stable=await snapshot(pc);row={revision:row.revision+1,payload:await pc.evaluate(async phrase=>RC_CLOUD_TRANSPORT.seal({version:99,progress:{}},phrase),PHRASE)};
   await click(pc,"now");assert.deepEqual(await snapshot(pc),stable);assert.match(await pc.locator("#rc-sync-status").textContent(),/incompatible/);
   // Recover an older valid cloud version through the existing transport, explicitly.
-  await click(pc,"history");await pc.evaluate(()=>document.querySelector("[data-sync-history]").onclick());assert.equal((await read(pc)).main.progress.dns,"mastered");assert.match(await pc.locator("#rc-sync-status").textContent(),/Ancienne révision/);
+  await click(pc,"history");await pc.evaluate(()=>document.querySelector("[data-sync-history]").onclick());assert.equal((await read(pc)).main.progress.dns,stable.progress.dns);assert.match(await pc.locator("#rc-sync-status").textContent(),/Ancienne révision/);
   console.log("PASS browser cloud: future/corrupt head cannot erase local progress; bounded previous cloud version is explicitly recoverable");
   await click(pc,"disconnect");assert.equal(await pc.evaluate(()=>localStorage.getItem("reconversion-control.cloud.session.v1")),null);assert.deepEqual(await snapshot(pc),stable);
   assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);
