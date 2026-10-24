@@ -112,6 +112,7 @@ async function run() {
   await check("refused local restore does not advance baseline or erase later local work", async () => {
     const f = fixture(); await f.prepare("automatic"); f.remote("other-device"); f.failRestore();
     await f.tick(); assert.equal(f.local, "initial-fixture"); assert.match(f.html, /progression locale conservée/);
+    assert.doesNotMatch(f.html, /À jour sur cet appareil et dans le cloud/, "a refused restoration must never acknowledge synchronization success");
     f.edit("local-after-failed-restore"); await f.tick();
     assert.equal(f.local, "local-after-failed-restore"); assert.match(f.html, /Conflit détecté/);
   });
