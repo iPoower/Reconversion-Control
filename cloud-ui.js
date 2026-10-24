@@ -4,7 +4,7 @@
 const RC_CLOUD_UI = (() => {
  const CONFIG="reconversion-control.cloud.config.v1",SESSION="reconversion-control.cloud.session.v1";
  let env,client,cfg,email="",phrase="",remember=false,user="",scope="",meta={v:1},remote=null,remoteData=null;
- let revision=null,baseline="",busy=false,applying=false,mode="setup",status="Local uniquement · cloud non configuré.",timer=null,pending=null,epoch=0,retries=0,historyRows=[];
+ let revision=null,baseline="",busy=false,applying=false,mode="setup",status="Local uniquement · cloud non configuré.",timer=null,pending=null,epoch=0,retries=0,historyRows=[],restoredHere=false;
  const T=()=>RC_CLOUD_TRANSPORT,now=()=>new Date().toISOString();
  function safe(s){return env.escape(String(s||""));}
  function load(key){const raw=localStorage.getItem(key);if(raw===null)return null;if(raw.length>4200000)throw Error("Métadonnées trop volumineuses");return JSON.parse(raw);}
@@ -96,7 +96,7 @@ const RC_CLOUD_UI = (() => {
   if(latest.revision===meta.ack.revision){
    if(await T().fingerprint(there)!==meta.ack.hash)throw Error("Même révision avec contenu différent : restauration refusée");guard(ticket);
    baseline=there;revision=latest.revision;mode="active";
-   status=uploadStatus(meta.restore&&hash===meta.restore.hash?"Restauration vérifiée après réouverture · connecté et déverrouillé.":"Connecté et déverrouillé. Reprise de la synchronisation.");activate();delayed();return;
+   status=uploadStatus(meta.restore&&hash===meta.restore.hash&&!restoredHere?"Restauration vérifiée après réouverture · connecté et déverrouillé.":"Connecté et déverrouillé. Reprise de la synchronisation.");activate();delayed();return;
   }
   // Read/decrypt/hash may yield; take another snapshot before deciding to replace.
   if(hash!==meta.ack.hash||local()!==here){mode="conflict";status="Conflit détecté : modifications sur deux appareils.";return;}
@@ -136,7 +136,7 @@ const RC_CLOUD_UI = (() => {
   try{
    if(env.preserve)env.preserve(JSON.parse(expected));
    guard(ticket);if(local()!==expected)throw Error("Progression locale modifiée pendant la réception");
-   env.restore(valid);
+   restoredHere=true;env.restore(valid);
    const restored=local();if(restored!==T().serialize(valid))throw Error("Relecture restaurée différente");
    await acknowledge(restored,next,ticket,remote&&remote.payload);guard(ticket);persist({...meta,restore:{hash:meta.ack.hash,revision:next}});
   }finally{applying=false;}
@@ -212,7 +212,7 @@ const RC_CLOUD_UI = (() => {
   busy=true;const ticket=epoch;
   try{
    const before=local(),saved=await client.historyVersion(r.revision);guard(ticket);const data=validate(await T().open(saved.payload,phrase));guard(ticket);if(local()!==before)throw Error("Progression locale modifiée");
-   if(env.preserve)env.preserve(JSON.parse(before));env.restore(data);
+   if(env.preserve)env.preserve(JSON.parse(before));restoredHere=true;env.restore(data);
    if(local()!==T().serialize(data))throw Error("Relecture restaurée différente");
    mode="conflict";baseline="";status="Ancienne révision relue localement. Exporter puis revérifier les sources avant toute synchronisation.";
   }catch(e){if(ticket===epoch)status="Récupération refusée : "+e.message;}
