@@ -1,6 +1,6 @@
 "use strict";
 // Real application/crypto/Storage in TWO isolated profiles; all provider HTTP intercepted.
-const assert=require("node:assert/strict"),{chromium,webkit,devices}=require("playwright"),{startServer}=require("./server.cjs");
+const fs=require("node:fs/promises"),assert=require("node:assert/strict"),{chromium,webkit,devices}=require("playwright"),{startServer}=require("./server.cjs");
 const B={chromium,webkit}[process.env.BROWSER||"chromium"],CANON="reconversion-control.snapshot.v3",PHRASE="fictional-end-to-end-phrase-2026",USER="11111111-1111-4111-8111-111111111111";
 const pause=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return{promise,resolve};};
 async function run(){
@@ -112,6 +112,9 @@ async function run(){
   // Recover an older valid cloud version through the existing transport, explicitly.
   await click(pc,"history");await pc.evaluate(()=>document.querySelector("[data-sync-history]").onclick());assert.equal((await read(pc)).main.progress.dns,stable.progress.dns);assert.match(await pc.locator("#rc-sync-status").textContent(),/Ancienne révision/);
   console.log("PASS browser cloud: future/corrupt head cannot erase local progress; bounded previous cloud version is explicitly recoverable");
+  const expectedRecovery=await pc.evaluate(()=>JSON.parse(localStorage.getItem("reconversion-control.cloud.recovery.v1")).copies[0].data);
+  const downloading=pc.waitForEvent("download");await pc.locator("#export-recovery").click();const download=await downloading;assert.deepEqual(JSON.parse(await fs.readFile(await download.path(),"utf8")),expectedRecovery);
+  console.log("PASS browser cloud: independent recovery export downloads every preserved business field");
   await click(pc,"disconnect");assert.equal(await pc.evaluate(()=>localStorage.getItem("reconversion-control.cloud.session.v1")),null);assert.deepEqual(await snapshot(pc),stable);
   assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);
   console.log("PASS browser cloud: explicit logout deletes remembered secrets and preserves local progress; no unmocked provider requests");

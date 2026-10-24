@@ -707,7 +707,7 @@ function exportRecovery(){
   var ring=JSON.parse(localStorage.getItem("reconversion-control.cloud.recovery.v1")||"null");
   if(!ring||ring.v!==1||!ring.copies.length)throw Error("Aucune copie de récupération disponible");
   var data=cloudValidate(ring.copies[0].data),blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
-  a.href=url;a.download="reconversion-control-recuperation.json";a.click();setTimeout(function(){URL.revokeObjectURL(url);},60000);
+  a.href=url;a.download="reconversion-control-recuperation.json";a.hidden=true;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},60000);
  }catch(e){alert("Export de récupération refusé : "+e.message);}
 }
 
