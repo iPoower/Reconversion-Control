@@ -137,3 +137,31 @@ complète verte et nouvelle lecture de sa tête et de main. Après fusion, exige
 les contrôles main, Pages et une comparaison des octets servis au commit fusionné.
 Aucun essai sur iPhone physique, activation cloud, donnée personnelle, autre
 application, PDF, secret, permission, workflow ou infrastructure n'est modifié.
+
+## Contrôle après la fusion de contenu
+
+La PR #28 a été fusionnée le 24/10/2026 au commit
+`9434c3114b315494db7518e81268e5a7623283b8`, arbre identique à la tête de PR
+`df7ed75dd52cc17ec06d663e9030990dd51c1b8c` validée par la
+[CI 40061689072](https://github.com/iPoower/Reconversion-Control/actions/runs/40061689072).
+Sur la [CI main 40062133686](https://github.com/iPoower/Reconversion-Control/actions/runs/40062133686),
+provenance et Chromium réussissent, puis WebKit échoue à
+`tests/learning.spec.cjs:161` sur le focus du bouton `rc-01` après fermeture du
+dialogue et retour d'historique. Les 31 groupes mobiles WebKit et la lecture
+des 42 cours ont réussi avant cet échec. Le déploiement Pages est correctement
+ignoré ; la mise à jour n'est pas annoncée comme livrée.
+
+Le contrôle initial attendait un focus possible sur l'ancien bouton avant que
+`history.back()` ne provoque `applyRoute()` et le remplacement du DOM du parcours.
+Il pouvait observer ce focus puis tester un autre nœud après la navigation.
+Le complément de test attend l'URL `#course`, le détachement du bouton capturé
+avant fermeture et la fermeture effective du dialogue, puis garde les deux
+contrôles originaux de focus. Il ajoute une assertion de dialogue fermé. Aucun
+délai fixe, timeout augmenté, réessai du test, `force`, assertion retirée ou
+changement de `app.js`, du stockage ou d'un workflow.
+
+Ce complément utilise une branche et une PR dédiées. Toute la CI doit réussir
+sur sa nouvelle tête, puis sur son commit fusionné avant Pages et vérification
+HTTP. Un résultat vert sur le SHA précédent ne suffit pas. Cette synchronisation
+du test ne doit pas servir à masquer une régression de focus après navigation
+achevée, ni à conclure à une validation de Safari sur iPhone physique.

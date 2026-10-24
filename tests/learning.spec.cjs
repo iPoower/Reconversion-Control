@@ -156,9 +156,18 @@ async function main() {
     assert.equal(await page.locator(".dialogbox").evaluate(el=>el.scrollTop),0);
     await page.locator('#detail .chapter-navigation [data-open="rc-01"]').tap();
     assert.equal(await page.locator("#detail .lesson-detail").getAttribute("data-lesson-id"),"rc-01");
+    const openerBeforeBack = await page.locator('#course-chapters [data-open="rc-01"]').elementHandle();
+    assert(openerBeforeBack,"the course opener exists before history navigation");
     await page.locator("#close").tap();
+    // A native close can focus the old opener before history.back() runs
+    // applyRoute() and replaces the course DOM. Require that transition first.
+    await page.waitForURL("**/#course");
+    await page.waitForFunction(opener => !opener.isConnected, openerBeforeBack);
+    await page.waitForFunction(() => !document.querySelector("#dlg").open);
     await page.waitForFunction(() => document.activeElement === document.querySelector('#course-chapters [data-open="rc-01"]'));
     assert(await page.locator('#course-chapters [data-open="rc-01"]').evaluate(el=>el===document.activeElement));
+    assert.equal(await page.locator("#dlg").evaluate(el=>el.open),false);
+    await openerBeforeBack.dispose();
     passed("next and previous chapter navigation keeps the dialog, resets reading position and restores the course opener");
 
     await openChapter(page,"rc-32");
