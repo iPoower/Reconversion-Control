@@ -353,11 +353,11 @@ async function checkLabEvidence(id,file){
 function load(){
  var initial=JSON.parse(JSON.stringify(defaults));
  try{var j=atomicSnapshot?atomicSnapshot.main:JSON.parse(storageGet(KEY)||"null");if(j===null)return initial;if(!plainObject(j)||(j.progress!==undefined&&!plainObject(j.progress))||(j.review!==undefined&&!plainObject(j.review)))throw Error("Invalid stored progression");
- var saved=progression({progress:plainObject(j.progress)?j.progress:{},review:plainObject(j.review)?j.review:{}},true);initial.progress=saved.progress;initial.review=saved.review;
  if(views.indexOf(j.view)>=0)initial.view=j.view;
  if(j.section==="all"||section(j.section))initial.section=j.section;
  if(typeof j.search==="string")initial.search=j.search;
  if(j.status==="all"||statuses.indexOf(j.status)>=0)initial.status=j.status;
+ var saved=progression({progress:plainObject(j.progress)?j.progress:{},review:plainObject(j.review)?j.review:{}},true);initial.progress=saved.progress;initial.review=saved.review;
  initial.labs=labStateSanitize(j.labs,true);initial.proofs=proofStateSanitize(j.proofs,true);initial.labChecks=labChecksSanitize(j.labChecks,true);initial.career=RC_PROJECT_PLAN.sanitize(j.career,true);
  }catch(e){progressUnread=true;storageStatus(KEY,true);}return initial;
 }

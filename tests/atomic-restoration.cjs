@@ -138,11 +138,12 @@ test("historical unknown progression blocks migration instead of dropping its by
  const loadFunction=source.match(/function load\(\)\{[\s\S]*?\n\}/)[0];
  const progressFunction=source.match(/function progression\(data,strict\)\{[\s\S]*?\n\}/)[0];
  const context=vm.createContext({defaults:{progress:{},review:{}},atomicSnapshot:null,
-  KEY:M,progressUnread:false,storageGet:()=>serialize({progress:{retiredTopic:"mastered"},review:{}}),
+  KEY:M,progressUnread:false,storageGet:()=>serialize({view:"review",progress:{retiredTopic:"mastered"},review:{}}),
   storageStatus(){},plainObject:v=>v&&typeof v==="object"&&!Array.isArray(v),
-  topic:()=>null,statuses:["learn","progress","mastered"],views:[],section:()=>null,
+  topic:()=>null,statuses:["learn","progress","mastered"],views:["review"],section:()=>null,
   labStateSanitize:()=>({}),proofStateSanitize:()=>({}),labChecksSanitize:()=>({}),RC_PROJECT_PLAN:{sanitize:()=>({})}});
- vm.runInContext(progressFunction+loadFunction+';load();',context);
+ vm.runInContext(progressFunction+loadFunction+';globalThis.loaded=load();',context);
+ assert.equal(context.loaded.view,'review','safe navigation metadata must remain usable while business migration is blocked');
  assert.equal(context.progressUnread,true,"unsupported historical progression must stay unread and non-migratable");
 });
 test("idempotent retry preserves one complete revision and no extra key",()=>{
