@@ -134,6 +134,17 @@ test("preflight read failure preserves the previous authoritative bytes",()=>{
  h.errors.get=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily),/Instantané non confirmé/);
  assert.equal(h.values.get(A),document(oldMain,oldDaily));
 });
+test("historical unknown progression blocks migration instead of dropping its bytes",()=>{
+ const loadFunction=source.match(/function load\(\)\{[\s\S]*?\n\}/)[0];
+ const progressFunction=source.match(/function progression\(data,strict\)\{[\s\S]*?\n\}/)[0];
+ const context=vm.createContext({defaults:{progress:{},review:{}},atomicSnapshot:null,
+  KEY:M,progressUnread:false,storageGet:()=>serialize({progress:{retiredTopic:"mastered"},review:{}}),
+  storageStatus(){},plainObject:v=>v&&typeof v==="object"&&!Array.isArray(v),
+  topic:()=>null,statuses:["learn","progress","mastered"],views:[],section:()=>null,
+  labStateSanitize:()=>({}),proofStateSanitize:()=>({}),labChecksSanitize:()=>({}),RC_PROJECT_PLAN:{sanitize:()=>({})}});
+ vm.runInContext(progressFunction+loadFunction+';load();',context);
+ assert.equal(context.progressUnread,true,"unsupported historical progression must stay unread and non-migratable");
+});
 test("idempotent retry preserves one complete revision and no extra key",()=>{
  const h=harness({[A]:document(oldMain,oldDaily)});
  h.errors.set=A;assert.throws(()=>h.atomicCommit(nextMain,nextDaily));

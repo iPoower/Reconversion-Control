@@ -39,3 +39,7 @@ Rollback: retain V3 canonical bytes, both legacy mirrors and full export before 
 approved code downgrade. Do not assume old code reads V3 or that mirrors are current
 when a storage warning occurred. Recover in a separate origin/profile, compare every
 business field, then decide. No migration, data reset or personal activation here.
+
+An additional red regression proves unsupported legacy topic IDs were silently dropped
+before migration. Legacy business readers now refuse invalid/unknown data, retain original
+bytes and block migration. Both browsers cover this historical preservation case.

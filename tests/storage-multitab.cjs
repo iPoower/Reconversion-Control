@@ -60,6 +60,16 @@ async function run(){
    await p.locator("#storage-notice").waitFor({state:"visible"});await c.close();
   }
   console.log("PASS corrupted canonical data: malformed progression, invalid status and incomplete Daily Five preserve every original byte");
+
+  const legacyContext=await browser.newContext({serviceWorkers:"block"}),legacyPage=await legacyContext.newPage();
+  const legacyKey="reconversion-control.state.v1",legacyRaw=JSON.stringify({progress:{retiredTopic:"mastered"},review:{}});
+  await legacyContext.addInitScript(({key,raw})=>localStorage.setItem(key,raw),{key:legacyKey,raw:legacyRaw});
+  await legacyPage.goto(server.url);await writer(legacyPage);await nav(legacyPage,"library");
+  await legacyPage.locator('[data-card="dns"] [data-prog="mastered"]').click();
+  assert.equal(await legacyPage.evaluate(k=>localStorage.getItem(k),legacyKey),legacyRaw,"unsupported historical bytes remain untouched");
+  assert.equal(await snapshot(legacyPage),null,"no authoritative replacement may hide unsupported history");
+  await legacyPage.locator("#storage-notice").waitFor({state:"visible"});await legacyContext.close();
+  console.log("PASS historical unsupported progression: original bytes preserved, no default-valued migration");
  }finally{await context.close();await browser.close();await server.close();}
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
