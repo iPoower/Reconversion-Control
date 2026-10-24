@@ -33,7 +33,7 @@ const RC_CLOUD_TRANSPORT = (() => {
     let raw="";
     if(res.body&&res.body.getReader){const reader=res.body.getReader();let size=0;const chunks=[];while(true){const chunk=await reader.read();if(chunk.done)break;size+=chunk.value.length;if(size>4200000){await reader.cancel();throw Error("Réponse cloud trop volumineuse");}chunks.push(chunk.value);}const bytes=new Uint8Array(size);let offset=0;chunks.forEach(c=>{bytes.set(c,offset);offset+=c.length;});raw=td.decode(bytes);}
     else{raw=await res.text();if(raw.length>4200000)throw Error("Réponse cloud trop volumineuse");}
-    return raw?JSON.parse(raw):null;
+    try{return raw?JSON.parse(raw):null;}catch(e){throw Error("Réponse cloud JSON invalide");}
    }finally{if(timeout)clearTimeout(timeout);}
   }
   function validSession(s){return s&&s.project===base.url&&typeof s.access_token==="string"&&s.access_token.length>0&&s.access_token.length<16384&&typeof s.refresh_token==="string"&&s.refresh_token.length>0&&s.refresh_token.length<16384&&Number.isFinite(s.expires_at)&&typeof s.user==="string"&&/^[0-9a-f-]{36}$/i.test(s.user);}
