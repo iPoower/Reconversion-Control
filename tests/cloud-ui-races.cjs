@@ -9,7 +9,7 @@ const deferred = () => { let resolve; const promise = new Promise(r => { resolve
 
 function fixture() {
   let state = {version: 2, progress: {dns: "initial-fixture"}}, row = null;
-  let interval, timeout, failWrite = false, failRestore = false;
+  let interval, timeout, failWrite = false, failRestore = false, failHead = false, fullReads=0, headReads=0, clock=0;
   const gates = new Map(), nodes = new Map(), writes = [];
   const node = selector => {
     if (!nodes.has(selector)) nodes.set(selector, {value: "", innerHTML: "", textContent: ""});
@@ -22,7 +22,8 @@ function fixture() {
   }
   const client = {
     sendCode: async () => {}, verifyCode: async () => "00000000-0000-4000-8000-000000000001", logout: () => {},
-    async read() { const result = copy(row); await wait("read"); return result; },
+    async read() { fullReads++; const result = copy(row); await wait("read"); return result; },
+    async readRevision() { headReads++; const result=row?row.revision:null; await wait("head"); if(failHead){failHead=false;throw Error("Fictitious metadata failure");}return result; },
     async write(payload, revision) {
       await wait("write");
       if (failWrite) { failWrite = false; throw Error("Fictitious network failure"); }
@@ -34,7 +35,7 @@ function fixture() {
   const store = new Map();
   const sandbox = {
     localStorage: {getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},
-    Date,
+    Date: class extends Date { static now(){return Date.now()+clock;} },
     navigator: {onLine: true}, document: {querySelector: node}, confirm: () => true,
     setInterval: callback => { interval = callback; return 1; }, clearInterval: () => { interval = null; },
     setTimeout: callback => { timeout = callback; return 2; }, clearTimeout: () => { timeout = null; },
@@ -68,6 +69,13 @@ function fixture() {
     pause(stage) { const gate = {started: deferred(), release: deferred()}; gates.set(stage, gate); return {started: gate.started.promise, release: gate.release.resolve}; },
     remote(value) { row = {revision: (row ? row.revision : 0) + 1, payload: {snapshot: {version: 2, progress: {dns: value}}}}; },
     tick: () => interval(),
+    manual: () => click("now"),
+    advance: ms => {clock+=ms;},
+    hidden: value => {sandbox.document.hidden=value;},
+    corruptHead: value => {row.payload.snapshot.progress.dns=value;},
+    removeCloud: () => {row=null;},
+    failHead: () => {failHead=true;},
+    get reads(){return {full:fullReads,head:headReads};},
     async pending() { assert(timeout, "concurrent edits must schedule another attempt, including first backup"); const run = timeout; timeout = null; await run(); },
     failWrite: () => { failWrite = true; }, failRestore: () => { failRestore = true; },
     get local() { return state.progress.dns; }, get remoteValue() { return row && row.payload.snapshot.progress.dns; },
@@ -125,6 +133,43 @@ async function run() {
   await check("future durable journal is never overwritten or treated as synchronized", async () => {
     const f=fixture();await f.prepare("automatic");f.corruptJournal();const before=f.journal,writes=f.writes.length;f.edit("pending-after-future-journal");await f.tick();
     assert.equal(f.journal,before);assert.equal(f.writes.length,writes);assert.match(f.html,/incompatible/);assert.doesNotMatch(f.html,/À jour sur cet appareil et dans le cloud/);
+  });
+  await check("idle metadata reads do not upload or advance a receipt; full audits remain mandatory",async()=>{
+    const f=fixture();await f.prepare("automatic");const before=f.reads,journal=f.journal,writes=f.writes.length;
+    await f.tick();assert.equal(f.reads.full,before.full);assert.equal(f.reads.head,before.head+1);assert.equal(f.writes.length,writes);assert.equal(f.journal,journal);
+    await f.manual();assert.equal(f.reads.full,before.full+1);
+    f.advance(600001);await f.tick();assert.equal(f.reads.full,before.full+2);
+    f.advance(-700000);await f.tick();assert.equal(f.reads.full,before.full+3,"clock rollback must force a full audit");
+    f.hidden(true);const hidden=f.reads;await f.tick();assert.deepEqual(f.reads,hidden);
+  });
+  await check("changed or disappeared revision always falls back to a full read",async()=>{
+    const f=fixture();await f.prepare("automatic");const before=f.reads.full;f.remote("other-device");await f.tick();
+    assert.equal(f.local,"other-device");assert.equal(f.reads.full,before+1);
+    f.removeCloud();await f.tick();assert.equal(f.local,"other-device");assert.match(f.html,/disparu/);
+  });
+  for(const concurrentRemote of [false,true])await check("edit during metadata probe is preserved"+(concurrentRemote?" with a remote conflict":""),async()=>{
+    const f=fixture();await f.prepare("automatic");const gate=f.pause("head"),poll=f.tick();await gate.started;
+    f.edit("new-local");if(concurrentRemote)f.remote("new-remote");gate.release();await poll;
+    assert.equal(f.local,"new-local");
+    if(concurrentRemote){assert.equal(f.remoteValue,"new-remote");assert.match(f.html,/Conflit détecté/);}
+    else assert.equal(f.remoteValue,"new-local");
+  });
+  await check("metadata failure cannot manufacture a success and forces the next full read",async()=>{
+    const f=fixture();await f.prepare("automatic");const before=f.reads.full,journal=f.journal;f.failHead();await f.tick();
+    assert.equal(f.journal,journal);assert.match(f.html,/metadata failure/);assert.doesNotMatch(f.html,/À jour sur cet appareil et dans le cloud/);
+    await f.tick();assert.equal(f.reads.full,before+1);
+  });
+  await check("manual request or audit expiry during a metadata probe forces a full read",async()=>{
+    for(const action of ["manual","expiry"]){
+     const f=fixture();await f.prepare("automatic");const before=f.reads.full,gate=f.pause("head"),poll=f.tick();await gate.started;
+     if(action==="manual")await f.manual();else f.advance(600001);
+     gate.release();await poll;assert.equal(f.reads.full,before+1);
+    }
+  });
+  await check("same-revision payload tampering remains rejected by manual and repeated full checks",async()=>{
+    const f=fixture();await f.prepare("automatic");const journal=f.journal;f.corruptHead("tampered-fixture");await f.manual();
+    assert.equal(f.local,"initial-fixture");assert.equal(f.journal,journal);assert.match(f.html,/modifié sans nouvelle révision/);
+    const before=f.reads.full;await f.tick();assert.equal(f.reads.full,before+1);assert.match(f.html,/modifié sans nouvelle révision/);
   });
   console.log("N03 offline regression cases: " + count + "/" + (count + failures.length) + " passed; no network or real data.");
   if (failures.length) throw new AggregateError(failures, failures.length + " N03 regression cases failed");

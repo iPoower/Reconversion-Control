@@ -6,7 +6,7 @@ Base vérifiée : `2ab4c0f74c74b5ad430e10032ae810708113b3f0` (PR #31).
 ## Fonctionnement quotidien prévu
 
 1. Les saisies sont d’abord enregistrées dans `reconversion-control.snapshot.v3` et relues. Un seul onglet a le Web Lock d’écriture. Un onglet obsolète, un quota ou un stockage illisible suspendent le cloud.
-2. Après activation volontaire et déverrouillage, les modifications persistantes déclenchent un envoi différé d’environ 2 secondes. Vérification périodique toutes les 30 secondes au premier plan ; reprise aux événements réseau, visibilité et réouverture. Échecs : reprise progressive jusqu’à 60 secondes.
+2. Après activation volontaire et déverrouillage, les modifications persistantes déclenchent un envoi différé d’environ 2 secondes. Vérification de révision toutes les 30 secondes au premier plan lorsque la copie locale est inchangée ; lecture complète au moins toutes les 10 minutes, ainsi qu'aux modifications locales, reprises réseau, retours au premier plan et actions manuelles. Une lecture de révision ne crée aucun reçu et ne change pas l'heure de la dernière confirmation. Révision différente, disparition, erreur ou horloge reculant imposent une lecture complète. Échecs : reprise progressive jusqu’à 60 secondes.
 3. Le paquet cloud existant V2 contient la projection métier complète de l’instantané local V3 : progression, révisions SRS, labs, preuves, validations, Daily Five et dossier. La navigation propre à l’appareil, les secrets et journaux cloud sont exclus. Pas de second format concurrent ni de migration des enveloppes existantes.
 4. Le JSON est figé avant toute attente cryptographique. L’enveloppe chiffrée et l’empreinte sont écrites/reluées dans une outbox locale avant la requête. Une modification survenue ensuite reste en attente.
 5. Une révision est acquittée seulement après relecture du **même** paquet sur le serveur à la révision attendue. Une réponse perdue peut signifier que l’écriture a réussi. La reprise réutilise exactement le même ciphertext ; elle ne génère pas une nouvelle sauvegarde au hasard.
@@ -31,7 +31,9 @@ La mémorisation chiffrée réduit le risque d’extraction au repos ; elle ne p
 
 ## Historique et récupération
 
-Migration proposée dans `supabase/migrations/*_encrypted_cloud_history.sql`, **non appliquée**. Elle conserve les 20 dernières révisions chiffrées par utilisateur, dont la tête, dans une table en lecture seule pour le client. Un trigger privé contrôle le propriétaire, l’incrément exact des révisions et l’archivage transactionnel ; les champs métier en clair sont refusés. Son `SECURITY DEFINER` est limité à cette fonction de trigger dans un schéma non exposé, `search_path` vide, droits d’exécution retirés aux rôles publics. La RLS reste active ; les utilisateurs anonymes et les connexions anonymes authentifiées sont exclus.
+Migration de référence dans `supabase/migrations/*_encrypted_cloud_history.sql`. L'installation est une opération administrative distincte, réservée au projet confirmé après autorisation ; l'état appliqué se vérifie dans son catalogue et son journal d'intervention, jamais à partir de la seule présence du fichier. Elle conserve les 20 dernières révisions chiffrées par utilisateur, dont la tête, dans une table en lecture seule pour le client. Un trigger privé contrôle le propriétaire, l’incrément exact des révisions et l’archivage transactionnel ; les champs métier en clair sont refusés. Son `SECURITY DEFINER` est limité à cette fonction de trigger dans un schéma non exposé, `search_path` vide, droits d’exécution retirés aux rôles publics. La RLS reste active ; les utilisateurs anonymes et les connexions anonymes authentifiées sont exclus.
+
+La migration suivante, `20261024173600_restrict_rls_event_trigger_execute.sql`, retire uniquement le droit client d'exécuter l'éventuel helper Supabase `public.rls_auto_enable()`. Elle vérifie sa nature d'event trigger privilégié appartenant à postgres, ne crée aucune fonction parallèle et ne modifie ni son code ni le trigger `ensure_rls`. L'activation automatique de RLS reste testée après restriction. Sur un projet sans ce helper, cette migration ne fait rien. Inspecter tout schéma existant et les migrations déjà appliquées avant exécution ; un SQL Editor manuel ne renseigne pas automatiquement le registre des migrations CLI.
 
 L’archivage démarre au prochain envoi : il ne recrée aucune version passée. Vingt versions rapprochées ne remplacent pas un export durable hors appareil. La liste ne télécharge que les numéros ; un seul paquet est chargé pour une récupération. Une version historique restaurée suspend la synchronisation et nécessite une nouvelle décision.
 
@@ -56,6 +58,8 @@ Commandes reproductibles dans `TESTING.md`. Tests HTTP simulés + vraie cryptogr
 Une PWA suspendue ou fermée sur iOS n’exécute pas continuellement le réseau : reprise après réouverture et déverrouillage. La relecture après fermeture de page prouve la persistance du profil navigateur de test ; elle ne prouve pas un iPhone physique ni un redémarrage matériel. Si un navigateur ne propose pas Web Locks ou perd le verrou après suspension, exporter toute saisie en mémoire puis fermer les autres onglets et recharger.
 
 Références officielles consultées le 24/10/2026 :
+- Modèle de menaces et limites : `cloud-security-model.md`.
+- Mesures reproductibles sans compte ni réseau Supabase : `node tests/cloud-storage.cjs`, résultats et projections dans `cloud-storage-measures.md`. Gzip/Brotli y restent des objets d'étude, refusés comme DTO par l'application actuelle ; aucun protocole compressé n'est activé.
 - https://supabase.com/docs/guides/auth/sessions
 - https://supabase.com/docs/guides/auth/signout
 - https://supabase.com/docs/guides/database/postgres/row-level-security

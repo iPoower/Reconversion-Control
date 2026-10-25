@@ -75,6 +75,12 @@ const RC_CLOUD_TRANSPORT = (() => {
    const rows=await request("/rest/v1/reconversion_progress?user_id=eq."+encodeURIComponent(session.user)+"&select=revision,payload",{secure:true});
    if(!Array.isArray(rows)||rows.length>1)throw Error("Réponse cloud invalide");return rows.length?row(rows[0]):null;
   }
+  async function readRevision(){
+   if(!session)throw Error("Non connecté");
+   const rows=await request("/rest/v1/reconversion_progress?user_id=eq."+encodeURIComponent(session.user)+"&select=revision",{secure:true});
+   if(!Array.isArray(rows)||rows.length>1||rows.length&&(!rows[0]||Object.keys(rows[0]).join(",")!=="revision"||!validRevision(rows[0].revision)))throw Error("Révision cloud invalide");
+   return rows.length?rows[0].revision:null;
+  }
   async function write(payload,revision){
    if(!session)throw Error("Non connecté");if(revision!==null&&!validRevision(revision))throw Error("Révision invalide");bounded(payload);
    const expected=revision===null?1:revision+1;
@@ -102,7 +108,7 @@ const RC_CLOUD_TRANSPORT = (() => {
    if(!Array.isArray(rows)||rows.length!==1||rows[0].revision!==revision)throw Error("Version historique absente");return row(rows[0]);
   }
   async function logout(){const previous=session;generation++;session=null;refreshing=null;if(previous){try{await request("/auth/v1/logout?scope=local",{method:"POST",headers:{Authorization:"Bearer "+previous.access_token}});return true;}catch(e){return false;}}return true;}
-  return {sendCode,verifyCode,resume,read,write,history,historyVersion,logout};
+  return {sendCode,verifyCode,resume,read,readRevision,write,history,historyVersion,logout};
  }
  async function encrypt(snapshot,phrase,context){
   if(typeof phrase!=="string"||phrase.length<12||phrase.length>1024)throw Error("Phrase de chiffrement : 12 à 1024 caractères");

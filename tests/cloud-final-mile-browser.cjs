@@ -5,10 +5,11 @@ const B={chromium,webkit}[process.env.BROWSER||"chromium"],CANON="reconversion-c
 const pause=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return{promise,resolve};};
 async function run(){
  const server=await startServer(),browser=await B.launch({headless:true}),contexts=[],errors=[],unexpected=[];
- let row=null,history=[],lose=false,failReads=false,writeGate=null,writes=0;
- const methods=[];
+ let row=null,history=[],lose=false,failReads=false,writeGate=null,writes=0,revisionReads=0,fullReads=0;
+ const methods=[],browserLogs=[];
  async function context(mobile=false){
   const c=await browser.newContext({...(mobile?devices["iPhone 11 Pro Max"]:{}),serviceWorkers:"block",acceptDownloads:true});contexts.push(c);
+  await c.addInitScript(()=>{const original=window.setInterval;window.setInterval=(fn,delay,...args)=>{if(delay===30000)window.__cloudPeriodic=fn;return original(fn,delay,...args);};});
   await c.route("**/*",async route=>{
    const req=route.request(),url=new URL(req.url());if(url.origin===server.origin)return route.continue();
    if(url.origin!=="https://fixture.supabase.co"){unexpected.push(req.url());return route.abort();}
@@ -20,7 +21,7 @@ async function run(){
    if(url.pathname==="/auth/v1/logout")return reply(200,{});
    if(url.pathname==="/rest/v1/reconversion_progress_history"){const versions=url.searchParams.has("revision")?history.filter(r=>"eq."+r.revision===url.searchParams.get("revision")):[...history].reverse().slice(0,20);return reply(200,url.searchParams.get("select")==="revision"?versions.map(r=>({revision:r.revision})):versions);}
    if(url.pathname!=="/rest/v1/reconversion_progress"){unexpected.push(req.url());return route.abort();}
-   if(req.method()==="GET"){if(failReads)return route.abort("failed");return reply(200,row?[row]:[]);}
+   if(req.method()==="GET"){if(failReads)return route.abort("failed");const small=url.searchParams.get("select")==="revision";if(small)revisionReads++;else fullReads++;return reply(200,row?[small?{revision:row.revision}:row]:[]);}
    const data=req.postDataJSON(),first=req.method()==="POST";
    if(first&&row||!first&&(!row||url.searchParams.get("revision")!=="eq."+row.revision))return reply(409,{});
    if(writeGate){const held=writeGate;writeGate=null;held.started.resolve();await held.release.promise;}
@@ -29,7 +30,7 @@ async function run(){
   });
   return c;
  }
- async function page(c){const p=await c.newPage();p.on("pageerror",e=>errors.push(e.message));p.on("dialog",d=>d.accept());await p.goto(server.url+"/#privacy");await p.waitForFunction(k=>!!localStorage.getItem(k),CANON);return p;}
+ async function page(c){const p=await c.newPage();p.on("pageerror",e=>errors.push(e.message));p.on("console",m=>browserLogs.push(m.text()));p.on("dialog",d=>d.accept());await p.goto(server.url+"/#privacy");await p.waitForFunction(k=>!!localStorage.getItem(k),CANON);return p;}
  async function click(p,id){await p.evaluate(id=>document.querySelector("#rc-sync-"+id).onclick(),id);}
  async function connect(p,remember=true){await p.locator("#rc-sync-url").fill("https://fixture.supabase.co");await p.locator("#rc-sync-key").fill("sb_publishable_fixture");await p.locator("#rc-sync-email").fill("test@example.invalid");if(remember)await p.locator("#rc-sync-remember").check();await click(p,"request");await p.locator("#rc-sync-otp").fill("123456");await p.locator("#rc-sync-phrase").fill(PHRASE);await click(p,"verify");}
  async function unlock(p){await p.locator("#rc-sync-phrase").fill(PHRASE);await click(p,"unlock");}
@@ -51,8 +52,13 @@ async function run(){
   const initial=await snapshot(pc);assert.equal(initial.progress.dns,"mastered");
   await connect(pc);assert.equal(row,null,"OTP/unlock alone must not upload a first real snapshot");
   await click(pc,"create");assert.equal(row.revision,1);assert(!JSON.stringify(row).includes("mastered"));
+  const firstWrites=writes;await click(pc,"now");await click(pc,"now");assert.equal(writes,firstWrites);assert.equal(row.revision,1);
   const remote=await pc.evaluate(async({p,phrase})=>RC_CLOUD_TRANSPORT.open(p,phrase),{p:row.payload,phrase:PHRASE});assert.deepEqual(remote,initial);
   console.log("PASS browser cloud: explicit first source; complete atomic V3 business snapshot encrypted before send");
+  const beforeProbe={revisionReads,fullReads,writes},receiptBefore=await pc.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith("reconversion-control.cloud.sync.v1:")).map(k=>localStorage.getItem(k)).join("\n"));
+  await pc.evaluate(()=>window.__cloudPeriodic());assert.equal(revisionReads,beforeProbe.revisionReads+1);assert.equal(fullReads,beforeProbe.fullReads);assert.equal(writes,beforeProbe.writes);
+  assert.equal(await pc.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith("reconversion-control.cloud.sync.v1:")).map(k=>localStorage.getItem(k)).join("\n")),receiptBefore);
+  console.log("PASS browser cloud: idle periodic check transfers only a revision and preserves the confirmed receipt");
   const phone=await page(await context(true));await connect(phone);assert(await phone.locator("#rc-sync-take").isVisible());assert.notEqual((await read(phone)).main.progress.dns,"mastered");
   await click(phone,"take");assert.deepEqual(await snapshot(phone),initial);
   // Actual page close/reopen discards memory/keys and retains browser Storage.
@@ -117,6 +123,7 @@ async function run(){
   console.log("PASS browser cloud: independent recovery export downloads every preserved business field");
   await click(pc,"disconnect");assert.equal(await pc.evaluate(()=>localStorage.getItem("reconversion-control.cloud.session.v1")),null);assert.deepEqual(await snapshot(pc),stable);
   assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);
+  for(const secret of [PHRASE,"test-access","test-refresh"])assert(!browserLogs.some(line=>line.includes(secret)),"browser logs must not contain authentication or encryption secrets");
   console.log("PASS browser cloud: explicit logout deletes remembered secrets and preserves local progress; no unmocked provider requests");
  }finally{if(writeGate)writeGate.release.resolve();for(const c of contexts)await c.close();await browser.close();await server.close();}
 }
