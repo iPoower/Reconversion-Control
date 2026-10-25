@@ -30,9 +30,9 @@ async function run(){
   });
   return c;
  }
- async function page(c){const p=await c.newPage();p.on("pageerror",e=>errors.push(e.message));p.on("console",m=>browserLogs.push(m.text()));p.on("dialog",d=>d.accept());await p.goto(server.url+"/#privacy");await p.waitForFunction(k=>!!localStorage.getItem(k),CANON);return p;}
+ async function page(c){const p=await c.newPage();p.on("pageerror",e=>errors.push(e.message));p.on("console",m=>browserLogs.push(m.text()));p.on("dialog",d=>d.accept());await p.goto(server.url+"/#privacy");await require("./private-device.cjs").enter(p);await p.waitForFunction(k=>!!localStorage.getItem(k),CANON);return p;}
  async function click(p,id){await p.evaluate(id=>document.querySelector("#rc-sync-"+id).onclick(),id);}
- async function connect(p,remember=true){await p.locator("#rc-sync-url").fill("https://fixture.supabase.co");await p.locator("#rc-sync-key").fill("sb_publishable_fixture");await p.locator("#rc-sync-email").fill("test@example.invalid");if(remember)await p.locator("#rc-sync-remember").check();await click(p,"request");await p.locator("#rc-sync-otp").fill("123456");await p.locator("#rc-sync-phrase").fill(PHRASE);await click(p,"verify");}
+ async function connect(p,remember=true){await require("./private-device.cjs").legacyEmail(p);await p.locator("#rc-sync-url").fill("https://fixture.supabase.co");await p.locator("#rc-sync-key").fill("sb_publishable_fixture");await p.locator("#rc-sync-email").fill("test@example.invalid");if(remember)await p.locator("#rc-sync-remember").check();await click(p,"request");await p.locator("#rc-sync-otp").fill("123456");await p.locator("#rc-sync-phrase").fill(PHRASE);await click(p,"verify");}
  async function unlock(p){await p.locator("#rc-sync-phrase").fill(PHRASE);await click(p,"unlock");}
  async function read(p){return p.evaluate(k=>JSON.parse(localStorage.getItem(k)),CANON);}
  async function snapshot(p){return p.evaluate(k=>{const s=JSON.parse(localStorage.getItem(k));return {version:2,progress:s.main.progress,review:s.main.review,labs:s.main.labs,proofs:s.main.proofs,labChecks:s.main.labChecks,dailyFive:s.daily,career:s.main.career};},CANON);}
@@ -84,7 +84,7 @@ async function run(){
   const held={started:pause(),release:pause()};writeGate=held;
   const sending=click(pc,"now");await held.started.promise;failReads=true;held.release.resolve();await sending;
   assert.match(await pc.locator("#rc-sync-status").textContent(),/en attente/);assert.equal((await read(pc)).main.progress.dns,"learn");const committed=row.revision;
-  await pc.reload();failReads=false;await unlock(pc);assert.equal(row.revision,committed,"uncertain upload retry must be idempotent");
+  await pc.reload();await require("./private-device.cjs").enter(pc);failReads=false;await unlock(pc);assert.equal(row.revision,committed,"uncertain upload retry must be idempotent");
   assert.equal((await snapshot(pc)).progress.dns,"learn");
   console.log("PASS browser cloud: response lost after server commit + failed readback; durable outbox reconciles after reload without a duplicate revision");
   await click(reopened,"now");
@@ -99,11 +99,11 @@ async function run(){
   await pc.evaluate(k=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,v){if(key===k)throw new DOMException("synthetic quota","QuotaExceededError");return original.call(this,key,v);};},CANON);
   await edit(pc,"learn");await click(pc,"now");assert.equal(writes,previousWrites);assert.equal(await pc.evaluate(k=>localStorage.getItem(k),CANON),saved);
   assert.match(await pc.locator("#rc-sync-status").textContent(),/non confirmée|non enregistrées/);
-  await pc.reload();await unlock(pc);assert.equal((await read(pc)).main.progress.dns,"mastered");
+  await pc.reload();await require("./private-device.cjs").enter(pc);await unlock(pc);assert.equal((await read(pc)).main.progress.dns,"mastered");
   console.log("PASS browser cloud: failed local write blocks transmission and preserves last confirmed progress across reload");
   const beforeJournal=writes;await pc.evaluate(()=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,v){if(key.startsWith("reconversion-control.cloud.sync.v1:"))throw new DOMException("synthetic journal quota","QuotaExceededError");return original.call(this,key,v);};});
   await edit(pc,"progress");await click(pc,"now");assert.equal(writes,beforeJournal);assert.match(await pc.locator("#rc-sync-status").textContent(),/en attente/);
-  await pc.reload();await unlock(pc);await click(pc,"now");await pc.waitForFunction(()=>/sauvegardées|À jour sur cet appareil/.test(document.querySelector("#rc-sync-status").textContent));
+  await pc.reload();await require("./private-device.cjs").enter(pc);await unlock(pc);await click(pc,"now");await pc.waitForFunction(()=>/sauvegardées|À jour sur cet appareil/.test(document.querySelector("#rc-sync-status").textContent));
   assert.equal((await read(pc)).main.progress.dns,"progress");
   console.log("PASS browser cloud: durable journal failure blocks upload; saved local edit resumes after reload");
   // Valid but empty higher revision still requires an explicit source decision.

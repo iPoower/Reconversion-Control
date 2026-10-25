@@ -16,12 +16,12 @@ async function run(){
  second.on("dialog",async d=>{dialogs.push(d.message());await d.accept();});
  first.on("dialog",async d=>{await d.accept();});
  try{
-  await first.goto(server.url);await writer(first);await nav(first,"privacy");
+  await first.goto(server.url);await require("./private-device.cjs").enter(first);await writer(first);await nav(first,"privacy");
   await first.locator("#importer").setInputFiles(file);
   await first.waitForFunction(()=>document.querySelector("#importer").value==="");
   const before=await snapshot(first);assert.equal(JSON.parse(before).main.progress.dns,"progress");
   assert.deepEqual(JSON.parse(before).daily,fixture.dailyFive);
-  await second.goto(server.url);await nav(second,"privacy");
+  await second.goto(server.url);await require("./private-device.cjs").enter(second);await nav(second,"privacy");
   await second.locator("#storage-notice").waitFor({state:"visible"});
   assert.equal(await snapshot(second),before,"opening a second tab must not rewrite the source");
   const replacement={...fixture,progress:{dns:"mastered"},dailyFive:{days:{}}};
@@ -41,7 +41,7 @@ async function run(){
   const memory=JSON.parse(Buffer.concat(chunks).toString());assert.equal(memory.progress.dns,"learn","refused memory changes remain exportable");
   assert.equal(JSON.parse(await snapshot(first)).main.progress.dns,"mastered");
   await first.close();await second.close();
-  const reopened=await context.newPage();await reopened.goto(server.url);await writer(reopened);
+  const reopened=await context.newPage();await reopened.goto(server.url);await require("./private-device.cjs").enter(reopened);await writer(reopened);
   const after=JSON.parse(await snapshot(reopened));
   // Navigation can differ; every durable business field must be structurally identical.
   for(const key of ["progress","review","labs","proofs","labChecks","career"])assert.deepEqual(after.main[key],committed.main[key],key);
@@ -54,7 +54,7 @@ async function run(){
   ]){
    const c=await browser.newContext({serviceWorkers:"block"}),p=await c.newPage();
    const raw=JSON.stringify(corrupt);await c.addInitScript(({key,raw})=>localStorage.setItem(key,raw),{key:A,raw});
-   await p.goto(server.url);await writer(p);await nav(p,"library");
+   await p.goto(server.url);await require("./private-device.cjs").enter(p);await writer(p);await nav(p,"library");
    await p.locator('[data-card="dns"] [data-prog="mastered"]').click();
    assert.equal(await snapshot(p),raw,"corrupt authoritative bytes must never be overwritten by defaults");
    await p.locator("#storage-notice").waitFor({state:"visible"});await c.close();
@@ -64,7 +64,7 @@ async function run(){
   const legacyContext=await browser.newContext({serviceWorkers:"block"}),legacyPage=await legacyContext.newPage();
   const legacyKey="reconversion-control.state.v1",legacyRaw=JSON.stringify({progress:{retiredTopic:"mastered"},review:{}});
   await legacyContext.addInitScript(({key,raw})=>localStorage.setItem(key,raw),{key:legacyKey,raw:legacyRaw});
-  await legacyPage.goto(server.url);await writer(legacyPage);await nav(legacyPage,"library");
+  await legacyPage.goto(server.url);await require("./private-device.cjs").enter(legacyPage);await writer(legacyPage);await nav(legacyPage,"library");
   await legacyPage.locator('[data-card="dns"] [data-prog="mastered"]').click();
   assert.equal(await legacyPage.evaluate(k=>localStorage.getItem(k),legacyKey),legacyRaw,"unsupported historical bytes remain untouched");
   assert.equal(await snapshot(legacyPage),null,"no authoritative replacement may hide unsupported history");

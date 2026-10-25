@@ -41,7 +41,7 @@ async function main() {
     const page = await context.newPage();
     page.on("pageerror", e => errors.push(e.message));
     page.on("request", request => { if (!request.url().startsWith(server.url + "/")) external.push(request.url()); });
-    await page.goto(server.url + "/?v=2");
+    await page.goto(server.url + "/?v=2");await require("./private-device.cjs").enter(page);
     return {context, page};
   }
   try {
@@ -73,14 +73,14 @@ async function main() {
 
     const routeContext=await browser.newContext(profile);contexts.push(routeContext);
     const routePage=await routeContext.newPage();routePage.on("pageerror",e=>errors.push(e.message));
-    await routePage.goto(server.url+"/#review");
+    await routePage.goto(server.url+"/#review");await require("./private-device.cjs").enter(routePage);
     assert.equal(await routePage.locator("#app h2").first().textContent(),headings.review);
     assert.equal(await routePage.locator('#nav [data-view="review"]').getAttribute("aria-current"),"page");
     await nav(routePage,"daily");assert.equal(new URL(routePage.url()).hash,"#daily");
     await nav(routePage,"labs");assert.equal(new URL(routePage.url()).hash,"#labs");
     await routePage.goBack();await routePage.waitForURL(/#daily$/);
     assert.equal(await routePage.locator("#app h2").first().textContent(),headings.daily);
-    await routePage.goto(server.url+"/#topic/dns");
+    await routePage.goto(server.url+"/#topic/dns");await require("./private-device.cjs").enter(routePage);
     await routePage.waitForTimeout(150);
     if(await routePage.locator("#detail h2").count()===0){console.error("DIAG topic DNS:",JSON.stringify({errors,hash:new URL(routePage.url()).hash,html:(await routePage.locator("#app").innerHTML()).slice(0,500)}));}
     assert.equal(await routePage.locator("#detail h2").textContent(),"DNS");
@@ -114,7 +114,7 @@ async function main() {
     assert.equal(dailyDates.length,1);
     assert.equal(dailySaved.days[dailyDates[0]].completed,true);
     assert(dailySaved.days[dailyDates[0]].xp>=100&&dailySaved.days[dailyDates[0]].xp<=140);
-    await page.reload();
+    await page.reload();await require("./private-device.cjs").enter(page);
     assert.equal(await page.locator(".daily-finish.won").count(),1);
     await nav(page,"cockpit");
     assert.match(await page.locator(".daily-teaser").textContent(),/Défi terminé/);
@@ -168,7 +168,7 @@ async function main() {
     await nav(page,"cockpit");
     const proofId=await page.locator(".proof-card").first().getAttribute("data-proof");
     await page.evaluate(({key,proofId})=>{const s=JSON.parse(localStorage.getItem(key));s.progress[proofId]="mastered";s.review[proofId]={step:0,due:"2099-01-01"};localStorage.setItem(key,JSON.stringify(s));},{key:KEY,proofId});
-    await page.reload();
+    await page.reload();await require("./private-device.cjs").enter(page);
     await nav(page,"labs");
     assert.match(await page.locator('[data-lab="lab-01"] .lab-status').textContent(),/EN COURS/,"mastering knowledge must not auto-validate a lab");
     await nav(page,"cockpit");
@@ -228,7 +228,7 @@ async function main() {
     assert.equal(await page.locator("#dlg").evaluate(el => el.open), true);
     assert(await page.locator('[data-dprog="mastered"]').evaluate(el => el.classList.contains("on")));
     await page.locator("#close").tap();
-    await page.reload();
+    await page.reload();await require("./private-device.cjs").enter(page);
     assert(await page.locator('#cards [data-card="dns"] [data-prog="mastered"]').evaluate(el => el.classList.contains("on")));
     passed("changing progress inside an open dialog keeps it usable and persists after reload");
 
@@ -247,7 +247,7 @@ async function main() {
     assert.deepEqual(await visibleIds(filters), ["linux-perms"]);
     await filters.locator('[data-card="linux-perms"] [data-prog="progress"]').tap();
     assert.deepEqual(await visibleIds(filters), []);
-    await filters.reload();
+    await filters.reload();await require("./private-device.cjs").enter(filters);
     assert.equal(await filters.locator("#status").inputValue(), "mastered");
     assert.equal(await filters.locator('[data-section="linux"]').getAttribute("aria-pressed"), "true");
     assert.deepEqual(await visibleIds(filters), []);
@@ -311,7 +311,7 @@ async function main() {
     await fileFallback.addInitScript(() => {File.prototype.text = undefined;});
     const filePage = await fileFallback.newPage(); filePage.on("pageerror", e => errors.push(e.message));
     filePage.on("dialog", dialog => dialog.accept());
-    await filePage.goto(server.url + "/"); await nav(filePage,"privacy");
+    await filePage.goto(server.url + "/");await require("./private-device.cjs").enter(filePage); await nav(filePage,"privacy");
     const legacyImport = {progress:{dns:"mastered"},review:{dns:{step:1,due:"2099-01-01"}}};
     await filePage.locator("#importer").setInputFiles({name:"legacy.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(legacyImport))});
     await filePage.waitForFunction(() => document.querySelector("#importer").value === "");
@@ -325,7 +325,7 @@ async function main() {
       for (const method of ["getItem", "setItem", "removeItem"]) Storage.prototype[method] = function(){throw new DOMException("Storage blocked", "SecurityError");};
     });
     const blockedPage = await blocked.newPage(); blockedPage.on("pageerror", e => errors.push(e.message));
-    await blockedPage.goto(server.url + "/?v=2");
+    await blockedPage.goto(server.url + "/?v=2");await require("./private-device.cjs").enter(blockedPage);
     for (const view of Object.keys(headings)) {await nav(blockedPage, view); assert.equal(await blockedPage.locator("#app h2").first().textContent(), headings[view]);}
     await nav(blockedPage,"library"); await blockedPage.locator("#search").fill("DNS");
     await blockedPage.locator('[data-card="dns"] [data-prog="progress"]').tap();
@@ -344,7 +344,7 @@ async function main() {
       Storage.prototype.getItem=function(k){if(k===key && first){first=false;throw new DOMException("Temporary read failure","SecurityError");}return get.call(this,k);};
     },{key:KEY,old:previousProgress});
     const unreadPage=await unreadable.newPage(); unreadPage.on("pageerror",e=>errors.push(e.message));
-    await unreadPage.goto(server.url+"/");
+    await unreadPage.goto(server.url+"/");await require("./private-device.cjs").enter(unreadPage);
     await nav(unreadPage,"library");
     await unreadPage.locator('[data-card="dns"] [data-prog="progress"]').tap();
     await unreadPage.locator("#search").fill("DNS");
@@ -362,7 +362,7 @@ async function main() {
       Storage.prototype.getItem=function(k){if(k===key&&first){first=false;throw new DOMException("Temporary Daily Five read failure","SecurityError");}return get.call(this,k);};
     },{key:DAILY_KEY,old:previousDaily});
     const unreadDailyPage=await unreadDaily.newPage(); unreadDailyPage.on("pageerror",e=>errors.push(e.message));
-    await unreadDailyPage.goto(server.url+"/");
+    await unreadDailyPage.goto(server.url+"/");await require("./private-device.cjs").enter(unreadDailyPage);
     await nav(unreadDailyPage,"daily");
     await unreadDailyPage.locator("[data-daily-mission]").tap();
     assert.equal(await unreadDailyPage.evaluate(key=>localStorage.getItem(key),DAILY_KEY),previousDaily);
@@ -379,7 +379,7 @@ async function main() {
     },{key:KEY,old:quotaPrevious});
     const quotaPage=await quota.newPage(); quotaPage.on("pageerror",e=>errors.push(e.message));
     quotaPage.on("request",request=>{if(!request.url().startsWith(server.url+"/"))external.push(request.url());});
-    await quotaPage.goto(server.url+"/");
+    await quotaPage.goto(server.url+"/");await require("./private-device.cjs").enter(quotaPage);
     await quotaPage.locator('[data-card="dns"] [data-prog="progress"]').tap();
     assert(await quotaPage.locator('[data-card="dns"] [data-prog="progress"]').evaluate(el=>el.classList.contains("on")));
     assert.equal(await quotaPage.evaluate(key=>localStorage.getItem(key),KEY),quotaPrevious);
@@ -411,7 +411,7 @@ async function main() {
     const fallback = await browser.newContext(profile); contexts.push(fallback);
     await fallback.addInitScript(() => {HTMLDialogElement.prototype.showModal = undefined;});
     const fallbackPage = await fallback.newPage(); fallbackPage.on("pageerror", e => errors.push(e.message));
-    await fallbackPage.goto(server.url + "/");
+    await fallbackPage.goto(server.url + "/");await require("./private-device.cjs").enter(fallbackPage);
     await fallbackPage.locator('#app [data-open]').first().tap();
     assert.equal(await fallbackPage.locator("#dlg").getAttribute("open"), "");
     await fallbackPage.locator("#close").tap();
@@ -421,7 +421,7 @@ async function main() {
     const paris = await browser.newContext({...profile,timezoneId:"Europe/Paris"}); contexts.push(paris);
     const midnight = await paris.newPage(); midnight.on("pageerror",e=>errors.push(e.message));
     await midnight.clock.install({time:new Date("2026-10-04T23:30:00Z")});
-    await midnight.goto(server.url + "/"); await nav(midnight,"library");
+    await midnight.goto(server.url + "/");await require("./private-device.cjs").enter(midnight); await nav(midnight,"library");
     await midnight.locator('[data-card="dns"] [data-prog="mastered"]').tap();
     const dueDay=await midnight.evaluate(key=>JSON.parse(localStorage.getItem(key)).review.dns.due,KEY);
     assert.equal(dueDay,"2026-10-06","J+1 must follow the local calendar after midnight Paris time");

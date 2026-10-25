@@ -1,5 +1,11 @@
 # Vérification mobile
 
+## Google OAuth et accès public — 25/10/2026
+
+`node tests/cloud-oauth.cjs` vérifie PKCE S256, le callback exact, l'identité vérifiée, les annulations concurrentes et le renouvellement/révocation de session. `BROWSER=chromium node tests/cloud-oauth-browser.cjs` et la variante WebKit exercent deux clients fictifs, restauration, fermeture/réouverture et réponse perdue. Le fournisseur Auth et la Data API sont simulés ; aucun compte Google réel, utilisateur personnel ou iPhone physique n'est validé par ces tests. Le protocole réel et les prérequis sont décrits dans [docs/google-auth.md](docs/google-auth.md).
+
+Les suites historiques choisissent explicitement un appareil personnel fictif avant leur scénario. Le lecteur public est testé séparément, avec canari de progression préexistante : aucun chargement du stockage personnel. `python3 -m unittest discover -s tests -p 'test_pages*.py'` valide aussi le build public à liste fermée, depuis les blobs du commit courant.
+
 La CI teste la navigation tactile et la recherche dans Chromium et WebKit avec le profil iPhone 11 Pro Max.
 Elle couvre Safari (414 × 715), l’application en plein écran (414 × 896), le paysage (896 × 414),
 un petit écran (320 × 568) et le bureau (1280 × 900).

@@ -14,7 +14,7 @@ WORKFLOW = ".github/workflows/tests.yml"
 WORKFLOW_NAME = "Reconversion Control · tests mobiles"
 REQUIRED_JOBS = {"provenance", "mobile (chromium)", "mobile (webkit)"}
 PUBLIC_FILES = (
-    "index.html", "project-plan.js", "app.js", "data.js", "course-foundations.js",
+    "index.html", "access-mode.js", "courses-public.html", "courses-public.js", "project-plan.js", "app.js", "data.js", "course-foundations.js",
     "course-race.js", "course-operations.js", "learning.js", "english.js",
     "drive-learning.js", "daily-five.js", "deep-dives.js", "evidence-checks.js",
     "cloud-transport.js", "cloud-ui.js", "style.css", "sw.js", "manifest.webmanifest",

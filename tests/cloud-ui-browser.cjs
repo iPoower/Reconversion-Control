@@ -33,7 +33,8 @@ async function run(browser, server) {
         unexpected.push(req.url()); return route.abort();
       });
       const page = await context.newPage(); page.on("pageerror", error => errors.push(error.message));
-      await page.goto(server.url + "/#privacy");
+      await page.goto(server.url + "/#privacy");await require("./private-device.cjs").enter(page);
+      await require("./private-device.cjs").legacyEmail(page);
       await page.locator("#rc-sync-url").fill("https://fixture.supabase.co");
       await page.locator("#rc-sync-key").fill("sb_publishable_fixture");
       await page.locator("#rc-sync-email").fill("fixture@example.invalid");

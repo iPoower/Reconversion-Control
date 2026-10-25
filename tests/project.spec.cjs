@@ -15,7 +15,7 @@ async function main(){
  const seed={view:"cockpit",section:"all",search:"",status:"all",progress:{dns:"mastered","rc-02":"progress"},review:{dns:{step:0,due:"2099-01-01"}},labs:{"lab-01":"progress"},proofs:{"rc-25":{status:"progress",evidence:"Preuve historique"}},labChecks:{}};
  try{
   await context.addInitScript(({KEY,DAILY,seed,dailySeed})=>{if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(seed));if(!localStorage.getItem(DAILY))localStorage.setItem(DAILY,JSON.stringify(dailySeed));},{KEY,DAILY,seed,dailySeed});
-  await page.goto(server.url+"/#project");
+  await page.goto(server.url+"/#project");await require("./private-device.cjs").enter(page);
   assert.equal(await page.locator("#app h2").first().textContent(),"Mon projet de reconversion");
   assert.equal(await page.locator("[data-project-answer]").count(),16);
   assert.equal(await page.locator("[data-project-drill]").count(),8);
@@ -46,7 +46,7 @@ async function main(){
   await cost.locator('[name="tuition"]').fill("11000");await cost.locator('[name="exam"]').fill("300");await cost.locator('[name="equipment"]').fill("500");await cost.locator('[name="travel"]').fill("200");await cost.locator("button").click();
   assert.match(await cost.locator(".project-budget-result").textContent(),/12\s000 €.*1\s000 €/);
   console.log("PASS school/drill evidence requires a date; budgets include all explicit costs, separate from financing");
-  await page.locator('[data-project-task="quotes"]').selectOption("doing");await page.reload();
+  await page.locator('[data-project-task="quotes"]').selectOption("doing");await page.reload();await require("./private-device.cjs").enter(page);
   assert.equal((await read()).career.tasks.quotes,"doing");
   await page.locator('[data-view="privacy"]').first().click();
   const downloaded=page.waitForEvent("download");await page.locator("#export").click();const download=await downloaded;
@@ -61,7 +61,7 @@ async function main(){
   await page.locator("#importer").setInputFiles({name:"new.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(saved))});
   await page.waitForTimeout(200);assert.deepEqual((await read()).career,saved.career);
   console.log("PASS new dossier round-trips through export/import; legacy import preserves it; invalid import is atomic");
-  await page.goto(server.url+"/#project");
+  await page.goto(server.url+"/#project");await require("./private-device.cjs").enter(page);
   for(const width of [320,414,1280]){
    await page.setViewportSize({width,height:900});await geometry(page);
    if(process.env.RC_SCREENSHOT_DIR){await fs.mkdir(process.env.RC_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.RC_SCREENSHOT_DIR,width+"-project-2027.png"),fullPage:false});}

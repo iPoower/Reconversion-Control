@@ -42,7 +42,7 @@ async function main() {
     });
     const page = await context.newPage();
     page.on("pageerror", e => errors.push(e.message));
-    await page.goto(server.url + "/?v=2");
+    await page.goto(server.url + "/?v=2");await require("./private-device.cjs").enter(page);
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready;
       if (!navigator.serviceWorker.controller) await new Promise(resolve => navigator.serviceWorker.addEventListener("controllerchange", resolve, {once:true}));
@@ -67,7 +67,7 @@ async function main() {
     assert(!installedScript.includes("__staleReconversionScript"), "installation must replace a fresh HTTP-cached v2 script");
     const installedLessons = await page.evaluate(async cacheName => (await (await (await caches.open(cacheName)).match("./course-foundations.js")).text()),activeCache);
     assert(!installedLessons.includes("__staleReconversionLessons"),"installation must also refresh a still-fresh HTTP-cached course file");
-    await page.reload();
+    await page.reload();await require("./private-device.cjs").enter(page);
     assert.equal(await page.locator("#app h2").first().textContent(), "⚡ 5 minutes du jour");
     assert.equal(await page.evaluate(() => !!window.__staleReconversionScript), false);
     await page.locator('#nav [data-view="library"]').tap();
@@ -76,11 +76,11 @@ async function main() {
     passed("installation bypasses a still-fresh old HTTP script and the reloaded app retains 42 fiches and 42 chapters");
 
     await context.setOffline(true);
-    await page.goto(server.url + "/#project");
+    await page.goto(server.url + "/#project");await require("./private-device.cjs").enter(page);
     assert.equal(await page.locator("#app h2").first().textContent(),"Mon projet de reconversion");
     assert.equal(await page.locator("[data-project-answer]").count(),16);
     await page.locator('#nav [data-view="cockpit"]').tap();
-    await page.goto(server.url + "/?v=2");
+    await page.goto(server.url + "/?v=2");await require("./private-device.cjs").enter(page);
     assert.equal(await page.locator("#app h2").first().textContent(), "⚡ 5 minutes du jour");
     await page.locator('#nav [data-view="daily"]').tap();
     assert.equal(await page.locator(".daily-round").count(),3);
@@ -91,7 +91,7 @@ async function main() {
     assert.equal(await page.locator("#detail h2").textContent(), "DNS");
     await page.locator('[data-dprog="mastered"]').tap();
     await page.locator("#close").tap();
-    await page.reload();
+    await page.reload();await require("./private-device.cjs").enter(page);
     assert(await page.locator('[data-card="dns"] [data-prog="mastered"]').evaluate(el => el.classList.contains("on")));
     passed("offline navigation with ?v=2 still supports fiche search, detail and saved progression");
 
@@ -105,7 +105,7 @@ async function main() {
     assert.equal(await answer.evaluate(el=>el.open),true);
     await page.locator('[data-dprog="mastered"]').tap();
     await page.locator("#close").tap();
-    await page.reload();
+    await page.reload();await require("./private-device.cjs").enter(page);
     assert.equal(await page.locator("#course-chapters [data-card]").count(),42);
     assert(await page.locator('[data-card="rc-06"] [data-prog="mastered"]').evaluate(el=>el.classList.contains("on")));
     await page.locator('#nav [data-view="library"]').tap();
@@ -144,7 +144,7 @@ async function main() {
 
     await context.setOffline(false);
     server.failures.set("/Reconversion-Control/",503);
-    await page.goto(server.url + "/?v=2");
+    await page.goto(server.url + "/?v=2");await require("./private-device.cjs").enter(page);
     assert.equal(await page.locator("#app h2").first().textContent(), "Bibliothèque essentielle");
     assert(await page.locator('[data-card="dns"] [data-prog="mastered"]').evaluate(el => el.classList.contains("on")));
     passed("a 503 navigation uses the existing offline app and preserves local progress");
