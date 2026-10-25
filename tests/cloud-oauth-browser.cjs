@@ -47,10 +47,13 @@ async function run(){
  try{
   const publicContext=await context();await publicContext.addInitScript(({key})=>{
    localStorage.setItem(key,'{"private":"PUBLIC_READER_CANARY"}');
-   window.__privateReads=[];const original=Storage.prototype.getItem;Storage.prototype.getItem=function(k){if(k===key||k.includes(".cloud."))window.__privateReads.push(k);return original.call(this,k);};
+   window.__privateReads=[];const original=Storage.prototype.getItem;Storage.prototype.getItem=function(k){if(this===localStorage)window.__privateReads.push(k);return original.call(this,k);};
   },{key:CANON});
   const pub=await publicContext.newPage();await pub.goto(server.url+"/");assert(await pub.locator("#rc-private-enter").isVisible());assert.equal(await pub.locator("#rc-sync-phrase").count(),0);assert.deepEqual(await pub.evaluate(()=>window.__privateReads),[]);
   await pub.getByRole("link",{name:"Consulter les cours sans connexion",exact:true}).click();await pub.locator("[data-public-lesson]").first().waitFor();assert.equal(await pub.locator("[data-public-lesson]").count(),42);await pub.locator("[data-public-lesson]").first().click();assert(await pub.locator("#public-lesson h2").isVisible());
+  for(let i=0;i<42;i++){await pub.locator("[data-public-lesson]").nth(i).click();assert(!/undefined|\[object Object\]/.test(await pub.locator("#public-lesson").innerText()));assert((await pub.locator("#public-lesson li").count())>0);}
+  await pub.goto(server.url+"/?code=UNSOLICITED_FICTIONAL_AUTH_CODE#access_token=IMPLICIT_TOKEN_CANARY");await pub.locator("#rc-private-enter").waitFor();assert(!pub.url().includes("code="));assert(!pub.url().includes("IMPLICIT_TOKEN_CANARY"));assert.equal(await pub.locator("#rc-sync-phrase").count(),0);
+
   assert.deepEqual(await pub.evaluate(()=>window.__privateReads),[]);assert.equal(publicContext.calls.length,0);assert(!await pub.locator("body").innerText().then(s=>s.includes("PUBLIC_READER_CANARY")));
   assert(!server.requests.some(r=>/cloud-transport|cloud-ui|\/app\.js/.test(r.path)),"Public reading must not load personal/cloud code");
   console.log("PASS Google/browser: default gate and all 42 public lessons avoid personal reads, Auth and cloud modules");
