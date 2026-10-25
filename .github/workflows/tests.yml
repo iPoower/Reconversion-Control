@@ -91,12 +91,16 @@ jobs:
           node --check evidence-checks.js
           node --check cloud-transport.js
           node --check cloud-ui.js
+          node --check access-mode.js
+          node --check courses-public.js
           node --check sw.js
       - name: Exercices probants et modules IT sourcés
         run: |
           node tests/deep-checks.cjs
           node tests/project-checks.cjs
           node tests/cloud-sync.spec.cjs
+          node tests/cloud-oauth.cjs
+          BROWSER=${{ matrix.browser }} node tests/cloud-oauth-browser.cjs
           node tests/cloud-final-mile.cjs
           node tests/cloud-history.cjs
           BROWSER=${{ matrix.browser }} node tests/cloud-final-mile-browser.cjs

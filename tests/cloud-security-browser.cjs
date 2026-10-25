@@ -7,7 +7,7 @@ async function run(){
  const unexpected=[],errors=[];
  try{
   await context.route("**/*",route=>{if(new URL(route.request().url()).origin===server.origin)return route.continue();unexpected.push(route.request().url());return route.abort();});
-  const page=await context.newPage();page.on("pageerror",e=>errors.push(e.message));await page.goto(server.url+"/#privacy");
+  const page=await context.newPage();page.on("pageerror",e=>errors.push(e.message));await page.goto(server.url+"/#privacy");await require("./private-device.cjs").enter(page);
   await page.waitForFunction(k=>!!localStorage.getItem(k),CANON);
   const before=await page.evaluate(k=>localStorage.getItem(k),CANON);
   const policy=await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute("content");

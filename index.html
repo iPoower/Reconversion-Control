@@ -10,6 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Reconversion Control">
+  <script src="./access-mode.js?v=__BUILD_SHA__"></script>
   <title>Reconversion Control</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icon-192.png">
@@ -17,6 +18,8 @@
   <link rel="stylesheet" href="./style.css?v=__BUILD_SHA__">
 </head>
 <body>
+<section id="rc-access-screen" class="wrap" aria-label="Choisir un accès"></section>
+<div id="rc-private-shell" hidden>
 <a id="skip-link" class="skip-link" href="#app">Aller au contenu · Skip to content</a>
 <header class="statusbar"><div class="statusin">
   <span class="badge"><i></i> LOCAL</span>
@@ -43,19 +46,20 @@
 <aside id="update-notice" class="update-notice" role="status" aria-live="polite" hidden><span>✨ Nouvelle version disponible</span><button id="update-reload" class="btn pri">Actualiser</button></aside>
 <dialog id="dlg" class="dialog" aria-labelledby="detail-title"><div class="dialogbox"><button id="close" class="close" aria-label="Fermer">×</button><div id="detail"></div></div></dialog>
 <input id="importer" type="file" accept=".json,application/json" aria-label="Importer une progression JSON" hidden>
-<script src="./data.js?v=__BUILD_SHA__"></script>
-<script src="./course-foundations.js?v=__BUILD_SHA__"></script>
-<script src="./course-race.js?v=__BUILD_SHA__"></script>
-<script src="./course-operations.js?v=__BUILD_SHA__"></script>
-<script src="./learning.js?v=__BUILD_SHA__"></script>
-<script src="./english.js?v=__BUILD_SHA__"></script>
-<script src="./drive-learning.js?v=__BUILD_SHA__"></script>
-<script src="./deep-dives.js?v=__BUILD_SHA__"></script>
-<script src="./evidence-checks.js?v=__BUILD_SHA__"></script>
-<script src="./daily-five.js?v=__BUILD_SHA__"></script>
-<script src="./cloud-transport.js?v=__BUILD_SHA__"></script>
-<script src="./cloud-ui.js?v=__BUILD_SHA__"></script>
-<script src="./project-plan.js?v=__BUILD_SHA__"></script>
-<script src="./app.js?v=__BUILD_SHA__"></script>
+</div>
+<script type="application/x-rc-private" data-rc-private-src="./data.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./course-foundations.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./course-race.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./course-operations.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./learning.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./english.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./drive-learning.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./deep-dives.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./evidence-checks.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./daily-five.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./cloud-transport.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./cloud-ui.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./project-plan.js?v=__BUILD_SHA__"></script>
+<script type="application/x-rc-private" data-rc-private-src="./app.js?v=__BUILD_SHA__"></script>
 </body>
 </html>

@@ -48,7 +48,7 @@ async function main() {
     const page = await context.newPage();
     page.on("pageerror",e=>errors.push(e.message));
     page.on("request",request=>{if(!request.url().startsWith(server.url + "/"))external.push(request.url());});
-    await page.goto(server.url + "/?v=2");
+    await page.goto(server.url + "/?v=2");await require("./private-device.cjs").enter(page);
     return {context,page};
   }
   try {
@@ -307,7 +307,7 @@ async function main() {
     // Closing returns through browser history; finish that navigation before reloading.
     await learning.waitForURL(url=>url.hash==="#course");
     assert.equal(await learning.locator("#dlg").evaluate(el=>el.open),false);
-    await learning.reload();
+    await learning.reload();await require("./private-device.cjs").enter(learning);
     assert.equal(await learning.locator("#dlg").evaluate(el=>el.open),false);
     assert(await learning.locator('[data-card="rc-06"] [data-prog="mastered"]').evaluate(el=>el.classList.contains("on")));
     const mixed = await learning.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);

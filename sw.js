@@ -1,7 +1,7 @@
 const PREFIX = "reconversion-control-";
 const BUILD = "__BUILD_SHA__";
 const CACHE = PREFIX + (BUILD.indexOf("__") === 0 ? "dev" : BUILD.slice(0, 12));
-const CORE = ["./", "./index.html", "./style.css", "./data.js", "./course-foundations.js", "./course-race.js", "./course-operations.js", "./learning.js", "./english.js", "./drive-learning.js", "./daily-five.js", "./deep-dives.js", "./evidence-checks.js", "./cloud-transport.js", "./cloud-ui.js", "./app.js", "./project-plan.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/icon-512.png"];
+const CORE = ["./", "./index.html", "./access-mode.js", "./courses-public.html", "./courses-public.js", "./style.css", "./data.js", "./course-foundations.js", "./course-race.js", "./course-operations.js", "./learning.js", "./english.js", "./drive-learning.js", "./daily-five.js", "./deep-dives.js", "./evidence-checks.js", "./cloud-transport.js", "./cloud-ui.js", "./app.js", "./project-plan.js", "./manifest.webmanifest", "./assets/icon-192.png", "./assets/icon-512.png"];
 const BASE = new URL(self.registration.scope);
 const INDEX = new URL("./index.html", BASE).href;
 const ASSETS = new Set(CORE.map(function(path) { return new URL(path, BASE).pathname; }));
@@ -26,6 +26,13 @@ self.addEventListener("fetch", function(event) {
   const request = event.request, url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== BASE.origin || !url.pathname.startsWith(BASE.pathname)) return;
   if (request.mode === "navigate") {
+    // An OAuth code must never be cached or replaced by an offline app shell.
+    if (url.searchParams.has("code") || url.searchParams.has("error")) {
+      event.respondWith(fetch(new Request(request, {cache:"no-store"})).catch(() => new Response("Connexion interrompue : reconnecte-toi avec le réseau. Aucune donnée locale effacée.", {status:503, headers:{"Content-Type":"text/plain; charset=utf-8","Cache-Control":"no-store"}})));
+      return;
+    }
+    const publicIndex = new URL("./courses-public.html", BASE).href;
+    const fallback = url.pathname === new URL(publicIndex).pathname ? publicIndex : INDEX;
     event.respondWith(caches.open(CACHE).then(async function(cache) {
       try {
         const response = await fetch(new Request(request, { cache: "no-cache" }));
@@ -33,9 +40,9 @@ self.addEventListener("fetch", function(event) {
           if (url.pathname === BASE.pathname || url.pathname === new URL(INDEX).pathname) await cache.put(INDEX, response.clone());
           return response;
         }
-        return await cache.match(INDEX) || response;
+        return await cache.match(fallback) || response;
       } catch (error) {
-        return await cache.match(INDEX) || Response.error();
+        return await cache.match(fallback) || Response.error();
       }
     }));
     return;
