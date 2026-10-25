@@ -51,7 +51,12 @@ async function run(){
   },{key:CANON});
   const pub=await publicContext.newPage();await pub.goto(server.url+"/");assert(await pub.locator("#rc-private-enter").isVisible());assert.equal(await pub.locator("#rc-sync-phrase").count(),0);assert.deepEqual(await pub.evaluate(()=>window.__privateReads),[]);
   await pub.getByRole("link",{name:"Consulter les cours sans connexion",exact:true}).click();await pub.locator("[data-public-lesson]").first().waitFor();assert.equal(await pub.locator("[data-public-lesson]").count(),42);await pub.locator("[data-public-lesson]").first().click();assert(await pub.locator("#public-lesson h2").isVisible());
-  for(let i=0;i<42;i++){await pub.locator("[data-public-lesson]").nth(i).click();assert(!/undefined|\[object Object\]/.test(await pub.locator("#public-lesson").innerText()));assert((await pub.locator("#public-lesson li").count())>0);}
+  for(let i=0;i<42;i++){
+   await pub.locator("[data-public-lesson]").nth(i).click();
+   const expected=await pub.evaluate(i=>{const l=RC_LESSONS[i];return {title:l.title,sources:l.sources.map(s=>{const id=typeof s==="string"?s:s.id,p=RC_SUPPORTS.find(p=>p.id===id)||s;return (p.title||id)+(s.pages?" · p. "+s.pages:"");})};},i);
+   assert.equal(await pub.locator("#public-lesson h2").textContent(),expected.title);
+   assert.deepEqual(await pub.locator("#public-lesson .public-sources li").allTextContents(),expected.sources);
+  }
   await pub.goto(server.url+"/?code=UNSOLICITED_FICTIONAL_AUTH_CODE#access_token=IMPLICIT_TOKEN_CANARY");await pub.locator("#rc-private-enter").waitFor();assert(!pub.url().includes("code="));assert(!pub.url().includes("IMPLICIT_TOKEN_CANARY"));assert.equal(await pub.locator("#rc-sync-phrase").count(),0);
 
   assert.deepEqual(await pub.evaluate(()=>window.__privateReads),[]);assert.equal(publicContext.calls.length,0);assert(!await pub.locator("body").innerText().then(s=>s.includes("PUBLIC_READER_CANARY")));
