@@ -1,12 +1,12 @@
 "use strict";
 // Real app, crypto and browser storage; ALL Auth/Google/Supabase HTTP is mocked.
-const assert=require("node:assert/strict"),{chromium,webkit,devices}=require("playwright"),{startServer}=require("./server.cjs"),{enter}=require("./private-device.cjs");
+const assert=require("node:assert/strict"),{createHash}=require("node:crypto"),{chromium,webkit,devices}=require("playwright"),{startServer}=require("./server.cjs"),{enter}=require("./private-device.cjs");
 const B={chromium,webkit}[process.env.BROWSER||"chromium"],A="11111111-1111-4111-8111-111111111111",OTHER="22222222-2222-4222-8222-222222222222",CANON="reconversion-control.snapshot.v3",CFG="reconversion-control.cloud.config.v1",PHRASE="FICTIVE-google-backup-phrase-2026";
 async function run(){
  const server=await startServer(),browser=await B.launch({headless:true}),contexts=[],logs=[],errors=[],unexpected=[];let row=null,history=[],writes=0,lose=false;
  async function context(uid=A,mobile=false){
   const c=await browser.newContext({...(mobile?devices["iPhone 11 Pro Max"]:{}),serviceWorkers:"block"});contexts.push(c);
-  const calls=[];c.calls=calls;
+  const calls=[];c.calls=calls;let challenge=null;
   await c.route("**/*",async route=>{
    const req=route.request(),u=new URL(req.url());if(u.origin===server.origin)return route.continue();
    if(u.origin!=="https://fixture.supabase.co"){unexpected.push(u.origin+u.pathname);return route.abort();}
@@ -16,9 +16,15 @@ async function run(){
    if(req.method()==="OPTIONS")return reply(200,{});
    if(u.pathname==="/auth/v1/authorize"){
     assert.equal(u.searchParams.get("provider"),"google");assert.equal(u.searchParams.get("scopes"),"openid email profile");assert.equal(u.searchParams.get("code_challenge_method"),"s256");assert.equal(u.searchParams.get("redirect_to"),server.url+"/");
-    return route.fulfill({status:302,headers:{location:server.url+"/?code=fictional-oauth-code-123456789#privacy"},body:""});
+    challenge=u.searchParams.get("code_challenge");
+    // WebKit interception cannot fulfill a navigation with HTTP 302. A mock
+    // provider page performs the same cross-origin top-level return instead.
+    return route.fulfill({status:200,contentType:"text/html",body:'<!doctype html><meta http-equiv="refresh" content="0;url='+server.url+'/?code=fictional-oauth-code-123456789#privacy">'});
    }
-   if(u.pathname==="/auth/v1/token")return reply(200,{access_token:"OAUTH_ACCESS_CANARY",refresh_token:"OAUTH_REFRESH_CANARY",provider_token:"GOOGLE_TOKEN_CANARY",expires_in:3600,user});
+   if(u.pathname==="/auth/v1/token"){
+    if(u.searchParams.get("grant_type")==="pkce"){const body=req.postDataJSON();assert.equal(body.auth_code,"fictional-oauth-code-123456789");assert.equal(createHash("sha256").update(body.code_verifier).digest("base64url"),challenge);challenge=null;}
+    return reply(200,{access_token:"OAUTH_ACCESS_CANARY",refresh_token:"OAUTH_REFRESH_CANARY",provider_token:"GOOGLE_TOKEN_CANARY",expires_in:3600,user});
+   }
    if(u.pathname==="/auth/v1/user")return reply(200,user);
    if(u.pathname==="/auth/v1/logout")return reply(200,{});
    if(u.pathname==="/rest/v1/reconversion_progress_history"){
@@ -51,21 +57,21 @@ async function run(){
   const pcContext=await context(),pc=await page(pcContext);await edit(pc,"mastered");const initial=await snapshot(pc);await google(pc);
   assert.equal(pcContext.calls.filter(r=>r.path.startsWith("/rest/")).length,0,"OAuth alone cannot download progress");assert.equal(row,null);
   const preUnlock=await pc.evaluate(()=>JSON.stringify({...localStorage})+JSON.stringify({...sessionStorage}));assert(!/OAUTH_ACCESS_CANARY|OAUTH_REFRESH_CANARY|GOOGLE_TOKEN_CANARY/.test(preUnlock));
-  await unlockGoogle(pc);await pc.locator("#rc-sync-create").waitFor();assert.equal(row,null);await pc.locator("#rc-sync-create").click();await pc.waitForFunction(()=>document.querySelector("#rc-sync-status").textContent.includes("confirmée"));assert.equal(row.revision,1);
+  await unlockGoogle(pc);await pc.locator("#rc-sync-create").waitFor();assert.equal(row,null);await pc.locator("#rc-sync-create").click();await pc.waitForFunction(()=>document.querySelector("#rc-sync-status")?.textContent.includes("confirmée"));assert.equal(row.revision,1);
   const decoded=await pc.evaluate(async({payload,phrase})=>RC_CLOUD_TRANSPORT.open(payload,phrase),{payload:row.payload,phrase:PHRASE});assert.equal(decoded.progress.dns,"mastered");assert(!JSON.stringify(row).includes("mastered"));
   console.log("PASS Google/browser: PKCE return, account confirmation, independent phrase and explicit first encrypted backup with readback");
   const phoneContext=await context(A,true),phone=await page(phoneContext);await google(phone);await unlockGoogle(phone);await phone.locator("#rc-sync-take").waitFor();await phone.locator("#rc-sync-take").click();await phone.waitForFunction(()=>JSON.parse(localStorage.getItem("reconversion-control.snapshot.v3")).main.progress.dns==="mastered");
   const restored=await snapshot(phone);assert.deepEqual(restored.main.progress,initial.main.progress);
   await phone.close();const reopened=await page(phoneContext);assert(await reopened.locator("#rc-sync-unlock").isVisible());const before=phoneContext.calls.length;
-  await reopened.locator("#rc-sync-phrase").fill("wrong-fictional-phrase");await reopened.locator("#rc-sync-unlock").click();await reopened.waitForFunction(()=>document.querySelector("#rc-sync-status").textContent.includes("refusé"));assert.equal(phoneContext.calls.length,before);assert.deepEqual((await snapshot(reopened)).main.progress,restored.main.progress);
-  await reopened.locator("#rc-sync-phrase").fill(PHRASE);await reopened.locator("#rc-sync-unlock").click();await reopened.waitForFunction(()=>document.querySelector("#rc-sync-status").textContent.includes("Restauration vérifiée après réouverture"));
+  await reopened.locator("#rc-sync-phrase").fill("wrong-fictional-phrase");await reopened.locator("#rc-sync-unlock").click();await reopened.waitForFunction(()=>document.querySelector("#rc-sync-status")?.textContent.includes("refusé"));assert.equal(phoneContext.calls.length,before);assert.deepEqual((await snapshot(reopened)).main.progress,restored.main.progress);
+  await reopened.locator("#rc-sync-phrase").fill(PHRASE);await reopened.locator("#rc-sync-unlock").click();await reopened.waitForFunction(()=>document.querySelector("#rc-sync-status")?.textContent.includes("Restauration vérifiée après réouverture"));
   await phoneContext.setOffline(true);await edit(reopened,"progress");await reopened.locator("#rc-sync-now").click();assert.equal((await snapshot(reopened)).main.progress.dns,"progress");lose=true;await phoneContext.setOffline(false);await reopened.locator("#rc-sync-now").click();
-  await reopened.waitForFunction(()=>/sauvegardées|À jour sur cet appareil/.test(document.querySelector("#rc-sync-status").textContent));await pc.locator("#rc-sync-now").click();await pc.waitForFunction(()=>JSON.parse(localStorage.getItem("reconversion-control.snapshot.v3")).main.progress.dns==="progress");assert.equal(row.revision,2);assert.equal(writes,2);
+  await reopened.waitForFunction(()=>/sauvegardées|À jour sur cet appareil/.test(document.querySelector("#rc-sync-status")?.textContent));await pc.locator("#rc-sync-now").click();await pc.waitForFunction(()=>JSON.parse(localStorage.getItem("reconversion-control.snapshot.v3")).main.progress.dns==="progress");assert.equal(row.revision,2);assert.equal(writes,2);
   const secrets=await reopened.evaluate(()=>JSON.stringify({...localStorage})+JSON.stringify({...sessionStorage}));assert(!secrets.includes(PHRASE));assert(!/OAUTH_ACCESS_CANARY|OAUTH_REFRESH_CANARY|GOOGLE_TOKEN_CANARY/.test(secrets));
   console.log("PASS Google/browser: second independent client, reopen/unlock, wrong phrase, offline edits and lost-response reconciliation");
-  const otherContext=await context(OTHER),other=await page(otherContext);await other.evaluate(({key,id})=>{const c={url:"https://fixture.supabase.co",key:"sb_publishable_fixture",owner:id};localStorage.setItem(key,JSON.stringify(c));},{key:CFG,id:A});await other.reload();await enter(other);const stable=await other.evaluate(k=>localStorage.getItem(k),CANON);await other.locator("#rc-sync-google").click();await other.waitForFunction(()=>document.querySelector("#rc-sync-status").textContent.includes("compte inattendu"));assert.equal(await other.evaluate(k=>localStorage.getItem(k),CANON),stable);assert.equal(otherContext.calls.filter(r=>r.path.startsWith("/rest/")).length,0);
+  const otherContext=await context(OTHER),other=await page(otherContext);await other.evaluate(({key,id})=>{const c={url:"https://fixture.supabase.co",key:"sb_publishable_fixture",owner:id};localStorage.setItem(key,JSON.stringify(c));},{key:CFG,id:A});await other.reload();await enter(other);const stable=await other.evaluate(k=>localStorage.getItem(k),CANON);await other.locator("#rc-sync-google").click();await other.waitForFunction(()=>document.querySelector("#rc-sync-status")?.textContent.includes("compte inattendu"));assert.equal(await other.evaluate(k=>localStorage.getItem(k),CANON),stable);assert.equal(otherContext.calls.filter(r=>r.path.startsWith("/rest/")).length,0);
   console.log("PASS Google/browser: an unexpected account cannot persist its session or access another account's progress");
-  await reopened.locator("#rc-sync-disconnect").click();await reopened.waitForFunction(()=>document.querySelector("#rc-sync-status").textContent.includes("Déconnecté"));assert.equal(await reopened.evaluate(()=>localStorage.getItem("reconversion-control.cloud.session.v1")),null);assert.equal((await snapshot(reopened)).main.progress.dns,"progress");
+  await reopened.locator("#rc-sync-disconnect").click();await reopened.waitForFunction(()=>document.querySelector("#rc-sync-status")?.textContent.includes("Déconnecté"));assert.equal(await reopened.evaluate(()=>localStorage.getItem("reconversion-control.cloud.session.v1")),null);assert.equal((await snapshot(reopened)).main.progress.dns,"progress");
   assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);assert(!/OAUTH_ACCESS_CANARY|OAUTH_REFRESH_CANARY|GOOGLE_TOKEN_CANARY|FICTIVE-google-backup-phrase-2026/.test(logs.join("\n")));
   console.log("PASS Google/browser: explicit logout preserves V3 and no secrets appear in browser logs; provider traffic was entirely simulated");
  }finally{for(const c of contexts)await c.close();await browser.close();await server.close();}
