@@ -72,6 +72,7 @@ Le dossier est conservé lors d’un import ancien qui ne possède pas de champ 
 ```sh
 node tests/cloud-sync.spec.cjs
 node tests/cloud-final-mile.cjs
+node tests/cloud-rollback.cjs
 node tests/cloud-history.cjs
 node tests/cloud-storage.cjs
 BROWSER=chromium node tests/cloud-final-mile-browser.cjs

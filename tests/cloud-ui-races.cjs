@@ -48,7 +48,14 @@ function fixture() {
       serialize: JSON.stringify, fingerprint: async s => require("node:crypto").createHash("sha256").update(s).digest("hex"),
       // Serialize AFTER the wait, just as real seal() does after its asynchronous KDF.
       async seal(snapshot) { await wait("seal"); return {snapshot: copy(snapshot)}; },
-      async open(payload) { await wait("open"); return copy(payload.snapshot); }
+      async open(payload) { await wait("open"); return copy(payload.snapshot); },
+      // Simulated (account, revision) binding; payloads without ctx model legacy envelopes.
+      async sealProgress(snapshot, phrase, ctx) { await wait("seal"); return {snapshot: copy(snapshot), ctx: ctx.user + "|" + ctx.revision}; },
+      async openProgress(payload, phrase, ctx) {
+        await wait("open"); const bound = payload.ctx === ctx.user + "|" + ctx.revision;
+        if (!bound && !(ctx.legacy === true && payload.ctx === undefined)) throw Error("Déchiffrement impossible : sauvegarde rejouée");
+        return {data: copy(payload.snapshot), bound};
+      }
     }
   };
   vm.createContext(sandbox);
@@ -71,7 +78,8 @@ function fixture() {
     send: kind => kind === "first" ? click("create") : kind === "choice" ? click("push") : interval(),
     edit(value) { state.progress.dns = value; api.changed(); },
     pause(stage) { const gate = {started: deferred(), release: deferred()}; gates.set(stage, gate); return {started: gate.started.promise, release: gate.release.resolve}; },
-    remote(value) { row = {revision: (row ? row.revision : 0) + 1, payload: {snapshot: {version: 2, progress: {dns: value}}}}; },
+    // Another up-to-date (bound) client writes the next revision.
+    remote(value) { const revision = (row ? row.revision : 0) + 1; row = {revision, payload: {snapshot: {version: 2, progress: {dns: value}}, ctx: "00000000-0000-4000-8000-000000000001|" + revision}}; },
     tick: () => interval(),
     manual: () => click("now"),
     advance: ms => {clock+=ms;},

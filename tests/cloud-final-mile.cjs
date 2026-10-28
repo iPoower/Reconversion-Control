@@ -46,6 +46,18 @@ async function run(){
   for(const field of ["iv","salt","ciphertext"]){const changed={...x,[field]:(x[field][0]==="A"?"B":"A")+x[field].slice(1)};await assert.rejects(T.open(changed,phrase));}
   await assert.rejects(T.open({...x,v:2},phrase));await assert.rejects(T.open({...x,unknown:true},phrase));await assert.rejects(T.open({...x,ciphertext:"A".repeat(3000000)},phrase));
  });
+ await check("bound progress envelope keeps the SQL-pinned v1 shape and opens only for its own account and revision",async()=>{
+  const {T}=fixture(),data={version:2,progress:{dns:"bound-fixture"}},x=await T.sealProgress(data,phrase,{user:a,revision:7});
+  assert.deepEqual(Object.keys(x).sort(),["ciphertext","iterations","iv","kdf","salt","v"]);assert.equal(x.v,1);assert.equal(x.iterations,250000);assert.match(x.salt,/^[A-Za-z0-9+/]{22}==$/);assert.match(x.iv,/^[A-Za-z0-9+/]{16}$/);
+  assert.deepEqual(clone(await T.openProgress(x,phrase,{user:a,revision:7})),{data,bound:true});
+  assert.deepEqual(clone(await T.openProgress(x,phrase,{user:a.toUpperCase(),revision:7,legacy:true})),{data,bound:true});
+  for(const ctx of [{user:a,revision:8},{user:a,revision:6},{user:b,revision:7},{user:a,revision:8,legacy:true}])await assert.rejects(T.openProgress(x,phrase,ctx),/rejouée/);
+  await assert.rejects(T.open(x,phrase),/Déchiffrement/,"a pre-binding client cannot read (and so never applies) a bound envelope");
+  const legacy=await T.seal(data,phrase);
+  assert.deepEqual(clone(await T.openProgress(legacy,phrase,{user:a,revision:3,legacy:true})),{data,bound:false});
+  await assert.rejects(T.openProgress(legacy,phrase,{user:a,revision:3}),/rejouée/);
+  for(const ctx of [null,{user:"x",revision:1},{user:a,revision:0},{user:a,revision:"1"}])await assert.rejects(T.sealProgress(data,phrase,ctx),/Contexte/);
+ });
  await check("serialization freezes before KDF and supports large histories without spread overflow",async()=>{
   const {T}=fixture(),data={version:2,progress:{dns:"progress"},history:"x".repeat(300000)};
   const pending=T.seal(data,phrase);data.progress.dns="mastered";const sealed=await pending;

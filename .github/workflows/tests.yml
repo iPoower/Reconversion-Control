@@ -102,6 +102,7 @@ jobs:
           node tests/cloud-oauth.cjs
           BROWSER=${{ matrix.browser }} node tests/cloud-oauth-browser.cjs
           node tests/cloud-final-mile.cjs
+          node tests/cloud-rollback.cjs
           node tests/cloud-history.cjs
           BROWSER=${{ matrix.browser }} node tests/cloud-final-mile-browser.cjs
           BROWSER=${{ matrix.browser }} node tests/cloud-security-browser.cjs
