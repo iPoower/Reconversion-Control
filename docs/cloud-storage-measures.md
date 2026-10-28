@@ -47,6 +47,8 @@ Ce sont des extrapolations des corps mesurés, pas un relevé réseau ni une fac
 
 La rétention ne croît pas avec le nombre d'envois après vingt versions, mais chaque instantané complet peut grossir. À taille comparable aux profils étudiés, les relations compactées passent de 2,12 Mio à un an à 9,08 Mio à cinq ans, sans compression ; le profil cinq ans atteint 18,07 Mio juste après 21 écritures. Le disque réel inclut aussi catalogues, Auth, autres tables et espace mort. Surveiller les métriques hébergées et l'autovacuum ; aucune projection de taille constante indéfinie n'est justifiée.
 
+Migration préparée (non appliquée) `20261028120000_history_daily_retention.sql` : la borne devient 20 révisions + au plus une révision par jour UTC sur 30 jours, soit 50 instantanés au maximum par compte (≈ 2,5× la borne actuelle dans le pire cas). Re-mesurer avec `tests/cloud-storage.cjs` avant toute application.
+
 ## Offre Free et limites économiques
 
 La [tarification officielle Supabase](https://supabase.com/pricing), consultée le 24 octobre 2026, indique Free à 0 $/mois, 500 Mo de base par projet, 5 Go de trafic sortant, et la mise en pause après une semaine d'inactivité. Cela ne garantit ni coût total nul, ni disponibilité continue, ni sauvegarde physique automatique/PITR. Le SMTP peut aussi entraîner un coût séparé. Aucun forfait payant n'est activé ici.

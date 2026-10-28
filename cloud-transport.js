@@ -124,8 +124,8 @@ const RC_CLOUD_TRANSPORT = (() => {
   }
   async function history(){
    if(!session)throw Error("Non connecté");
-   const rows=await request("/rest/v1/reconversion_progress_history?user_id=eq."+encodeURIComponent(session.user)+"&select=revision&order=revision.desc&limit=20",{secure:true});
-   if(!Array.isArray(rows)||rows.length>20||rows.some(r=>!validRevision(r.revision)))throw Error("Historique invalide");return rows.map(r=>({revision:r.revision}));
+   const rows=await request("/rest/v1/reconversion_progress_history?user_id=eq."+encodeURIComponent(session.user)+"&select=revision&order=revision.desc&limit=50",{secure:true});
+   if(!Array.isArray(rows)||rows.length>50||rows.some(r=>!validRevision(r.revision)))throw Error("Historique invalide");return rows.map(r=>({revision:r.revision}));
   }
   async function historyVersion(revision){
    if(!session||!validRevision(revision))throw Error("Révision inaccessible");

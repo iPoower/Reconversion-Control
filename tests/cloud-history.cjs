@@ -80,6 +80,39 @@ async function run(){
    assert.equal((await db.query("select max(revision) n from public.reconversion_progress_history")).rows[0].n,24);
    await owner(b);assert.equal((await db.query("select count(*)::int n from public.reconversion_progress_history")).rows[0].n,1);
   });
+  // Daily retention migration (prepared only). Applied AFTER the base checks above.
+  const c="33333333-3333-4333-8333-333333333333";
+  await db.exec("reset role");await db.query("insert into auth.users values ($1)",[c]);
+  const security=async()=>{await db.exec("reset role");return JSON.stringify([
+   (await db.query("select tablename,policyname,permissive,roles::text,cmd,qual,with_check from pg_policies where schemaname='public' order by 1,2")).rows,
+   (await db.query("select relname,relrowsecurity,relforcerowsecurity from pg_class where relname in ('reconversion_progress','reconversion_progress_history') order by 1")).rows,
+   (await db.query("select grantee,table_name,privilege_type from information_schema.role_table_grants where table_schema='public' and table_name like 'reconversion_progress%' order by 1,2,3")).rows,
+   (await db.query("select r.rolname,has_function_privilege(r.rolname,'rc_backup_private.capture_progress()','EXECUTE') x from pg_roles r where r.rolname in ('anon','authenticated') order by 1")).rows]);};
+  const before=await security();
+  const retention=fs.readdirSync(path.join(root,"supabase/migrations")).filter(n=>n.endsWith("_history_daily_retention.sql"));
+  for(const name of retention){const sql=fs.readFileSync(path.join(root,"supabase/migrations",name),"utf8");await db.exec(sql);await db.exec(sql);} // idempotent re-run
+  await check("retention migration leaves RLS policies, grants and function privileges unchanged",async()=>{assert.equal(await security(),before);});
+  await check("25 quick edits keep the last 20 revisions AND the latest revision of each earlier day (30 days)",async()=>{
+   await owner(c);await db.query("insert into public.reconversion_progress(user_id,payload) values($1,$2)",[c,payload]);
+   for(let n=2;n<=5;n++)await db.query("update public.reconversion_progress set revision=$1 where user_id=$2 and revision=$3",[n,c,n-1]);
+   // Test-only clock: age the archived rows as superuser (clients can never write saved_at).
+   await db.exec("reset role");
+   for(const [rev,days] of [[1,40],[2,3],[3,3],[4,1],[5,0]])await db.query("update public.reconversion_progress_history set saved_at=now()-make_interval(days=>$1) where user_id=$2 and revision=$3",[days,c,rev]);
+   await owner(c);
+   for(let n=6;n<=30;n++)await db.query("update public.reconversion_progress set revision=$1 where user_id=$2 and revision=$3",[n,c,n-1]);
+   await db.exec("reset role");
+   const kept=(await db.query("select revision from public.reconversion_progress_history where user_id=$1 order by revision",[c])).rows.map(x=>x.revision);
+   assert.deepEqual(kept,[3,4,...Array.from({length:20},(_,i)=>i+11)],"day-3 latest (3) and day-1 latest (4) survive; 40-day-old revision 1 is evicted");
+   assert.equal((await db.query("select count(*)::int n from public.reconversion_progress_history where user_id=$1",[b])).rows[0].n,1,"other users untouched");
+  });
+  await check("after retention migration, clients still cannot delete, update, insert or call the capture function",async()=>{
+   await owner(c);
+   for(const query of ["delete from public.reconversion_progress_history","update public.reconversion_progress_history set saved_at=now()-interval '1 day'","insert into public.reconversion_progress_history(user_id,revision,payload) select user_id,99,payload from public.reconversion_progress"])
+    await assert.rejects(db.query(query),e=>e.code==="42501");
+   await assert.rejects(db.query("select rc_backup_private.capture_progress()"),e=>e.code==="42501");
+   await owner(a);assert.equal((await db.query("select count(*)::int n from public.reconversion_progress_history where user_id=$1",[c])).rows[0].n,0,"history stays private to its owner");
+   await db.exec("reset role");assert(retention.length===1,"exactly one prepared retention migration");
+  });
   console.log("Isolated PostgreSQL/RLS: "+count+" groups passed. Mock auth.uid()/JWT only; hosted Supabase integration remains separate.");
  }finally{await db.close();}
 }
