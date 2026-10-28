@@ -9,7 +9,8 @@ const deferred = () => { let resolve; const promise = new Promise(r => { resolve
 
 function fixture() {
   let state = {version: 2, progress: {dns: "initial-fixture"}}, row = null;
-  let interval, timeout, failWrite = false, failRestore = false, failHead = false, fullReads=0, headReads=0, clock=0;
+  let interval, timeout, failWrite = false, failRestore = false, failHead = false, fullReads=0, headReads=0, clock=0, expired=false;
+  const listeners = {};
   const gates = new Map(), nodes = new Map(), writes = [];
   const node = selector => {
     if (!nodes.has(selector)) nodes.set(selector, {value: "", innerHTML: "", textContent: ""});
@@ -21,11 +22,12 @@ function fixture() {
     if (gate) { gates.delete(stage); gate.started.resolve(); await gate.release.promise; }
   }
   const client = {
-    sendCode: async () => {}, verifyCode: async () => "00000000-0000-4000-8000-000000000001", logout: () => {},
-    async read() { fullReads++; const result = copy(row); await wait("read"); return result; },
+    sendCode: async () => {}, verifyCode: async () => { expired = false; return "00000000-0000-4000-8000-000000000001"; }, logout: () => {},
+    async read() { if (expired) throw Error("Session expirée ou révoquée : reconnecte-toi"); fullReads++; const result = copy(row); await wait("read"); return result; },
     async readRevision() { headReads++; const result=row?row.revision:null; await wait("head"); if(failHead){failHead=false;throw Error("Fictitious metadata failure");}return result; },
     async write(payload, revision) {
       await wait("write");
+      if (expired) throw Error("Session expirée ou révoquée : reconnecte-toi");
       if (failWrite) { failWrite = false; throw Error("Fictitious network failure"); }
       assert.equal(revision, row ? row.revision : null, "conditional write must use the expected revision");
       row = {revision: revision === null ? 1 : revision + 1, payload: copy(payload)};
@@ -36,7 +38,9 @@ function fixture() {
   const sandbox = {
     localStorage: {getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},
     Date: class extends Date { static now(){return Date.now()+clock;} },
-    navigator: {onLine: true}, document: {querySelector: node}, confirm: () => true,
+    navigator: {onLine: true}, confirm: () => true,
+    document: {querySelector: node, addEventListener: (type, fn) => { listeners["document:" + type] = fn; }},
+    window: {addEventListener: (type, fn) => { listeners["window:" + type] = fn; }},
     setInterval: callback => { interval = callback; return 1; }, clearInterval: () => { interval = null; },
     setTimeout: callback => { timeout = callback; return 2; }, clearTimeout: () => { timeout = null; },
     RC_CLOUD_TRANSPORT: {
@@ -72,6 +76,12 @@ function fixture() {
     manual: () => click("now"),
     advance: ms => {clock+=ms;},
     hidden: value => {sandbox.document.hidden=value;},
+    online: value => {sandbox.navigator.onLine=value;},
+    // Browser lifecycle events registered by attach(); handlers do not return their promise.
+    async fire(target, type) { const fn = listeners[target + ":" + type]; assert(fn, target + " " + type + " listener must be registered"); fn({type}); for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r)); },
+    dropTimer: () => { timeout = null; },
+    expireSession: () => { expired = true; },
+    disconnect: () => click("disconnect"),
     corruptHead: value => {row.payload.snapshot.progress.dns=value;},
     removeCloud: () => {row=null;},
     failHead: () => {failHead=true;},
@@ -170,6 +180,32 @@ async function run() {
     const f=fixture();await f.prepare("automatic");const journal=f.journal;f.corruptHead("tampered-fixture");await f.manual();
     assert.equal(f.local,"initial-fixture");assert.equal(f.journal,journal);assert.match(f.html,/modifié sans nouvelle révision/);
     const before=f.reads.full;await f.tick();assert.equal(f.reads.full,before+1);assert.match(f.html,/modifié sans nouvelle révision/);
+  });
+  // Resume triggers (task: automatic backup chain). Each case starts from a durable local edit.
+  await check("reconnection ('online' event) uploads an edit made while offline", async () => {
+    const f = fixture(); await f.prepare("automatic"); f.online(false); f.edit("offline-edit");
+    await f.pending(); assert.match(f.html, /Hors connexion/); assert.notEqual(f.remoteValue, "offline-edit");
+    assert.doesNotMatch(f.html, /À jour sur cet appareil et dans le cloud/);
+    f.online(true); await f.fire("window", "online");
+    assert.equal(f.remoteValue, "offline-edit"); assert.match(f.html, /sauvegardées et chiffrées|À jour/);
+  });
+  for (const [target, type] of [["document", "visibilitychange"], ["window", "pageshow"]]) await check("foreground (" + type + ") resumes an upload whose debounce timer was suspended", async () => {
+    const f = fixture(); await f.prepare("automatic"); f.hidden(true); f.edit("background-edit"); f.dropTimer();
+    assert.notEqual(f.remoteValue, "background-edit"); f.hidden(false); await f.fire(target, type);
+    assert.equal(f.remoteValue, "background-edit"); assert.equal(f.local, "background-edit");
+  });
+  for (const stage of ["read", "write"]) await check("session expiry during " + stage + " never acknowledges; local edit is uploaded after re-authentication", async () => {
+    const f = fixture(); await f.prepare("automatic"); f.edit("edit-before-expiry");
+    const writes = f.writes.length;
+    if (stage === "read") { f.expireSession(); await f.pending(); }
+    else { const gate = f.pause("write"), sending = f.pending(); await gate.started; f.expireSession(); gate.release(); await sending;
+      assert.match(f.journal, /"pending":\{/, "an interrupted upload must stay in the durable encrypted outbox"); }
+    assert.equal(f.writes.length, writes); assert.equal(f.local, "edit-before-expiry");
+    assert.match(f.html, /Session expirée/); assert.doesNotMatch(f.html, /À jour sur cet appareil et dans le cloud/);
+    await f.disconnect(); await f.prepare("relogin");
+    if (stage === "read") await f.pending(); // no outbox yet: the dirty snapshot is re-sent by the normal debounce
+    assert.equal(f.remoteValue, "edit-before-expiry"); assert.equal(f.writes.length, writes + 1);
+    assert.doesNotMatch(f.journal, /"pending":\{/);
   });
   console.log("N03 offline regression cases: " + count + "/" + (count + failures.length) + " passed; no network or real data.");
   if (failures.length) throw new AggregateError(failures, failures.length + " N03 regression cases failed");
