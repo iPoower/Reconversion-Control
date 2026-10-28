@@ -43,3 +43,11 @@ Le format V1 déployé ne transporte pas de négociation de compression. Une ado
 ## Critères de mise en service
 
 Tout défaut critique ou élevé confirmé et non maîtrisé bloque l'activation. Des tests locaux ou CI verts ne remplacent ni les vérifications du bon projet, ni la délivrabilité OTP, ni la recette PC ↔ iPhone physique. Aucune fusion, publication, création d'utilisateur personnel ou progression réelle n'est autorisée par ce document.
+
+## Déploiement en deux phases du format lié (NOESIS 13.6)
+
+Preuve exécutable : le client de production `0edcf3f` peut écraser une tête **liée** qu'il ne sait pas déchiffrer. Sur l'écran de conflit, « Récupérer le cloud » appliquait le contenu en cache d'une révision précédente. Ce code ne peut pas être corrigé à distance.
+
+- **Phase A (livrée, `BOUND_WRITES=false`)** : lecture des formats lié et hérité, écriture du format hérité. Les anciens appareils lisent toujours la tête. L'anti-rejeu par révision n'est pas encore actif ; la protection reste alors celle de la production actuelle.
+- **Phase B (une ligne, sur GO séparé)** : `BOUND_WRITES=true`, seulement après mise à jour de **tous** les appareils (chacun rouvert sur la nouvelle version).
+- Les deux phases corrigent X1 : la tête distante n'est jamais associée au contenu d'une autre révision, et « Récupérer le cloud » re-déchiffre la version actuelle.

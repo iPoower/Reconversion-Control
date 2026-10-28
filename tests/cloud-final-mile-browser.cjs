@@ -53,7 +53,7 @@ async function run(){
   await connect(pc);assert.equal(row,null,"OTP/unlock alone must not upload a first real snapshot");
   await click(pc,"create");assert.equal(row.revision,1);assert(!JSON.stringify(row).includes("mastered"));
   const firstWrites=writes;await click(pc,"now");await click(pc,"now");assert.equal(writes,firstWrites);assert.equal(row.revision,1);
-  const remote=await pc.evaluate(async({p,phrase,ctx})=>(await RC_CLOUD_TRANSPORT.openProgress(p,phrase,ctx)).data,{p:row.payload,phrase:PHRASE,ctx:{user:USER,revision:row.revision}});assert.deepEqual(remote,initial);
+  const remote=await pc.evaluate(async({p,phrase,ctx})=>(await RC_CLOUD_TRANSPORT.openProgress(p,phrase,ctx)).data,{p:row.payload,phrase:PHRASE,ctx:{user:USER,revision:row.revision,legacy:true}});assert.deepEqual(remote,initial);
   console.log("PASS browser cloud: explicit first source; complete atomic V3 business snapshot encrypted before send");
   const beforeProbe={revisionReads,fullReads,writes},receiptBefore=await pc.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith("reconversion-control.cloud.sync.v1:")).map(k=>localStorage.getItem(k)).join("\n"));
   await pc.evaluate(()=>window.__cloudPeriodic());assert.equal(revisionReads,beforeProbe.revisionReads+1);assert.equal(fullReads,beforeProbe.fullReads);assert.equal(writes,beforeProbe.writes);

@@ -65,7 +65,7 @@ async function run(browser, server) {
       assert.match(await page.locator("#rc-sync-status").textContent(), /restent à synchroniser/);
       if (kind === "automatic") {
         const user = "00000000-0000-4000-8000-000000000001";
-        const incoming = await page.evaluate(async ({phrase, payload, user, revision}) => { const data = (await RC_CLOUD_TRANSPORT.openProgress(payload, phrase, {user, revision})).data; data.progress.dns = "learn"; return RC_CLOUD_TRANSPORT.sealProgress(data, phrase, {user, revision: revision + 1}); }, {phrase: PHRASE, payload: row.payload, user, revision: row.revision});
+        const incoming = await page.evaluate(async ({phrase, payload, user, revision}) => { const data = (await RC_CLOUD_TRANSPORT.openProgress(payload, phrase, {user, revision, legacy: true})).data; data.progress.dns = "learn"; return RC_CLOUD_TRANSPORT.sealProgress(data, phrase, {user, revision: revision + 1}); }, {phrase: PHRASE, payload: row.payload, user, revision: row.revision});
         row = {revision: row.revision + 1, payload: incoming};
         await page.evaluate(() => document.querySelector("#rc-sync-now").onclick());
         assert.match(await page.locator("#rc-sync-status").textContent(), /Conflit détecté/);
