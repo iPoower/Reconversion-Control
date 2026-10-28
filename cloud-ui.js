@@ -130,7 +130,8 @@ const RC_CLOUD_UI = (() => {
  }
  async function upload(expected,ticket){
   if(meta.pending)throw Error("Un envoi précédent doit être résolu avant un nouvel envoi");
-  const sent=local(),snapshot=JSON.parse(sent),payload=await T().sealProgress(snapshot,phrase,{user,revision:target(expected)});guard(ticket);
+  // Phase A : format hérité, lisible par les appareils pas encore mis à jour ; phase B : format lié.
+  const sent=local(),snapshot=JSON.parse(sent),payload=T().BOUND_WRITES===true?await T().sealProgress(snapshot,phrase,{user,revision:target(expected)}):await T().seal(snapshot,phrase);guard(ticket);
   const hash=await T().fingerprint(sent);guard(ticket);local();
   persist({...meta,pending:{expected,hash,payload}});
   await flush(ticket);delayed();
@@ -145,7 +146,8 @@ const RC_CLOUD_UI = (() => {
    if(matches||retry){await flush(ticket);latest=await client.read();guard(ticket);}
    else{remote=latest;remoteBound=false;remoteData=null;if(latest){const opened=await openHead(latest,ticket);if(!opened)return;remoteData=validate(opened.data);remoteBound=opened.bound;}guard(ticket);mode="conflict";status="Conflit détecté : envoi précédent conservé, décision nécessaire.";return;}
   }
-  remote=latest;
+  // Jamais de contenu déchiffré d'une autre révision associé à `remote` (preuve X1, NOESIS 13.6).
+  remote=latest;remoteData=null;remoteBound=false;
   if(!latest){mode=meta.ack?"conflict":"initial";remoteData=null;status=meta.ack?"La sauvegarde cloud a disparu. Aucun changement local effacé.":"Connecté et déverrouillé · aucune sauvegarde cloud. Confirmation initiale requise.";return;}
   const opened=await openHead(latest,ticket);if(!opened)return;remoteData=validate(opened.data);remoteBound=opened.bound;guard(ticket);
   const here=local(),hash=await T().fingerprint(here),there=T().serialize(remoteData);guard(ticket);
@@ -256,7 +258,10 @@ const RC_CLOUD_UI = (() => {
    if(!latest||latest.revision!==remote.revision||T().serialize(latest.payload)!==T().serialize(remote.payload)||local()!==before)throw Error("Une version a changé : revérifie les deux sources");
    if(meta.pending&&env.preserve)env.preserve(validate((await openAt(meta.pending.payload,target(meta.pending.expected),true)).data));guard(ticket);
    if(local()!==before)throw Error("Progression locale modifiée");
-   await apply(remoteData,latest.revision,ticket);mode="active";status="Progression cloud relue localement. Restauration après réouverture à vérifier.";activate();
+   // Re-déchiffrer la version distante ACTUELLE : jamais appliquer un contenu mis en cache (X1).
+   const opened=await openHead(latest,ticket);if(!opened)throw Error("version cloud illisible pour ce compte et cette révision");
+   const fresh=validate(opened.data);guard(ticket);if(local()!==before)throw Error("Progression locale modifiée");
+   await apply(fresh,latest.revision,ticket);mode="active";status="Progression cloud relue localement. Restauration après réouverture à vérifier.";activate();
   }catch(e){if(ticket===epoch)status="Import cloud refusé : "+e.message;}
   finally{if(ticket===epoch){busy=false;repaint();}}
  }

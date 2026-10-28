@@ -31,7 +31,8 @@ function server(){
 }
 
 // sources: optional {transport, ui} source text (used to replay older client versions).
-function device(srv,mail="a@example.invalid",store=new Map(),sources){
+// phase "B" (défaut de cette suite) : écriture liée activée ; "A" : source de production telle quelle.
+function device(srv,mail="a@example.invalid",store=new Map(),sources,phase="B"){
  let state={version:2,progress:{dns:"initial-fixture"}},timeout=null;const preserved=[];const nodes=new Map(),listeners={};
  const node=s=>{if(!nodes.has(s))nodes.set(s,{value:"",innerHTML:"",textContent:"",checked:false});return nodes.get(s);};
  for(const [id,value] of Object.entries({url:"https://fixture.supabase.co",key:"sb_publishable_fixture",email:mail,otp:"123456",phrase:PHRASE}))node("#rc-sync-"+id).value=value;
@@ -43,7 +44,9 @@ function device(srv,mail="a@example.invalid",store=new Map(),sources){
   setInterval:()=>1,clearInterval:()=>{},setTimeout:fn=>{timeout=fn;return 2;},clearTimeout:()=>{timeout=null;}};
  vm.createContext(sandbox);
  const root=path.join(__dirname,"..");
- const src=sources||{transport:fs.readFileSync(path.join(root,"cloud-transport.js"),"utf8"),ui:fs.readFileSync(path.join(root,"cloud-ui.js"),"utf8")};
+ const raw=fs.readFileSync(path.join(root,"cloud-transport.js"),"utf8");
+ if(!sources&&phase==="B")assert(raw.includes("const BOUND_WRITES=false;"),"bascule de phase introuvable");
+ const src=sources||{transport:phase==="B"?raw.replace("const BOUND_WRITES=false;","const BOUND_WRITES=true;"):raw,ui:fs.readFileSync(path.join(root,"cloud-ui.js"),"utf8")};
  vm.runInContext(src.transport+"\n"+src.ui+"\nglobalThis.T=RC_CLOUD_TRANSPORT;globalThis.UI=RC_CLOUD_UI;",sandbox);
  const api=sandbox.UI.attach({escape:s=>String(s).replaceAll("&","&amp;").replaceAll("<","&lt;"),snapshot:()=>clone(state),restore:d=>{state=clone(d);},preserve:d=>{preserved.push(clone(d));}});
  api.bind();
@@ -113,6 +116,34 @@ async function run(){
   // It never auto-applies (explicit choice is required), but it cannot detect a stale legacy copy.
   const srv=server(),seed=device(srv);srv.rows.set(A,{revision:9,payload:await seed.T.seal({version:2,progress:{dns:"possibly-stale"}},PHRASE)});
   const fresh=device(srv);await fresh.login();assert.match(fresh.html,/Choisis/);assert.equal(fresh.local,"initial-fixture");
+ });
+ // NOESIS 13.6 (preuve exécutable X1) : sur l'écran de conflit, une tête distante illisible ne doit jamais
+ // laisser « Récupérer le cloud » appliquer le contenu DÉCHIFFRÉ D'UNE AUTRE RÉVISION sous son numéro.
+ await check("conflict screen: an unopenable head never lets 'take cloud' apply stale content under its revision",async()=>{
+  const srv=server(),d=device(srv);await d.login();await d.create();await d.edit("D2");
+  const e=device(srv);await e.login();await e.take();
+  await e.edit("E3");                                                // E publie la révision 3
+  await d.edit("D-unsaved-before-conflict");await d.now();           // D, en retard, modifie : conflit
+  assert.match(d.html,/Conflit|conflit/,"conflit attendu côté D");
+  srv.replay(A,srv.history.find(r=>r.revision===1).payload);        // ancien chiffré lié servi comme révision suivante
+  await d.now();const before=JSON.stringify(srv.rows.get(A));
+  await d.take();
+  assert.notEqual(d.meta.ack&&d.meta.ack.revision,srv.rows.get(A).revision,"jamais d'accusé d'une révision non déchiffrée");
+  assert.equal(d.local,"D-unsaved-before-conflict","saisie locale conservée");
+  await d.edit("D-after-take");await d.now();
+  assert.equal(JSON.stringify(srv.rows.get(A)),before,"la tête distante n'est jamais écrasée sans décision sur une version lisible");
+ });
+ // Phase A (production telle que livrée) : les anciens clients restent compatibles.
+ await check("phase A: production writes the legacy format that pre-binding clients (0edcf3f API) can decrypt",async()=>{
+  const srv=server(),a=device(srv,undefined,undefined,undefined,"A");assert.equal(a.T.BOUND_WRITES,false,"phase A livrée");
+  await a.login();await a.create();await a.edit("PA-2");
+  const head=srv.rows.get(A);assert.equal(head.revision,2);
+  assert.equal((await open(a.T,head.payload)).progress.dns,"PA-2","T.open (AAD constante de 0edcf3f) déchiffre la tête");
+  assert.notEqual(a.meta.bound,true,"ses propres écritures ne rendent jamais l'appareil « lié »");
+ });
+ await check("phase A: a phase-B device's bound head is read by a phase-A device (forward compatible), never overwritten blindly",async()=>{
+  const srv=server(),b=device(srv);await b.login();await b.create();await b.edit("PB-2");
+  const a=device(srv,undefined,undefined,undefined,"A");await a.login();await a.take();assert.equal(a.local,"PB-2");
  });
  console.log("Rollback/replay resistance: "+passed+"/"+(passed+failures.length)+" passed; simulated server only, fictitious data.");
  if(failures.length)throw new AggregateError(failures,failures.length+" rollback cases failed");

@@ -170,11 +170,16 @@ const RC_CLOUD_TRANSPORT = (() => {
   if(!ctx||typeof ctx.user!=="string"||!/^[0-9a-f-]{36}$/i.test(ctx.user)||!validRevision(ctx.revision))throw Error("Contexte de sauvegarde invalide");
   return "reconversion-control-progress-v2|"+ctx.user.toLowerCase()+"|"+ctx.revision;
  }
+ // Déploiement en deux phases (NOESIS 13.6). Phase A (false) : lecture des formats lié ET hérité,
+ // écriture du format hérité, lisible par les clients encore en production (0edcf3f) : un ancien
+ // appareil ne rencontre jamais de tête illisible (preuve C3b). Phase B (true), après mise à jour de
+ // TOUS les appareils : écriture liée au compte et à la révision (anti-rejeu).
+ const BOUND_WRITES=false;
  async function sealProgress(snapshot,phrase,ctx){return encrypt(snapshot,phrase,boundContext(ctx));}
  // legacy:true additionally accepts constant-AAD v1 progress envelopes (pre-binding clients).
  async function openProgress(envelope,phrase,ctx){
   const contexts=[boundContext(ctx)].concat(ctx.legacy===true?[progress]:[]);
   const opened=await decryptAny(envelope,phrase,contexts);return {data:opened.value,bound:opened.index===0};
  }
- return Object.freeze({create,config,serialize,fingerprint,seal:(s,p)=>encrypt(s,p,progress),open:(s,p)=>decrypt(s,p,progress),sealProgress,openProgress,sealSession:(s,p)=>encrypt(s,p,auth),openSession:(s,p)=>decrypt(s,p,auth)});
+ return Object.freeze({BOUND_WRITES,create,config,serialize,fingerprint,seal:(s,p)=>encrypt(s,p,progress),open:(s,p)=>decrypt(s,p,progress),sealProgress,openProgress,sealSession:(s,p)=>encrypt(s,p,auth),openSession:(s,p)=>decrypt(s,p,auth)});
 })();
