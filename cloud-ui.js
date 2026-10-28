@@ -37,13 +37,14 @@ const RC_CLOUD_UI = (() => {
  function uploadStatus(message){return message+(dirty()?" De nouvelles modifications locales restent à synchroniser.":"");}
  function receipt(){return meta.ack?'<p class="muted">Dernière sauvegarde cloud confirmée : '+safe(meta.ack.at)+' · révision '+safe(meta.ack.revision)+'.</p>':"";}
  function view(){
-  const intro='<h3>☁️ Synchronisation chiffrée PC ↔ iPhone (optionnelle)</h3><p class="muted">Local d’abord. Après activation et déverrouillage, la progression complète est chiffrée avant envoi. Phrase en mémoire seulement. Une app iPhone fermée reprend à la réouverture.</p>';
+  const intro='<h3>☁️ Synchronisation chiffrée PC ↔ iPhone (optionnelle)</h3><p class="muted">Local d’abord. Après activation et déverrouillage, la progression (statuts, révisions, labs, preuves, Daily Five, dossier) est chiffrée avant envoi ; les préférences d’affichage et les copies de récupération restent sur cet appareil. Phrase en mémoire seulement. Une app iPhone fermée reprend à la réouverture.</p>';
   const msg='<p id="rc-sync-status" role="status" aria-live="polite">'+safe(status)+'</p>'+receipt();
   const disconnect='<button class="btn" id="rc-sync-disconnect">Déconnecter</button>';
   if(mode==="setup")return intro+'<p>Connexion réservée à tes appareils personnels. Sur un PC professionnel, utilise les <a href="./courses-public.html">cours publics sans connexion</a>.</p><div class="rc-sync-form"><label>URL Supabase<input id="rc-sync-url" type="url" autocomplete="off" value="'+safe(cfg&&cfg.url)+'" placeholder="https://jsxbpxlipjmkszfektis.supabase.co"></label><label>Clé publique<input id="rc-sync-key" type="text" autocomplete="off" value="'+safe(cfg&&cfg.key)+'" placeholder="sb_publishable_…"></label><button class="btn pri" id="rc-sync-google">Continuer avec Google</button><p class="muted">Google identifie le compte. Ta phrase de chiffrement sera demandée ensuite ; elle ne sera pas transmise à Google ou Supabase.</p><details id="rc-sync-legacy"><summary class="btn">Connexion email existante</summary><label>Adresse email de connexion<input id="rc-sync-email" type="email" autocomplete="email"></label><label><input id="rc-sync-remember" type="checkbox"> Mémoriser la session chiffrée sur cet appareil privé</label><button class="btn" id="rc-sync-request">Recevoir un code par email</button></details></div>'+msg;
   if(mode==="oauth")return intro+'<p>Compte Google confirmé : <b id="rc-sync-account">'+safe(googleIdentity&&googleIdentity.email)+'</b></p><div class="rc-sync-form"><label><input type="checkbox" id="rc-sync-confirm-account"> Je confirme utiliser ce compte pour mes sauvegardes.</label><label>Phrase secrète (indépendante du compte Google)<input id="rc-sync-phrase" type="password" autocomplete="off"></label><label><input id="rc-sync-remember" type="checkbox"> Mémoriser la session sous chiffrement sur cet appareil personnel</label><button class="btn pri" id="rc-sync-google-unlock">Déverrouiller mes sauvegardes</button>'+disconnect+'</div>'+msg;
   if(mode==="otp"||mode==="locked")return intro+(mode==="otp"?'<p>Code email Supabase requis (modèle <code>{{ .Token }}</code>).</p>':'<p>Session chiffrée mémorisée. Déverrouille-la pour vérifier sa validité auprès de Supabase.</p>')+'<div class="rc-sync-form">'+(mode==="otp"?'<label>Code reçu<input id="rc-sync-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></label>':'')+'<label>Phrase secrète (12 caractères minimum, identique sur les deux appareils)<input id="rc-sync-phrase" type="password" autocomplete="off"></label><button class="btn pri" id="rc-sync-'+(mode==="otp"?'verify':'unlock')+'">Déverrouiller</button>'+disconnect+'</div>'+msg;
-  let controls='<div class="actions"><button class="btn" id="rc-sync-now">Synchroniser maintenant</button>'+disconnect+'</div>';
+  // Manual trigger of the SAME tick() pipeline (read, verify, encrypt, conditional write, read-back).
+  let controls='<div class="actions"><button class="btn" id="rc-sync-now">Sauvegarder maintenant</button>'+disconnect+'</div>';
   if(mode==="initial")controls='<p>Le cloud est vide. Ta progression locale sera la source initiale. Vérifie d’abord ton export indépendant.</p><div class="actions"><button class="btn pri" id="rc-sync-create">Créer la première sauvegarde chiffrée</button>'+disconnect+'</div>';
   if(mode==="choose"||mode==="conflict")controls='<p><b>'+safe(mode==="choose"?'Choisis explicitement la source initiale.':'Conflit : aucune version remplacée automatiquement.')+'</b></p><div class="actions"><button class="btn" id="rc-sync-take">Récupérer le cloud sur cet appareil</button><button class="btn" id="rc-sync-push">Envoyer cet appareil vers le cloud</button><button class="btn" id="rc-sync-now">Revérifier les versions</button>'+disconnect+'</div><p class="muted">Chaque remplacement nécessite confirmation et copie locale de récupération. Exporte aussi une sauvegarde indépendante.</p>';
   if(mode==="error")controls='<div class="actions"><button class="btn" id="rc-sync-now">Réessayer la lecture cloud</button>'+disconnect+'</div>';
@@ -52,9 +53,11 @@ const RC_CLOUD_UI = (() => {
  }
  function repaint(){
   const root=typeof document!=="undefined"&&document.querySelector("#rc-sync");if(!root||!env)return;
-  const label=document.querySelector("#rc-storage-label");if(label)label.textContent=mode==="active"?"LOCAL + CLOUD CHIFFRÉ · voir l’état de sauvegarde":"LOCAL · cloud "+(cfg?"configuré":"non configuré");
+  const label=document.querySelector("#rc-storage-label");if(label)label.textContent=mode==="active"?(confirmed()?"LOCAL + CLOUD CHIFFRÉ · sauvegarde confirmée (révision "+revision+")":"LOCAL · sauvegarde cloud en attente"):"LOCAL · cloud "+(cfg?"configuré":"non configuré");
   root.innerHTML=view();bind();
  }
+ // True only when this device's current snapshot is exactly the acknowledged cloud revision.
+ function confirmed(){try{return !!(meta.ack&&!meta.pending&&revision===meta.ack.revision&&baseline&&!dirty());}catch(e){return false;}}
  function warn(t){status=t;repaint();}
  function makeClient(ticket){
   return T().create(cfg,{sessionChanged:async session=>{
@@ -232,7 +235,7 @@ const RC_CLOUD_UI = (() => {
     else status="À jour sur cet appareil et dans le cloud · sauvegarde cloud confirmée.";
    }
    lastFullRead=Date.now();delayed();
-  }catch(e){if(ticket===epoch){lastFullRead=0;status="Synchronisation en attente : "+e.message+" · progression locale conservée.";schedule(Math.min(60000,2000*2**Math.min(retries++,5)));}}
+  }catch(e){if(ticket===epoch){lastFullRead=0;status=/^(Non connecté|Session expirée)/.test(e.message)?"Sauvegarde cloud interrompue : session expirée ou révoquée, reconnecte-toi (Déconnecter puis se reconnecter). Progression locale conservée"+(confirmed()?".":" ; des modifications ne sont pas encore dans le cloud."):"Synchronisation en attente : "+e.message+" · progression locale conservée.";schedule(Math.min(60000,2000*2**Math.min(retries++,5)));}}
   finally{if(ticket===epoch){busy=false;repaint();}}
  }
  async function createFirst(){
@@ -301,7 +304,7 @@ const RC_CLOUD_UI = (() => {
  }
  function attach(options){
   env=options;
-  try{const saved=load(CONFIG);if(saved){cfg=T().config(saved.url,saved.key);if(saved.owner!==undefined){if(!/^[0-9a-f-]{36}$/i.test(saved.owner))throw Error("Compte mémorisé invalide");cfg.owner=saved.owner;}}if(cfg&&load(SESSION)){mode="locked";status="Session mémorisée chiffrée · déverrouillage requis, aucun envoi automatique.";}}
+  try{const saved=load(CONFIG);if(saved){cfg=T().config(saved.url,saved.key);if(saved.owner!==undefined){if(!/^[0-9a-f-]{36}$/i.test(saved.owner))throw Error("Compte mémorisé invalide");cfg.owner=saved.owner;}}if(cfg&&load(SESSION)){mode="locked";status="Session mémorisée chiffrée · déverrouillage requis, aucun envoi automatique : les modifications restent sur cet appareil jusqu’au déverrouillage.";}}
   catch(e){status="Cloud suspendu : configuration locale illisible. Progression locale conservée.";}
   if(typeof window!=="undefined"&&window.addEventListener){
    window.addEventListener("online",tick);

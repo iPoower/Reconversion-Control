@@ -11,6 +11,7 @@ function fixture() {
   let state = {version: 2, progress: {dns: "initial-fixture"}}, row = null;
   let interval, timeout, failWrite = false, failRestore = false, failHead = false, fullReads=0, headReads=0, clock=0, expired=false;
   const listeners = {};
+  const sessionError = () => { const first = expired === true; expired = "gone"; return Error(first ? "Session expirée ou révoquée : reconnecte-toi" : "Non connecté"); };
   const gates = new Map(), nodes = new Map(), writes = [];
   const node = selector => {
     if (!nodes.has(selector)) nodes.set(selector, {value: "", innerHTML: "", textContent: ""});
@@ -23,11 +24,11 @@ function fixture() {
   }
   const client = {
     sendCode: async () => {}, verifyCode: async () => { expired = false; return "00000000-0000-4000-8000-000000000001"; }, logout: () => {},
-    async read() { if (expired) throw Error("Session expirée ou révoquée : reconnecte-toi"); fullReads++; const result = copy(row); await wait("read"); return result; },
+    async read() { if (expired) throw sessionError(); fullReads++; const result = copy(row); await wait("read"); return result; },
     async readRevision() { headReads++; const result=row?row.revision:null; await wait("head"); if(failHead){failHead=false;throw Error("Fictitious metadata failure");}return result; },
     async write(payload, revision) {
       await wait("write");
-      if (expired) throw Error("Session expirée ou révoquée : reconnecte-toi");
+      if (expired) throw sessionError();
       if (failWrite) { failWrite = false; throw Error("Fictitious network failure"); }
       assert.equal(revision, row ? row.revision : null, "conditional write must use the expected revision");
       row = {revision: revision === null ? 1 : revision + 1, payload: copy(payload)};
@@ -98,7 +99,7 @@ function fixture() {
     failWrite: () => { failWrite = true; }, failRestore: () => { failRestore = true; },
     get local() { return state.progress.dns; }, get remoteValue() { return row && row.payload.snapshot.progress.dns; },
     corruptJournal() { for(const key of store.keys())if(key.startsWith("reconversion-control.cloud.sync.v1:"))store.set(key,JSON.stringify({v:99,retained:"future-journal"})); },
-    get html() { return node("#rc-sync").innerHTML; }, get writes() { return writes; }, get journal() { return Array.from(store.values()).join("\n"); }
+    get html() { return node("#rc-sync").innerHTML; }, get label() { return node("#rc-storage-label").textContent; }, get writes() { return writes; }, get journal() { return Array.from(store.values()).join("\n"); }
   };
 }
 
@@ -209,11 +210,28 @@ async function run() {
     else { const gate = f.pause("write"), sending = f.pending(); await gate.started; f.expireSession(); gate.release(); await sending;
       assert.match(f.journal, /"pending":\{/, "an interrupted upload must stay in the durable encrypted outbox"); }
     assert.equal(f.writes.length, writes); assert.equal(f.local, "edit-before-expiry");
-    assert.match(f.html, /Session expirée/); assert.doesNotMatch(f.html, /À jour sur cet appareil et dans le cloud/);
+    assert.match(f.html, /session expirée/i); assert.doesNotMatch(f.html, /À jour sur cet appareil et dans le cloud/);
     await f.disconnect(); await f.prepare("relogin");
     if (stage === "read") await f.pending(); // no outbox yet: the dirty snapshot is re-sent by the normal debounce
     assert.equal(f.remoteValue, "edit-before-expiry"); assert.equal(f.writes.length, writes + 1);
     assert.doesNotMatch(f.journal, /"pending":\{/);
+  });
+  // Status wording: never claim a cloud backup while the state is local-only or pending.
+  await check("header label distinguishes confirmed cloud backup from pending/failed upload", async () => {
+    const f = fixture(); await f.prepare("automatic"); f.edit("pending-label"); f.failWrite(); await f.pending();
+    assert.notEqual(f.remoteValue, "pending-label"); assert.doesNotMatch(f.label, /CLOUD CHIFFRÉ/); assert.match(f.label, /en attente/);
+    await f.pending(); assert.equal(f.remoteValue, "pending-label"); assert.match(f.label, /CLOUD CHIFFRÉ · sauvegarde confirmée/);
+  });
+  await check("manual 'Sauvegarder maintenant' reuses the single pipeline (no second loop)", async () => {
+    const f = fixture(); await f.prepare("automatic"); assert.match(f.html, /id="rc-sync-now">Sauvegarder maintenant</);
+    f.edit("manual-save"); await f.manual(); assert.equal(f.remoteValue, "manual-save"); assert.match(f.html, /sauvegardées et chiffrées/);
+  });
+  await check("expired session keeps telling the user to reconnect on every retry", async () => {
+    const f = fixture(); await f.prepare("automatic"); f.edit("after-expiry"); f.expireSession(); await f.pending(); await f.pending();
+    assert.match(f.html, /reconnecte-toi/); assert.match(f.html, /pas encore dans le cloud/); assert.doesNotMatch(f.label, /CLOUD CHIFFRÉ/);
+  });
+  await check("intro states which local data is not sent", async () => {
+    const f = fixture(); await f.prepare("automatic"); assert.match(f.html, /préférences d’affichage/); assert.doesNotMatch(f.html, /progression complète est chiffrée/);
   });
   console.log("N03 offline regression cases: " + count + "/" + (count + failures.length) + " passed; no network or real data.");
   if (failures.length) throw new AggregateError(failures, failures.length + " N03 regression cases failed");
