@@ -6,7 +6,7 @@ const clone=v=>JSON.parse(JSON.stringify(v)),response=(status,j)=>({ok:status>=2
 let passed=0;
 async function check(name,fn){await fn();passed++;console.log("PASS cloud final mile: "+name);}
 function fixture(){
- const rows=new Map(),calls=[];let lost=false,failRead=false,empty=false,expired=false,refreshes=0,revoke=false,anon=false,clock=0,headOverride;
+ const rows=new Map(),calls=[];let lost=false,failRead=false,empty=false,expired=false,refreshes=0,revoke=false,anon=false,clock=0,headOverride,historyRows=[];
  async function fetch(input,init){
   const url=new URL(input),body=init.body?JSON.parse(init.body):{},token=init.headers.Authorization;
   assert.equal(url.origin,"https://fixture.supabase.co");calls.push({path:url.pathname,method:init.method,select:url.searchParams.get("select")});
@@ -18,6 +18,7 @@ function fixture(){
   }
   if(url.pathname==="/auth/v1/user")return response(200,{id:token.slice(7)});
   if(url.pathname==="/auth/v1/logout")return response(204,null);
+  if(url.pathname==="/rest/v1/reconversion_progress_history"){const limit=Number(url.searchParams.get("limit"));return response(200,historyRows.slice(0,limit));}
   if(url.pathname!=="/rest/v1/reconversion_progress")return response(404,{});
   const uid=token&&token.slice(7),target=url.searchParams.get("user_id");
   if(![a,b].includes(uid)||target&&target!=="eq."+uid)return response(403,{});
@@ -36,7 +37,7 @@ function fixture(){
  const sandbox={URL,crypto:webcrypto,TextEncoder,TextDecoder,fetch,Date:class extends Date{static now(){return Date.now()+clock;}},btoa:s=>Buffer.from(s,"binary").toString("base64"),atob:s=>Buffer.from(s,"base64").toString("binary")};
  vm.createContext(sandbox);vm.runInContext(fs.readFileSync(require("node:path").join(__dirname,"../cloud-transport.js"),"utf8")+"\nglobalThis.T=RC_CLOUD_TRANSPORT",sandbox);
  const T=sandbox.T,cfg={url:"https://fixture.supabase.co",key:"sb_publishable_fixture"};
- return {T,cfg,rows,calls,client:options=>T.create(cfg,options),headShape:v=>{headOverride=v;},lose:()=>{lost=true;},offline:v=>{failRead=v;},empty:()=>{empty=true;},expire:()=>{expired=true;},advance:()=>{clock+=3600001;},revoke:()=>{revoke=true;},anonymous:()=>{anon=true;},get refreshes(){return refreshes;}};
+ return {T,cfg,rows,calls,setHistory:r=>{historyRows=r;},client:options=>T.create(cfg,options),headShape:v=>{headOverride=v;},lose:()=>{lost=true;},offline:v=>{failRead=v;},empty:()=>{empty=true;},expire:()=>{expired=true;},advance:()=>{clock+=3600001;},revoke:()=>{revoke=true;},anonymous:()=>{anon=true;},get refreshes(){return refreshes;}};
 }
 async function run(){
  await check("legacy AES-256-GCM envelope, independent IV/salt and tamper refusal",async()=>{
@@ -45,6 +46,23 @@ async function run(){
   await assert.rejects(T.open(x,"wrong-fictional-phrase"));
   for(const field of ["iv","salt","ciphertext"]){const changed={...x,[field]:(x[field][0]==="A"?"B":"A")+x[field].slice(1)};await assert.rejects(T.open(changed,phrase));}
   await assert.rejects(T.open({...x,v:2},phrase));await assert.rejects(T.open({...x,unknown:true},phrase));await assert.rejects(T.open({...x,ciphertext:"A".repeat(3000000)},phrase));
+ });
+ await check("bound progress envelope keeps the SQL-pinned v1 shape and opens only for its own account and revision",async()=>{
+  const {T}=fixture(),data={version:2,progress:{dns:"bound-fixture"}},x=await T.sealProgress(data,phrase,{user:a,revision:7});
+  assert.deepEqual(Object.keys(x).sort(),["ciphertext","iterations","iv","kdf","salt","v"]);assert.equal(x.v,1);assert.equal(x.iterations,250000);assert.match(x.salt,/^[A-Za-z0-9+/]{22}==$/);assert.match(x.iv,/^[A-Za-z0-9+/]{16}$/);
+  assert.deepEqual(clone(await T.openProgress(x,phrase,{user:a,revision:7})),{data,bound:true});
+  assert.deepEqual(clone(await T.openProgress(x,phrase,{user:a.toUpperCase(),revision:7,legacy:true})),{data,bound:true});
+  for(const ctx of [{user:a,revision:8},{user:a,revision:6},{user:b,revision:7},{user:a,revision:8,legacy:true}])await assert.rejects(T.openProgress(x,phrase,ctx),/rejouée/);
+  await assert.rejects(T.open(x,phrase),/Déchiffrement/,"a pre-binding client cannot read (and so never applies) a bound envelope");
+  const legacy=await T.seal(data,phrase);
+  assert.deepEqual(clone(await T.openProgress(legacy,phrase,{user:a,revision:3,legacy:true})),{data,bound:false});
+  await assert.rejects(T.openProgress(legacy,phrase,{user:a,revision:3}),/rejouée/);
+  for(const ctx of [null,{user:"x",revision:1},{user:a,revision:0},{user:a,revision:"1"}])await assert.rejects(T.sealProgress(data,phrase,ctx),/Contexte/);
+ });
+ await check("history listing exposes daily-retained versions beyond the last 20 (up to 20 + 30 days)",async()=>{
+  const f=fixture(),c=f.client();await c.verifyCode("a@example.invalid","123456");
+  f.setHistory(Array.from({length:60},(_,i)=>({revision:80-i})));const listed=await c.history();
+  assert.equal(listed.length,50);assert.equal(listed[0].revision,80);assert.equal(listed[49].revision,31);
  });
  await check("serialization freezes before KDF and supports large histories without spread overflow",async()=>{
   const {T}=fixture(),data={version:2,progress:{dns:"progress"},history:"x".repeat(300000)};

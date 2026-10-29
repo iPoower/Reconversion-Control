@@ -46,7 +46,8 @@ async function run(browser, server) {
         await page.locator('[data-id="dns"][data-prog="' + value + '"]').click();
         await page.locator('#nav [data-view="privacy"]').click();
       };
-      const open = payload => page.evaluate(({payload, phrase}) => RC_CLOUD_TRANSPORT.open(payload, phrase), {payload, phrase: PHRASE});
+      // Uploaded envelopes are bound to (account, revision); the seeded "choice" row is legacy.
+      const open = (payload, revision = row.revision) => page.evaluate(async ({payload, phrase, ctx}) => (await RC_CLOUD_TRANSPORT.openProgress(payload, phrase, ctx)).data, {payload, phrase: PHRASE, ctx: {user: "00000000-0000-4000-8000-000000000001", revision, legacy: true}});
       if (kind === "choice") row = {revision: 4, payload: await page.evaluate(phrase => RC_CLOUD_TRANSPORT.seal({version: 2, progress: {dns: "learn"}, review: {}, labs: {}, proofs: {}, labChecks: {}, dailyFive: {days:{}}, career: RC_PROJECT_PLAN.empty()}, phrase), PHRASE)};
       await page.evaluate(() => document.querySelector("#rc-sync-verify").onclick());
       if(kind === "automatic") { page.once("dialog", dialog => dialog.accept()); await page.evaluate(() => document.querySelector("#rc-sync-create").onclick()); }
@@ -63,7 +64,8 @@ async function run(browser, server) {
       assert.equal(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).progress.dns, KEY), "mastered");
       assert.match(await page.locator("#rc-sync-status").textContent(), /restent à synchroniser/);
       if (kind === "automatic") {
-        const incoming = await page.evaluate(async ({phrase, payload}) => { const data = await RC_CLOUD_TRANSPORT.open(payload, phrase); data.progress.dns = "learn"; return RC_CLOUD_TRANSPORT.seal(data, phrase); }, {phrase: PHRASE, payload: row.payload});
+        const user = "00000000-0000-4000-8000-000000000001";
+        const incoming = await page.evaluate(async ({phrase, payload, user, revision}) => { const data = (await RC_CLOUD_TRANSPORT.openProgress(payload, phrase, {user, revision, legacy: true})).data; data.progress.dns = "learn"; return RC_CLOUD_TRANSPORT.sealProgress(data, phrase, {user, revision: revision + 1}); }, {phrase: PHRASE, payload: row.payload, user, revision: row.revision});
         row = {revision: row.revision + 1, payload: incoming};
         await page.evaluate(() => document.querySelector("#rc-sync-now").onclick());
         assert.match(await page.locator("#rc-sync-status").textContent(), /Conflit détecté/);

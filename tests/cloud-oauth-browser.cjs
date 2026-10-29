@@ -66,7 +66,7 @@ async function run(){
   assert.equal(pcContext.calls.filter(r=>r.path.startsWith("/rest/")).length,0,"OAuth alone cannot download progress");assert.equal(row,null);
   const preUnlock=await pc.evaluate(()=>JSON.stringify({...localStorage})+JSON.stringify({...sessionStorage}));assert(!/OAUTH_ACCESS_CANARY|OAUTH_REFRESH_CANARY|GOOGLE_TOKEN_CANARY/.test(preUnlock));
   await unlockGoogle(pc);await pc.locator("#rc-sync-create").waitFor();assert.equal(row,null);await pc.locator("#rc-sync-create").click();await pc.waitForFunction(()=>document.querySelector("#rc-sync-status")?.textContent.includes("confirmée"));assert.equal(row.revision,1);
-  const decoded=await pc.evaluate(async({payload,phrase})=>RC_CLOUD_TRANSPORT.open(payload,phrase),{payload:row.payload,phrase:PHRASE});assert.equal(decoded.progress.dns,"mastered");assert(!JSON.stringify(row).includes("mastered"));
+  const decoded=await pc.evaluate(async({payload,phrase,ctx})=>(await RC_CLOUD_TRANSPORT.openProgress(payload,phrase,ctx)).data,{payload:row.payload,phrase:PHRASE,ctx:{user:A,legacy:true,revision:row.revision}});assert.equal(decoded.progress.dns,"mastered");assert(!JSON.stringify(row).includes("mastered"));
   console.log("PASS Google/browser: PKCE return, account confirmation, independent phrase and explicit first encrypted backup with readback");
   const phoneContext=await context(A,true),phone=await page(phoneContext);await google(phone);await unlockGoogle(phone);await phone.locator("#rc-sync-take").waitFor();await phone.locator("#rc-sync-take").click();await phone.waitForFunction(()=>JSON.parse(localStorage.getItem("reconversion-control.snapshot.v3")).main.progress.dns==="mastered");
   const restored=await snapshot(phone);assert.deepEqual(restored.main.progress,initial.main.progress);

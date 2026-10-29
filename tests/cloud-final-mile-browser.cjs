@@ -53,7 +53,7 @@ async function run(){
   await connect(pc);assert.equal(row,null,"OTP/unlock alone must not upload a first real snapshot");
   await click(pc,"create");assert.equal(row.revision,1);assert(!JSON.stringify(row).includes("mastered"));
   const firstWrites=writes;await click(pc,"now");await click(pc,"now");assert.equal(writes,firstWrites);assert.equal(row.revision,1);
-  const remote=await pc.evaluate(async({p,phrase})=>RC_CLOUD_TRANSPORT.open(p,phrase),{p:row.payload,phrase:PHRASE});assert.deepEqual(remote,initial);
+  const remote=await pc.evaluate(async({p,phrase,ctx})=>(await RC_CLOUD_TRANSPORT.openProgress(p,phrase,ctx)).data,{p:row.payload,phrase:PHRASE,ctx:{user:USER,revision:row.revision,legacy:true}});assert.deepEqual(remote,initial);
   console.log("PASS browser cloud: explicit first source; complete atomic V3 business snapshot encrypted before send");
   const beforeProbe={revisionReads,fullReads,writes},receiptBefore=await pc.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith("reconversion-control.cloud.sync.v1:")).map(k=>localStorage.getItem(k)).join("\n"));
   await pc.evaluate(()=>window.__cloudPeriodic());assert.equal(revisionReads,beforeProbe.revisionReads+1);assert.equal(fullReads,beforeProbe.fullReads);assert.equal(writes,beforeProbe.writes);
@@ -108,12 +108,13 @@ async function run(){
   console.log("PASS browser cloud: durable journal failure blocks upload; saved local edit resumes after reload");
   // Valid but empty higher revision still requires an explicit source decision.
   const beforeEmpty=await snapshot(pc);
-  row={revision:row.revision+1,payload:await pc.evaluate(async phrase=>RC_CLOUD_TRANSPORT.seal({version:2,progress:{},review:{},labs:{},proofs:{},labChecks:{},dailyFive:{days:{}},career:RC_PROJECT_PLAN.empty()},phrase),PHRASE)};
+  // Another up-to-date client writes the next revision (bound to account + revision).
+  row={revision:row.revision+1,payload:await pc.evaluate(async({phrase,ctx})=>RC_CLOUD_TRANSPORT.sealProgress({version:2,progress:{},review:{},labs:{},proofs:{},labChecks:{},dailyFive:{days:{}},career:RC_PROJECT_PLAN.empty()},phrase,ctx),{phrase:PHRASE,ctx:{user:USER,revision:row.revision+1}})};
   await click(pc,"now");assert.deepEqual(await snapshot(pc),beforeEmpty);assert.match(await pc.locator("#rc-sync-status").textContent(),/vide nécessite une sélection explicite/);
   await click(pc,"push");
   console.log("PASS browser cloud: an empty higher revision cannot silently replace a complete local snapshot");
   // Future remote format is rejected without writes, including a new client.
-  const stable=await snapshot(pc);row={revision:row.revision+1,payload:await pc.evaluate(async phrase=>RC_CLOUD_TRANSPORT.seal({version:99,progress:{}},phrase),PHRASE)};
+  const stable=await snapshot(pc);row={revision:row.revision+1,payload:await pc.evaluate(async({phrase,ctx})=>RC_CLOUD_TRANSPORT.sealProgress({version:99,progress:{}},phrase,ctx),{phrase:PHRASE,ctx:{user:USER,revision:row.revision+1}})};
   await click(pc,"now");assert.deepEqual(await snapshot(pc),stable);assert.match(await pc.locator("#rc-sync-status").textContent(),/incompatible/);
   // Recover an older valid cloud version through the existing transport, explicitly.
   await click(pc,"history");await pc.evaluate(()=>document.querySelector("[data-sync-history]").onclick());assert.equal((await read(pc)).main.progress.dns,stable.progress.dns);assert.match(await pc.locator("#rc-sync-status").textContent(),/Ancienne révision/);

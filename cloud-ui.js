@@ -3,7 +3,7 @@
    Durable encrypted outbox; receipts scoped to provider + authenticated user. */
 const RC_CLOUD_UI = (() => {
  const CONFIG="reconversion-control.cloud.config.v1",SESSION="reconversion-control.cloud.session.v1";
- let env,client,cfg,email="",phrase="",remember=false,user="",scope="",meta={v:1},remote=null,remoteData=null,googleIdentity=null;
+ let env,client,cfg,email="",phrase="",remember=false,user="",scope="",meta={v:1},remote=null,remoteData=null,remoteBound=false,googleIdentity=null;
  let revision=null,baseline="",busy=false,applying=false,mode="setup",status="Local uniquement · cloud non configuré.",timer=null,pending=null,epoch=0,retries=0,historyRows=[],restoredHere=false,lastFullRead=0;
  const FULL_READ_MS=600000;
  const T=()=>RC_CLOUD_TRANSPORT,now=()=>new Date().toISOString();
@@ -16,17 +16,35 @@ const RC_CLOUD_UI = (() => {
  function guard(ticket){if(ticket!==epoch)throw Error("Opération annulée");}
  function persist(next){if(next.v!==1)throw Error("Journal cloud incompatible : écriture refusée");save(scope,next);meta=next;}
  function dirty(){return local()!==baseline;}
+ function target(expected){return expected===null?1:expected+1;}
+ // Progress ciphertexts are bound to (account, revision). Legacy constant-AAD envelopes are
+ // accepted only until this device has acknowledged a bound one for this account (sticky
+ // meta.bound), or for explicit, preserve-only copies made before an explicit replacement.
+ function openAt(payload,rev,preserveOnly){return T().openProgress(payload,phrase,{user,revision:rev,legacy:preserveOnly===true||meta.bound!==true});}
+ // A legacy head refused after a bound ack (older client still writing, or a replay) is never
+ // applied: it becomes an explicit conflict where only "send this device" can proceed.
+ async function openHead(latest,ticket){
+  try{return await openAt(latest.payload,latest.revision);}
+  catch(e){
+   if(meta.bound!==true)throw e;
+   try{await openAt(latest.payload,latest.revision,true);}catch(x){throw e;}
+   guard(ticket);remote=latest;remoteData=null;remoteBound=false;mode="conflict";
+   status="Version cloud non liée à ce compte et à cette révision (ancien client ou rejeu) : refusée, aucune donnée locale remplacée. Mets à jour l’autre appareil ou envoie explicitement cet appareil.";
+   return null;
+  }
+ }
  function delayed(){if(dirty())schedule();}
  function uploadStatus(message){return message+(dirty()?" De nouvelles modifications locales restent à synchroniser.":"");}
  function receipt(){return meta.ack?'<p class="muted">Dernière sauvegarde cloud confirmée : '+safe(meta.ack.at)+' · révision '+safe(meta.ack.revision)+'.</p>':"";}
  function view(){
-  const intro='<h3>☁️ Synchronisation chiffrée PC ↔ iPhone (optionnelle)</h3><p class="muted">Local d’abord. Après activation et déverrouillage, la progression complète est chiffrée avant envoi. Phrase en mémoire seulement. Une app iPhone fermée reprend à la réouverture.</p>';
+  const intro='<h3>☁️ Synchronisation chiffrée PC ↔ iPhone (optionnelle)</h3><p class="muted">Local d’abord. Après activation et déverrouillage, la progression (statuts, révisions, labs, preuves, Daily Five, dossier) est chiffrée avant envoi ; les préférences d’affichage et les copies de récupération restent sur cet appareil. Phrase en mémoire seulement. Une app iPhone fermée reprend à la réouverture.</p>';
   const msg='<p id="rc-sync-status" role="status" aria-live="polite">'+safe(status)+'</p>'+receipt();
   const disconnect='<button class="btn" id="rc-sync-disconnect">Déconnecter</button>';
   if(mode==="setup")return intro+'<p>Connexion réservée à tes appareils personnels. Sur un PC professionnel, utilise les <a href="./courses-public.html">cours publics sans connexion</a>.</p><div class="rc-sync-form"><label>URL Supabase<input id="rc-sync-url" type="url" autocomplete="off" value="'+safe(cfg&&cfg.url)+'" placeholder="https://jsxbpxlipjmkszfektis.supabase.co"></label><label>Clé publique<input id="rc-sync-key" type="text" autocomplete="off" value="'+safe(cfg&&cfg.key)+'" placeholder="sb_publishable_…"></label><button class="btn pri" id="rc-sync-google">Continuer avec Google</button><p class="muted">Google identifie le compte. Ta phrase de chiffrement sera demandée ensuite ; elle ne sera pas transmise à Google ou Supabase.</p><details id="rc-sync-legacy"><summary class="btn">Connexion email existante</summary><label>Adresse email de connexion<input id="rc-sync-email" type="email" autocomplete="email"></label><label><input id="rc-sync-remember" type="checkbox"> Mémoriser la session chiffrée sur cet appareil privé</label><button class="btn" id="rc-sync-request">Recevoir un code par email</button></details></div>'+msg;
   if(mode==="oauth")return intro+'<p>Compte Google confirmé : <b id="rc-sync-account">'+safe(googleIdentity&&googleIdentity.email)+'</b></p><div class="rc-sync-form"><label><input type="checkbox" id="rc-sync-confirm-account"> Je confirme utiliser ce compte pour mes sauvegardes.</label><label>Phrase secrète (indépendante du compte Google)<input id="rc-sync-phrase" type="password" autocomplete="off"></label><label><input id="rc-sync-remember" type="checkbox"> Mémoriser la session sous chiffrement sur cet appareil personnel</label><button class="btn pri" id="rc-sync-google-unlock">Déverrouiller mes sauvegardes</button>'+disconnect+'</div>'+msg;
   if(mode==="otp"||mode==="locked")return intro+(mode==="otp"?'<p>Code email Supabase requis (modèle <code>{{ .Token }}</code>).</p>':'<p>Session chiffrée mémorisée. Déverrouille-la pour vérifier sa validité auprès de Supabase.</p>')+'<div class="rc-sync-form">'+(mode==="otp"?'<label>Code reçu<input id="rc-sync-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8"></label>':'')+'<label>Phrase secrète (12 caractères minimum, identique sur les deux appareils)<input id="rc-sync-phrase" type="password" autocomplete="off"></label><button class="btn pri" id="rc-sync-'+(mode==="otp"?'verify':'unlock')+'">Déverrouiller</button>'+disconnect+'</div>'+msg;
-  let controls='<div class="actions"><button class="btn" id="rc-sync-now">Synchroniser maintenant</button>'+disconnect+'</div>';
+  // Manual trigger of the SAME tick() pipeline (read, verify, encrypt, conditional write, read-back).
+  let controls='<div class="actions"><button class="btn" id="rc-sync-now">Sauvegarder maintenant</button>'+disconnect+'</div>';
   if(mode==="initial")controls='<p>Le cloud est vide. Ta progression locale sera la source initiale. Vérifie d’abord ton export indépendant.</p><div class="actions"><button class="btn pri" id="rc-sync-create">Créer la première sauvegarde chiffrée</button>'+disconnect+'</div>';
   if(mode==="choose"||mode==="conflict")controls='<p><b>'+safe(mode==="choose"?'Choisis explicitement la source initiale.':'Conflit : aucune version remplacée automatiquement.')+'</b></p><div class="actions"><button class="btn" id="rc-sync-take">Récupérer le cloud sur cet appareil</button><button class="btn" id="rc-sync-push">Envoyer cet appareil vers le cloud</button><button class="btn" id="rc-sync-now">Revérifier les versions</button>'+disconnect+'</div><p class="muted">Chaque remplacement nécessite confirmation et copie locale de récupération. Exporte aussi une sauvegarde indépendante.</p>';
   if(mode==="error")controls='<div class="actions"><button class="btn" id="rc-sync-now">Réessayer la lecture cloud</button>'+disconnect+'</div>';
@@ -35,9 +53,11 @@ const RC_CLOUD_UI = (() => {
  }
  function repaint(){
   const root=typeof document!=="undefined"&&document.querySelector("#rc-sync");if(!root||!env)return;
-  const label=document.querySelector("#rc-storage-label");if(label)label.textContent=mode==="active"?"LOCAL + CLOUD CHIFFRÉ · voir l’état de sauvegarde":"LOCAL · cloud "+(cfg?"configuré":"non configuré");
+  const label=document.querySelector("#rc-storage-label");if(label)label.textContent=mode==="active"?(confirmed()?"LOCAL + CLOUD CHIFFRÉ · sauvegarde confirmée (révision "+revision+")":"LOCAL · sauvegarde cloud en attente"):"LOCAL · cloud "+(cfg?"configuré":"non configuré");
   root.innerHTML=view();bind();
  }
+ // True only when this device's current snapshot is exactly the acknowledged cloud revision.
+ function confirmed(){try{return !!(meta.ack&&!meta.pending&&revision===meta.ack.revision&&baseline&&!dirty());}catch(e){return false;}}
  function warn(t){status=t;repaint();}
  function makeClient(ticket){
   return T().create(cfg,{sessionChanged:async session=>{
@@ -95,22 +115,23 @@ const RC_CLOUD_UI = (() => {
  }
  function loadMeta(){
   scope="reconversion-control.cloud.sync.v1:"+cfg.url+":"+user;meta=load(scope)||{v:1};
-  if(meta.v!==1||meta.ack&&(!Number.isSafeInteger(meta.ack.revision)||!/^[a-f0-9]{64}$/.test(meta.ack.hash))||meta.pending&&(!/^[a-f0-9]{64}$/.test(meta.pending.hash)||!(meta.pending.expected===null||Number.isSafeInteger(meta.pending.expected))))throw Error("Journal cloud incompatible : récupération manuelle requise");
+  if(meta.v!==1||meta.ack&&(!Number.isSafeInteger(meta.ack.revision)||!/^[a-f0-9]{64}$/.test(meta.ack.hash))||meta.pending&&(!/^[a-f0-9]{64}$/.test(meta.pending.hash)||!(meta.pending.expected===null||Number.isSafeInteger(meta.pending.expected)))||meta.bound!==undefined&&meta.bound!==true)throw Error("Journal cloud incompatible : récupération manuelle requise");
  }
- async function acknowledge(sent,next,ticket,payload){
+ async function acknowledge(sent,next,ticket,payload,bound){
   const hash=await T().fingerprint(sent),payloadHash=payload?await T().fingerprint(T().serialize(payload)):null;guard(ticket);
-  persist({...meta,ack:{revision:next,hash,payloadHash,at:now()},pending:null});revision=next;baseline=sent;retries=0;lastFullRead=Date.now();
+  persist({...meta,ack:{revision:next,hash,payloadHash,at:now()},pending:null,...(bound===true?{bound:true}:{})});revision=next;baseline=sent;retries=0;lastFullRead=Date.now();
  }
  async function flush(ticket){
   const job=meta.pending;if(!job)return;
-  const data=validate(await T().open(job.payload,phrase));guard(ticket);
+  const opened=await openAt(job.payload,target(job.expected)),data=validate(opened.data);guard(ticket);
   const sent=T().serialize(data);if(await T().fingerprint(sent)!==job.hash)throw Error("Journal d’envoi altéré");guard(ticket);
   local(); // A failed/unconfirmed local write must suspend network transmission.
-  const next=await client.write(job.payload,job.expected);guard(ticket);await acknowledge(sent,next,ticket,job.payload);
+  const next=await client.write(job.payload,job.expected);guard(ticket);await acknowledge(sent,next,ticket,job.payload,opened.bound);
  }
  async function upload(expected,ticket){
   if(meta.pending)throw Error("Un envoi précédent doit être résolu avant un nouvel envoi");
-  const sent=local(),snapshot=JSON.parse(sent),payload=await T().seal(snapshot,phrase);guard(ticket);
+  // Phase A : format hérité, lisible par les appareils pas encore mis à jour ; phase B : format lié.
+  const sent=local(),snapshot=JSON.parse(sent),payload=T().BOUND_WRITES===true?await T().sealProgress(snapshot,phrase,{user,revision:target(expected)}):await T().seal(snapshot,phrase);guard(ticket);
   const hash=await T().fingerprint(sent);guard(ticket);local();
   persist({...meta,pending:{expected,hash,payload}});
   await flush(ticket);delayed();
@@ -123,17 +144,19 @@ const RC_CLOUD_UI = (() => {
    const matches=latest&&latest.revision===next&&T().serialize(latest.payload)===T().serialize(meta.pending.payload);
    const retry=(!latest&&meta.pending.expected===null)||(latest&&latest.revision===meta.pending.expected);
    if(matches||retry){await flush(ticket);latest=await client.read();guard(ticket);}
-   else{remote=latest;remoteData=latest?validate(await T().open(latest.payload,phrase)):null;guard(ticket);mode="conflict";status="Conflit détecté : envoi précédent conservé, décision nécessaire.";return;}
+   else{remote=latest;remoteBound=false;remoteData=null;if(latest){const opened=await openHead(latest,ticket);if(!opened)return;remoteData=validate(opened.data);remoteBound=opened.bound;}guard(ticket);mode="conflict";status="Conflit détecté : envoi précédent conservé, décision nécessaire.";return;}
   }
-  remote=latest;
+  // Jamais de contenu déchiffré d'une autre révision associé à `remote` (preuve X1, NOESIS 13.6).
+  remote=latest;remoteData=null;remoteBound=false;
   if(!latest){mode=meta.ack?"conflict":"initial";remoteData=null;status=meta.ack?"La sauvegarde cloud a disparu. Aucun changement local effacé.":"Connecté et déverrouillé · aucune sauvegarde cloud. Confirmation initiale requise.";return;}
-  remoteData=validate(await T().open(latest.payload,phrase));guard(ticket);
+  const opened=await openHead(latest,ticket);if(!opened)return;remoteData=validate(opened.data);remoteBound=opened.bound;guard(ticket);
   const here=local(),hash=await T().fingerprint(here),there=T().serialize(remoteData);guard(ticket);
   // No automatic source selection without a durable receipt from this account.
   if(!meta.ack){mode="choose";status="Une progression cloud existe déjà. Choisis laquelle conserver.";return;}
   if(latest.revision<meta.ack.revision)throw Error("Révision distante obsolète : restauration automatique refusée");
   if(latest.revision===meta.ack.revision){
    if(await T().fingerprint(there)!==meta.ack.hash)throw Error("Même révision avec contenu différent : restauration refusée");guard(ticket);
+   if(remoteBound&&meta.bound!==true)persist({...meta,bound:true});
    baseline=there;revision=latest.revision;mode="active";lastFullRead=Date.now();
    status=uploadStatus(meta.restore&&hash===meta.restore.hash&&!restoredHere?"Restauration vérifiée après réouverture · connecté et déverrouillé.":"Connecté et déverrouillé. Reprise de la synchronisation.");activate();delayed();return;
   }
@@ -177,7 +200,7 @@ const RC_CLOUD_UI = (() => {
    guard(ticket);if(local()!==expected)throw Error("Progression locale modifiée pendant la réception");
    restoredHere=true;env.restore(valid);
    const restored=local();if(restored!==T().serialize(valid))throw Error("Relecture restaurée différente");
-   await acknowledge(restored,next,ticket,remote&&remote.payload);guard(ticket);persist({...meta,restore:{hash:meta.ack.hash,revision:next}});
+   await acknowledge(restored,next,ticket,remote&&remote.payload,remoteBound);guard(ticket);persist({...meta,restore:{hash:meta.ack.hash,revision:next}});
   }finally{applying=false;}
  }
  async function tick(periodic){
@@ -203,7 +226,7 @@ const RC_CLOUD_UI = (() => {
    const latest=await client.read();guard(ticket);
    if(!latest){mode="conflict";remote=remoteData=null;status="La sauvegarde cloud a disparu. Aucun changement local effacé.";return;}
    if(latest.revision!==revision){
-    const decrypted=validate(await T().open(latest.payload,phrase));guard(ticket);remote=latest;remoteData=decrypted;
+    const opened=await openHead(latest,ticket);if(!opened)return;const decrypted=validate(opened.data);guard(ticket);remote=latest;remoteData=decrypted;remoteBound=opened.bound;
     if(latest.revision<revision)throw Error("Révision distante obsolète");
     if(dirty()){mode="conflict";status="Conflit détecté : modifications sur deux appareils.";return;}
     if(env.empty&&env.empty(decrypted)&&!env.empty(env.snapshot())){mode="conflict";status="Une version cloud vide nécessite une sélection explicite. Progression locale conservée.";return;}
@@ -214,7 +237,7 @@ const RC_CLOUD_UI = (() => {
     else status="À jour sur cet appareil et dans le cloud · sauvegarde cloud confirmée.";
    }
    lastFullRead=Date.now();delayed();
-  }catch(e){if(ticket===epoch){lastFullRead=0;status="Synchronisation en attente : "+e.message+" · progression locale conservée.";schedule(Math.min(60000,2000*2**Math.min(retries++,5)));}}
+  }catch(e){if(ticket===epoch){lastFullRead=0;status=/^(Non connecté|Session expirée)/.test(e.message)?"Sauvegarde cloud interrompue : session expirée ou révoquée, reconnecte-toi (Déconnecter puis se reconnecter). Progression locale conservée"+(confirmed()?".":" ; des modifications ne sont pas encore dans le cloud."):"Synchronisation en attente : "+e.message+" · progression locale conservée.";schedule(Math.min(60000,2000*2**Math.min(retries++,5)));}}
   finally{if(ticket===epoch){busy=false;repaint();}}
  }
  async function createFirst(){
@@ -233,9 +256,12 @@ const RC_CLOUD_UI = (() => {
   try{
    const before=local(),latest=await client.read();guard(ticket);
    if(!latest||latest.revision!==remote.revision||T().serialize(latest.payload)!==T().serialize(remote.payload)||local()!==before)throw Error("Une version a changé : revérifie les deux sources");
-   if(meta.pending&&env.preserve)env.preserve(validate(await T().open(meta.pending.payload,phrase)));guard(ticket);
+   if(meta.pending&&env.preserve)env.preserve(validate((await openAt(meta.pending.payload,target(meta.pending.expected),true)).data));guard(ticket);
    if(local()!==before)throw Error("Progression locale modifiée");
-   await apply(remoteData,latest.revision,ticket);mode="active";status="Progression cloud relue localement. Restauration après réouverture à vérifier.";activate();
+   // Re-déchiffrer la version distante ACTUELLE : jamais appliquer un contenu mis en cache (X1).
+   const opened=await openHead(latest,ticket);if(!opened)throw Error("version cloud illisible pour ce compte et cette révision");
+   const fresh=validate(opened.data);guard(ticket);if(local()!==before)throw Error("Progression locale modifiée");
+   await apply(fresh,latest.revision,ticket);mode="active";status="Progression cloud relue localement. Restauration après réouverture à vérifier.";activate();
   }catch(e){if(ticket===epoch)status="Import cloud refusé : "+e.message;}
   finally{if(ticket===epoch){busy=false;repaint();}}
  }
@@ -245,8 +271,8 @@ const RC_CLOUD_UI = (() => {
   try{
    const latest=await client.read();guard(ticket);
    if((!latest&&remote)||latest&&(!remote||latest.revision!==remote.revision))throw Error("La version cloud a encore changé. Revérifie et réessaie.");
-   if(latest&&env.preserve)env.preserve(validate(await T().open(latest.payload,phrase)));guard(ticket);
-   if(meta.pending&&env.preserve)env.preserve(validate(await T().open(meta.pending.payload,phrase)));guard(ticket);
+   if(latest&&env.preserve)env.preserve(validate((await openAt(latest.payload,latest.revision,true)).data));guard(ticket);
+   if(meta.pending&&env.preserve)env.preserve(validate((await openAt(meta.pending.payload,target(meta.pending.expected),true)).data));guard(ticket);
    persist({...meta,pending:null});await upload(latest?latest.revision:null,ticket);
    mode="active";status=uploadStatus("Progression de cet appareil envoyée. Synchronisation automatique active.");activate();delayed();
   }catch(e){if(ticket===epoch)status="Envoi refusé : "+e.message;}
@@ -262,7 +288,7 @@ const RC_CLOUD_UI = (() => {
   const r=historyRows[index];if(busy||!r||!confirm("Récupérer cette ancienne révision localement ? La synchronisation sera suspendue jusqu’à une nouvelle décision."))return;
   busy=true;const ticket=epoch;
   try{
-   const before=local(),saved=await client.historyVersion(r.revision);guard(ticket);const data=validate(await T().open(saved.payload,phrase));guard(ticket);if(local()!==before)throw Error("Progression locale modifiée");
+   const before=local(),saved=await client.historyVersion(r.revision);guard(ticket);const data=validate((await openAt(saved.payload,r.revision,true)).data);guard(ticket);if(local()!==before)throw Error("Progression locale modifiée");
    if(env.preserve)env.preserve(JSON.parse(before));restoredHere=true;env.restore(data);
    if(local()!==T().serialize(data))throw Error("Relecture restaurée différente");
    mode="conflict";baseline="";status="Ancienne révision relue localement. Exporter puis revérifier les sources avant toute synchronisation.";
@@ -271,7 +297,7 @@ const RC_CLOUD_UI = (() => {
  }
  async function disconnect(){
   const ticket=++epoch,previous=client;if(timer)clearInterval(timer);if(pending)clearTimeout(pending);timer=pending=null;
-  client=null;phrase="";email="";user="";googleIdentity=null;remote=remoteData=null;revision=null;baseline="";meta={v:1};historyRows=[];busy=false;mode="setup";
+  client=null;phrase="";email="";user="";googleIdentity=null;remote=remoteData=null;remoteBound=false;revision=null;baseline="";meta={v:1};historyRows=[];busy=false;mode="setup";
   try{remove(SESSION);status="Déconnecté localement. Données et journal de récupération conservés.";}
   catch(e){status="Session en mémoire fermée ; suppression durable NON confirmée. Efface la session mémorisée avant de quitter cet appareil.";}
   repaint();if(previous){const revoked=await previous.logout();if(ticket===epoch&&!revoked){status+=" Révocation serveur non confirmée : reconnecte-toi au fournisseur pour révoquer la session.";repaint();}}
@@ -283,7 +309,7 @@ const RC_CLOUD_UI = (() => {
  }
  function attach(options){
   env=options;
-  try{const saved=load(CONFIG);if(saved){cfg=T().config(saved.url,saved.key);if(saved.owner!==undefined){if(!/^[0-9a-f-]{36}$/i.test(saved.owner))throw Error("Compte mémorisé invalide");cfg.owner=saved.owner;}}if(cfg&&load(SESSION)){mode="locked";status="Session mémorisée chiffrée · déverrouillage requis, aucun envoi automatique.";}}
+  try{const saved=load(CONFIG);if(saved){cfg=T().config(saved.url,saved.key);if(saved.owner!==undefined){if(!/^[0-9a-f-]{36}$/i.test(saved.owner))throw Error("Compte mémorisé invalide");cfg.owner=saved.owner;}}if(cfg&&load(SESSION)){mode="locked";status="Session mémorisée chiffrée · déverrouillage requis, aucun envoi automatique : les modifications restent sur cet appareil jusqu’au déverrouillage.";}}
   catch(e){status="Cloud suspendu : configuration locale illisible. Progression locale conservée.";}
   if(typeof window!=="undefined"&&window.addEventListener){
    window.addEventListener("online",tick);

@@ -124,8 +124,8 @@ const RC_CLOUD_TRANSPORT = (() => {
   }
   async function history(){
    if(!session)throw Error("Non connecté");
-   const rows=await request("/rest/v1/reconversion_progress_history?user_id=eq."+encodeURIComponent(session.user)+"&select=revision&order=revision.desc&limit=20",{secure:true});
-   if(!Array.isArray(rows)||rows.length>20||rows.some(r=>!validRevision(r.revision)))throw Error("Historique invalide");return rows.map(r=>({revision:r.revision}));
+   const rows=await request("/rest/v1/reconversion_progress_history?user_id=eq."+encodeURIComponent(session.user)+"&select=revision&order=revision.desc&limit=50",{secure:true});
+   if(!Array.isArray(rows)||rows.length>50||rows.some(r=>!validRevision(r.revision)))throw Error("Historique invalide");return rows.map(r=>({revision:r.revision}));
   }
   async function historyVersion(revision){
    if(!session||!validRevision(revision))throw Error("Révision inaccessible");
@@ -145,7 +145,8 @@ const RC_CLOUD_TRANSPORT = (() => {
   const cipher=await crypto.subtle.encrypt({name:"AES-GCM",iv,additionalData:te.encode(context)},key,te.encode(raw));
   return {v:1,kdf:"PBKDF2-SHA256",iterations:250000,salt:b64(salt),iv:b64(iv),ciphertext:b64(new Uint8Array(cipher))};
  }
- async function decrypt(envelope,phrase,context){
+ // contexts: AES-GCM additional data candidates, tried in order with ONE key derivation.
+ async function decryptAny(envelope,phrase,contexts){
   if(!envelope||envelope.v!==1||envelope.kdf!=="PBKDF2-SHA256"||envelope.iterations!==250000||Object.keys(envelope).sort().join(",")!=="ciphertext,iterations,iv,kdf,salt,v")throw Error("Format de sauvegarde cloud inconnu");
   try{
    if(typeof phrase!=="string"||phrase.length<12||phrase.length>1024)throw Error("Phrase");
@@ -153,9 +154,32 @@ const RC_CLOUD_TRANSPORT = (() => {
    if(salt.length!==16||iv.length!==12||cipher.length<16)throw Error("Format");
    const material=await crypto.subtle.importKey("raw",te.encode(phrase),"PBKDF2",false,["deriveKey"]);
    const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:250000,hash:"SHA-256"},material,{name:"AES-GCM",length:256},false,["decrypt"]);
-   const value=JSON.parse(td.decode(await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:te.encode(context)},key,cipher)));bounded(value);return value;
-  }catch(e){throw Error("Déchiffrement impossible : mauvaise phrase ou données altérées");}
+   for(let index=0;index<contexts.length;index++){
+    let plain;try{plain=await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:te.encode(contexts[index])},key,cipher);}catch(e){continue;}
+    const value=JSON.parse(td.decode(plain));bounded(value);return {value,index};
+   }
+   throw Error("AAD");
+  }catch(e){throw Error(contexts[0].startsWith("reconversion-control-progress-v2|")?"Déchiffrement impossible : mauvaise phrase, données altérées ou sauvegarde rejouée (autre compte ou autre révision) · restauration refusée":"Déchiffrement impossible : mauvaise phrase ou données altérées");}
  }
+ async function decrypt(envelope,phrase,context){return (await decryptAny(envelope,phrase,[context])).value;}
  const progress="reconversion-control-progress-v1",auth="reconversion-control-session-v1";
- return Object.freeze({create,config,serialize,fingerprint,seal:(s,p)=>encrypt(s,p,progress),open:(s,p)=>decrypt(s,p,progress),sealSession:(s,p)=>encrypt(s,p,auth),openSession:(s,p)=>decrypt(s,p,auth)});
+ // Progress envelopes keep the SQL-pinned v1 shape; only the authenticated data changes.
+ // Bound AAD ties a ciphertext to one account and the exact revision it was written as,
+ // so a server cannot replay an older (or another account's) ciphertext as a newer head.
+ function boundContext(ctx){
+  if(!ctx||typeof ctx.user!=="string"||!/^[0-9a-f-]{36}$/i.test(ctx.user)||!validRevision(ctx.revision))throw Error("Contexte de sauvegarde invalide");
+  return "reconversion-control-progress-v2|"+ctx.user.toLowerCase()+"|"+ctx.revision;
+ }
+ // Déploiement en deux phases (NOESIS 13.6). Phase A (false) : lecture des formats lié ET hérité,
+ // écriture du format hérité, lisible par les clients encore en production (0edcf3f) : un ancien
+ // appareil ne rencontre jamais de tête illisible (preuve C3b). Phase B (true), après mise à jour de
+ // TOUS les appareils : écriture liée au compte et à la révision (anti-rejeu).
+ const BOUND_WRITES=false;
+ async function sealProgress(snapshot,phrase,ctx){return encrypt(snapshot,phrase,boundContext(ctx));}
+ // legacy:true additionally accepts constant-AAD v1 progress envelopes (pre-binding clients).
+ async function openProgress(envelope,phrase,ctx){
+  const contexts=[boundContext(ctx)].concat(ctx.legacy===true?[progress]:[]);
+  const opened=await decryptAny(envelope,phrase,contexts);return {data:opened.value,bound:opened.index===0};
+ }
+ return Object.freeze({BOUND_WRITES,create,config,serialize,fingerprint,seal:(s,p)=>encrypt(s,p,progress),open:(s,p)=>decrypt(s,p,progress),sealProgress,openProgress,sealSession:(s,p)=>encrypt(s,p,auth),openSession:(s,p)=>decrypt(s,p,auth)});
 })();
