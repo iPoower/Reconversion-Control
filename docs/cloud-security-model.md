@@ -1,6 +1,6 @@
 # Modèle de menaces — sauvegarde chiffrée
 
-Auteur : Bryan Fiarda. Révision : 24 octobre 2026. Périmètre : Reconversion Control uniquement.
+Auteur : Bryan. Révision : 24 octobre 2026. Périmètre : Reconversion Control uniquement.
 
 Ce modèle reprend les mécanismes existants ; il ne certifie pas un service personnel ni un iPhone physique. Les migrations, le code testé, le service hébergé et la recette personnelle ont des preuves distinctes.
 

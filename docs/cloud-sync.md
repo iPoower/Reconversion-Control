@@ -1,6 +1,6 @@
 # Sauvegarde chiffrée PC ↔ iPhone — candidat du 24 octobre 2026
 
-Auteur : Bryan Fiarda. Développement autorisé, **aucune mise en service personnelle**.
+Auteur : Bryan. Développement autorisé, **aucune mise en service personnelle**.
 Base vérifiée : `2ab4c0f74c74b5ad430e10032ae810708113b3f0` (PR #31).
 
 ## Fonctionnement quotidien prévu

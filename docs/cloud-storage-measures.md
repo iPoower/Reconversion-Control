@@ -1,6 +1,6 @@
 # Mesures de stockage et transferts — données fictives
 
-Auteur : Bryan Fiarda. Mesures locales du 24 octobre 2026, Node 24.22.1, PostgreSQL PGlite 0.5.11. Ce banc d'essai n'utilise aucun projet Supabase, compte ou progression personnels.
+Auteur : Bryan. Mesures locales du 24 octobre 2026, Node 24.22.1, PostgreSQL PGlite 0.5.11. Ce banc d'essai n'utilise aucun projet Supabase, compte ou progression personnels.
 
 ## Décision compatible avec les sauvegardes existantes
 

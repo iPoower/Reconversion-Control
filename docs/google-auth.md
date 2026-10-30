@@ -1,6 +1,6 @@
 # Google OAuth sans domaine — Reconversion Control
 
-Auteur : Bryan Fiarda. 25 octobre 2026.
+Auteur : Bryan. 25 octobre 2026.
 
 Ce changement prolonge le candidat #33 (4570c111…). Il ne fusionne ni ne publie le code, ne crée pas d'utilisateur personnel et ne transmet pas de progression personnelle. Aucune migration SQL n'est nécessaire. AES-256-GCM/PBKDF2, DTO cloud V2 issu du snapshot atomique V3, outbox, révisions, RLS et rétention 20 restent inchangés.
 
