@@ -1,6 +1,6 @@
 # GO FINAL personnel — guide préparé, non exécuté
 
-Auteur : Bryan Fiarda · 24 octobre 2026.
+Auteur : Bryan · 24 octobre 2026.
 
 **Aucun GO de fusion, publication, modification administrative, activation ou données réelles n’est déduit de ce guide.**
 

@@ -1,6 +1,6 @@
 # NOESIS — consolidation de la restauration locale
 
-Auteur : Bryan Fiarda. Relevé : 24 octobre 2026 (Europe/Paris).
+Auteur : Bryan. Relevé : 24 octobre 2026 (Europe/Paris).
 
 ## Portée et filiation
 
